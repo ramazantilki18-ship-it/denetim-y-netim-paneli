@@ -1631,6 +1631,7 @@
                             <button class="tab-btn" onclick="switchPlanTab('manual', this)">Manuel</button>
                             <button class="tab-btn" onclick="switchPlanTab('monthly', this)">Aylık Plan</button>
                             <button class="tab-btn" onclick="switchPlanTab('yearly', this)">Yıllık Plan</button>
+                            <button class="tab-btn" onclick="switchPlanTab('yearly-weekly', this)">Yıllık Haftalık Plan</button>
                         </div>
                         <div class="planning-actions">
                             <input type="file" id="planning-excel-import" accept=".xlsx, .xls" style="display:none;" onchange="handlePlanningExcelImport(event)">
@@ -2234,6 +2235,7 @@
                              <option value="manual">Tekil Denetim (Manuel)</option>
                              <option value="monthly">Aylık Planlama</option>
                              <option value="yearly">Yıllık Planlama</option>
+                             <option value="yearly_weekly">Yıllık Haftalık Planlama</option>
                          </select>
                      </div>
                      <div class="input-group">
@@ -2271,7 +2273,15 @@
                          </div>
                      </div>
 
-                     <!-- Date Selectors -->
+                      <!-- Yearly Weekly Station Distribution -->
+                      <div id="yearly-weekly-station-distribution" class="input-group" style="display: none;">
+                          <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Yıllık Haftalık İstasyon Dağılımı</label>
+                          <div id="yearly-weekly-months-container" style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 300px; overflow-y: auto; padding-right: 10px;">
+                              <!-- JS will populate months and weeks -->
+                          </div>
+                      </div>
+
+                      <!-- Date Selectors -->
                      <div id="manual-date-fields" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                          <div class="input-group">
                              <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Başlangıç Tarihi</label>

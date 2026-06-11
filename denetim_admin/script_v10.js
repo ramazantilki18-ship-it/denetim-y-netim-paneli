@@ -3537,9 +3537,11 @@ function renderPlanning() {
         plans = plans.filter(p => p.id && p.id.startsWith('MT-'));
     } else if (appData.currentPlanTab === 'yearly') {
         plans = plans.filter(p => p.id && p.id.startsWith('YT-'));
+    } else if (appData.currentPlanTab === 'yearly-weekly') {
+        plans = plans.filter(p => p.id && p.id.startsWith('YWT-'));
     } else if (appData.currentPlanTab === 'manual') {
-        // Manual: Everything that doesn't start with MT- or YT-
-        plans = plans.filter(p => !p.id || (!p.id.startsWith('MT-') && !p.id.startsWith('YT-')));
+        // Manual: Everything that doesn't start with MT-, YT- or YWT-
+        plans = plans.filter(p => !p.id || (!p.id.startsWith('MT-') && !p.id.startsWith('YT-') && !p.id.startsWith('YWT-')));
     } else {
         // 'all': Show all plans, no filtering
     }
@@ -3714,13 +3716,16 @@ function togglePlanPeriodFields() {
     
     document.getElementById('manual-date-fields').style.display = type === 'manual' ? 'grid' : 'none';
     document.getElementById('monthly-date-fields').style.display = type === 'monthly' ? 'block' : 'none';
-    document.getElementById('yearly-date-fields').style.display = type === 'yearly' ? 'block' : 'none';
+    document.getElementById('yearly-date-fields').style.display = (type === 'yearly' || type === 'yearly_weekly') ? 'block' : 'none';
     
-    document.getElementById('standard-station-selection').style.display = (type === 'yearly' || type === 'monthly') ? 'none' : 'block';
+    document.getElementById('standard-station-selection').style.display = (type === 'yearly' || type === 'monthly' || type === 'yearly_weekly') ? 'none' : 'block';
     document.getElementById('yearly-station-distribution').style.display = type === 'yearly' ? 'block' : 'none';
+    document.getElementById('yearly-weekly-station-distribution').style.display = type === 'yearly_weekly' ? 'block' : 'none';
 
     if (type === 'yearly') {
         renderYearlyMonths();
+    } else if (type === 'yearly_weekly') {
+        renderYearlyWeeklyMonths();
     } else if (type === 'monthly') {
         renderMonthlyWeeks();
     }
@@ -3812,6 +3817,89 @@ function toggleMiniChip(chip) {
     const parent = chip.closest('.month-stations-grid').parentElement;
     const count = parent.querySelectorAll('.mini-chip.active').length;
     parent.querySelector('.station-count').innerText = `${count} Seçili`;
+}
+
+function renderYearlyWeeklyMonths() {
+    const container = document.getElementById('yearly-weekly-months-container');
+    const line = document.getElementById('plan-line').value;
+    const stations = appData.stations[line] || [];
+    container.innerHTML = '';
+    
+    const yearSelect = document.getElementById('plan-year-only');
+    const selectedYear = yearSelect ? parseInt(yearSelect.value) : new Date().getFullYear();
+    
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonthIndex = currentDate.getMonth(); // 0-11
+    
+    const monthNames = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+    
+    monthNames.forEach((month, index) => {
+        const isPastMonth = (selectedYear === currentYear && index < currentMonthIndex) || (selectedYear < currentYear);
+        const mDiv = document.createElement('div');
+        mDiv.style.background = isPastMonth ? 'rgba(0,0,0,0.02)' : 'var(--bg-input)';
+        mDiv.style.borderRadius = '12px';
+        mDiv.style.padding = '1rem';
+        mDiv.style.border = '1px solid var(--glass-border)';
+        mDiv.style.marginBottom = '1rem';
+        if (isPastMonth) {
+            mDiv.style.opacity = '0.5';
+            mDiv.style.pointerEvents = 'none';
+        }
+        
+        let weeksHtml = '';
+        if (!isPastMonth) {
+            for (let week = 1; week <= 4; week++) {
+                weeksHtml += `
+                    <div style="margin-top: 0.75rem; padding-left: 0.75rem; border-left: 2px solid var(--primary);">
+                        <div style="font-weight: 600; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem; display: flex; align-items: center; justify-content: space-between;">
+                            <span>${week}. Hafta</span>
+                            <span class="station-count-week" style="font-size: 0.65rem; opacity: 0.7;">0 Seçili</span>
+                        </div>
+                        <div class="yearly-weekly-stations-grid" data-month="${index + 1}" data-week="${week}" style="display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 0.5rem;">
+                            ${stations.map(s => `
+                                <div class="mini-chip" onclick="toggleMiniChipYearlyWeekly(this)" style="padding: 2px 6px; font-size: 0.65rem; border-radius: 6px; border: 1px solid var(--border-main); cursor: pointer; transition: 0.2s;">${s}</div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        mDiv.innerHTML = `
+            <div style="font-weight: 700; font-size: 0.85rem; color: ${isPastMonth ? 'var(--text-dim)' : 'var(--primary)'}; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-main); padding-bottom: 0.5rem;">
+                <span>${month} ${isPastMonth ? '<span style="font-size: 0.7rem; font-weight: 500; color: var(--text-dim); margin-left: 6px;">(Geçmiş Ay)</span>' : ''}</span>
+                <span class="month-total-count" style="font-size: 0.7rem; opacity: 0.7;">${isPastMonth ? 'Devre Dışı' : '0 İstasyon'}</span>
+            </div>
+            <div class="month-weeks-wrapper">
+                ${isPastMonth ? '' : weeksHtml}
+            </div>
+        `;
+        container.appendChild(mDiv);
+    });
+}
+
+function toggleMiniChipYearlyWeekly(chip) {
+    chip.classList.toggle('active');
+    if (chip.classList.contains('active')) {
+        chip.style.background = 'var(--primary)';
+        chip.style.color = 'white';
+        chip.style.borderColor = 'var(--primary)';
+    } else {
+        chip.style.background = 'transparent';
+        chip.style.color = 'var(--text-primary)';
+        chip.style.borderColor = 'var(--border-main)';
+    }
+    
+    // Update week count
+    const weekGrid = chip.closest('.yearly-weekly-stations-grid');
+    const weekCount = weekGrid.querySelectorAll('.mini-chip.active').length;
+    weekGrid.previousElementSibling.querySelector('.station-count-week').innerText = `${weekCount} Seçili`;
+    
+    // Update month total count
+    const monthDiv = chip.closest('.month-weeks-wrapper').parentElement;
+    const totalCount = monthDiv.querySelectorAll('.mini-chip.active').length;
+    monthDiv.querySelector('.month-total-count').innerText = `${totalCount} İstasyon`;
 }
 
 function updatePlanLinesDropdown() {
@@ -3910,6 +3998,9 @@ function updatePlanStations() {
 
     if (type === 'yearly') {
         renderYearlyMonths();
+        return;
+    } else if (type === 'yearly_weekly') {
+        renderYearlyWeeklyMonths();
         return;
     } else if (type === 'monthly') {
         renderMonthlyWeeks();
@@ -4082,6 +4173,57 @@ async function processNewPlan() {
             }
             showToast(`Yıllık plan (${taskCount} görev) başarıyla oluşturuldu!`);
             switchPlanTab('yearly', document.querySelector('[onclick*="switchPlanTab(\'yearly\'"]'));
+        } else if (periodType === 'yearly_weekly') {
+            const year = parseInt(document.getElementById('plan-year-only').value);
+            const weeklyGrids = document.querySelectorAll('.yearly-weekly-stations-grid');
+
+            if (!line || !auditorId) {
+                showToast('Lütfen hat ve denetçi seçiniz!');
+                return;
+            }
+
+            let hasSelection = false;
+            let taskCount = 0;
+
+            for (const wGrid of weeklyGrids) {
+                const month = parseInt(wGrid.dataset.month);
+                const week = parseInt(wGrid.dataset.week);
+                const activeChips = wGrid.querySelectorAll('.mini-chip.active');
+                const selectedStations = Array.from(activeChips).map(c => c.innerText);
+
+                if (selectedStations.length > 0) {
+                    hasSelection = true;
+                    const startDate = new Date(year, month - 1, (week - 1) * 7 + 1);
+                    const endDate = new Date(year, month - 1, week * 7);
+                    const id = `YWT-${Date.now()}-${month}-${week}-${Math.floor(Math.random() * 1000)}`;
+
+                    const task = {
+                        id,
+                        title: `${auditTitle} - ${month}. Ay ${week}. Hafta`,
+                        description: `${line} Hattı yıllık haftalık planlı denetimi (${month}. ay ${week}. hafta).`,
+                        assignedTitle,
+                        assignedUserId: auditorId,
+                        targetLine: line,
+                        targetStations: selectedStations,
+                        startDate: startDate.toISOString(),
+                        dueDate: endDate.toISOString(),
+                        taskType: 'Planlı Denetim',
+                        isCompleted: false,
+                        auditTypeId,
+                        createdBy: currentUser ? currentUser.id : null
+                    };
+                    await db.collection('plans').doc(id).set(task);
+                    taskCount++;
+                }
+            }
+
+            if (!hasSelection) {
+                showToast('Lütfen en az bir hafta için istasyon seçiniz!');
+                return;
+            }
+
+            showToast(`Yıllık haftalık plan (${taskCount} görev) başarıyla oluşturuldu!`);
+            switchPlanTab('yearly-weekly', document.querySelector('[onclick*="switchPlanTab(\'yearly-weekly\'"]'));
         }
 
         closePlanModal();
@@ -4121,8 +4263,10 @@ async function deletePlansForAuditor(userId) {
         plansToDelete = plansToDelete.filter(p => p.id && p.id.startsWith('MT-'));
     } else if (appData.currentPlanTab === 'yearly') {
         plansToDelete = plansToDelete.filter(p => p.id && p.id.startsWith('YT-'));
+    } else if (appData.currentPlanTab === 'yearly-weekly') {
+        plansToDelete = plansToDelete.filter(p => p.id && p.id.startsWith('YWT-'));
     } else if (appData.currentPlanTab === 'manual') {
-        plansToDelete = plansToDelete.filter(p => !p.id || (!p.id.startsWith('MT-') && !p.id.startsWith('YT-')));
+        plansToDelete = plansToDelete.filter(p => !p.id || (!p.id.startsWith('MT-') && !p.id.startsWith('YT-') && !p.id.startsWith('YWT-')));
     }
     
     // Then filter by the specific auditor!
@@ -4138,7 +4282,7 @@ async function deletePlansForAuditor(userId) {
         return;
     }
 
-    const tabName = appData.currentPlanTab === 'monthly' ? 'Aylık' : (appData.currentPlanTab === 'yearly' ? 'Yıllık' : (appData.currentPlanTab === 'manual' ? 'Manuel' : 'Tüm'));
+    const tabName = appData.currentPlanTab === 'monthly' ? 'Aylık' : (appData.currentPlanTab === 'yearly' ? 'Yıllık' : (appData.currentPlanTab === 'yearly-weekly' ? 'Yıllık Haftalık' : (appData.currentPlanTab === 'manual' ? 'Manuel' : 'Tüm')));
     if (!confirm(`Bu denetçiye ait bu sekmedeki (${tabName} Plan) yetkiniz dahilindeki tüm görevleri (${plansToDelete.length} adet) tek seferde silmek istediğinize emin misiniz?`)) return;
 
     try {
@@ -14407,25 +14551,25 @@ function downloadPlanningTemplate() {
     const wb = XLSX.utils.book_new();
 
     const headers = [
-        "Plan Tipi (Aylık/Yıllık)", "Yıl (Örn: 2026)", "Ay (1-12)", "Hafta (1-4) (Aylık İçin)", "Görev Türü (İstasyon/Hat)", "Denetçi (Kullanıcı Adı)", "Hat Kodu", "İstasyon Kodu", "Denetim Tipi Adı"
+        "Plan Tipi (Aylık/Yıllık/Yıllık Haftalık)", "Yıl (Örn: 2026)", "Ay (1-12)", "Hafta (1-4) (Aylık/Yıllık Haftalık İçin)", "Görev Türü (İstasyon/Hat)", "Denetçi (Kullanıcı Adı)", "Hat Kodu", "İstasyon Kodu", "Denetim Tipi Adı"
     ];
     const wsData = XLSX.utils.aoa_to_sheet([headers]);
     
     wsData['!cols'] = [
-        { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 25 }, { wch: 30 }, { wch: 25 }, { wch: 15 }, { wch: 20 }, { wch: 35 }
+        { wch: 35 }, { wch: 15 }, { wch: 15 }, { wch: 30 }, { wch: 30 }, { wch: 25 }, { wch: 15 }, { wch: 20 }, { wch: 35 }
     ];
 
     XLSX.utils.book_append_sheet(wb, wsData, "Görev Şablonu");
 
     const instructions = [
         ["❓ GÖREV PLANLAMA EXCEL YÜKLEME REHBERİ", "", ""],
-        ["Toplu şekilde aylık veya yıllık görevler planlayabilirsiniz.", "", ""],
+        ["Toplu şekilde aylık, yıllık veya yıllık haftalık görevler planlayabilirsiniz.", "", ""],
         ["", "", ""],
         ["SÜTUN ADI", "AÇIKLAMA", "NE YAZMALISINIZ?"],
-        ["1) Plan Tipi", "Görevin Aylık mı Yıllık mı olduğunu belirler.", "Aylık VEYA Yıllık"],
+        ["1) Plan Tipi", "Görevin Aylık, Yıllık veya Yıllık Haftalık mı olduğunu belirler.", "Aylık, Yıllık VEYA Yıllık Haftalık"],
         ["2) Yıl", "Görevin hangi yılda yapılacağı.", "Örn: 2026"],
         ["3) Ay", "Görevin hangi ayda yapılacağı (Sayı olarak).", "Örn: 6 (Haziran için)"],
-        ["4) Hafta", "Aylık planlar için gereklidir.", "1, 2, 3 veya 4"],
+        ["4) Hafta", "Aylık veya Yıllık Haftalık planlar için gereklidir.", "1, 2, 3 veya 4"],
         ["5) Görev Türü", "İstasyon mu, Hat mı vb.", "İstasyon Denetimi VEYA Hat Denetimi"],
         ["6) Denetçi", "Görevin atanacağı kişinin kullanıcı adı.", "Sistemde var olan bir kullanıcı adı"],
         ["7) Hat Kodu", "Denetlenecek hat ID'si.", "Örn: M1"],
@@ -14498,9 +14642,16 @@ async function handlePlanningExcelImport(event) {
                     endDate = new Date(year, month - 1, validWeek * 7);
                     id = `MT-${Date.now()}-${validWeek}-${Math.floor(Math.random()*1000)}`;
                 } else if (planTypeRaw.includes('yıllık') || planTypeRaw.includes('yillik')) {
-                    startDate = new Date(year, month - 1, 1);
-                    endDate = new Date(year, month, 0); // last day of month
-                    id = `YT-${Date.now()}-${month}-${Math.floor(Math.random()*1000)}`;
+                    if (planTypeRaw.includes('hafta') || planTypeRaw.includes('haftalık') || planTypeRaw.includes('haftalik')) {
+                        const validWeek = isNaN(week) ? 1 : week;
+                        startDate = new Date(year, month - 1, (validWeek - 1) * 7 + 1);
+                        endDate = new Date(year, month - 1, validWeek * 7);
+                        id = `YWT-${Date.now()}-${month}-${validWeek}-${Math.floor(Math.random()*1000)}`;
+                    } else {
+                        startDate = new Date(year, month - 1, 1);
+                        endDate = new Date(year, month, 0); // last day of month
+                        id = `YT-${Date.now()}-${month}-${Math.floor(Math.random()*1000)}`;
+                    }
                 } else {
                     // Fallback to manual if unknown
                     startDate = new Date(year, month - 1, 1);
