@@ -3014,10 +3014,12 @@ function processNCClose() {
         return;
     }
 
+    const closureName = currentUser ? (currentUser.name || currentUser.username || (currentUser.email ? currentUser.email.split('@')[0] : '')) : 'Admin';
     db.collection('nonconformities').doc(id).update({
         status: 'waitingControl',
         closureComment: comment,
-        closureDate: new Date().toISOString()
+        closureDate: new Date().toISOString(),
+        closedByName: closureName
     }).then(() => {
         showToast(`${id} kontrol için gönderildi.`);
         closeNCModal();
@@ -3028,8 +3030,10 @@ function processNCClose() {
 }
 
 function approveNC(id) {
+    const approverName = currentUser ? (currentUser.name || currentUser.username || (currentUser.email ? currentUser.email.split('@')[0] : '')) : 'Admin';
     db.collection('nonconformities').doc(id).update({
-        status: 'completed'
+        status: 'completed',
+        approvedByName: approverName
     }).then(() => {
         showToast(`${id} onaylandı ve kapatıldı.`);
     }).catch(err => console.error('Approve Error:', err));
