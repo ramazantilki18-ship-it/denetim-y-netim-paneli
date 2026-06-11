@@ -1359,7 +1359,22 @@
                         </div>
                     </div>
 
-                    <div id="feedbacks-list" class="feedback-card-grid" aria-live="polite"></div>
+                    <div class="table-responsive" style="margin-top: 1rem;">
+                        <table class="cms-table" style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid var(--border-main); text-align: left;">
+                                    <th style="padding: 12px 16px; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); width: 140px;">Kategori</th>
+                                    <th style="padding: 12px 16px; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); width: 150px;">Tarih</th>
+                                    <th style="padding: 12px 16px; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); width: 200px;">Başlık</th>
+                                    <th style="padding: 12px 16px; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary);">Açıklama</th>
+                                    <th style="padding: 12px 16px; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); width: 180px;">Gönderen</th>
+                                    <th style="padding: 12px 16px; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); text-align: center; width: 120px;">Görsel</th>
+                                </tr>
+                            </thead>
+                            <tbody id="feedbacks-list" aria-live="polite">
+                            </tbody>
+                        </table>
+                    </div>
 
                     <div id="feedbacks-empty" class="feedback-empty-state" style="display: none;">
                         <span class="feedback-empty-icon"><i class="fas fa-inbox"></i></span>
@@ -1709,8 +1724,22 @@
                         </div>
                     </div>
 
-                    <div id="announcements-list" class="announcement-card-grid">
-                        <!-- Dynamic announcement cards -->
+                    <div class="table-responsive" style="margin-top: 1rem;">
+                        <table class="cms-table" style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid var(--border-main); text-align: left;">
+                                    <th style="padding: 12px 16px; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); width: 140px;">Durum</th>
+                                    <th style="padding: 12px 16px; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); width: 200px;">Başlık</th>
+                                    <th style="padding: 12px 16px; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary);">Duyuru Metni</th>
+                                    <th style="padding: 12px 16px; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); width: 180px;">Yayın Kapsamı</th>
+                                    <th style="padding: 12px 16px; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); width: 200px;">Tarih Aralığı</th>
+                                    <th style="padding: 12px 16px; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); text-align: center; width: 220px;">İşlemler</th>
+                                </tr>
+                            </thead>
+                            <tbody id="announcements-list">
+                                <!-- Dynamic announcement rows -->
+                            </tbody>
+                        </table>
                     </div>
                 </section>
             </div>

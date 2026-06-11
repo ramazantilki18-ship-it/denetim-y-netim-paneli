@@ -11140,11 +11140,15 @@ function renderAnnouncements() {
 
     if (!visibleAnnouncements.length) {
         container.innerHTML = `
-            <div class="announcement-empty-state">
-                <span><i class="fas ${announcements.length ? 'fa-magnifying-glass' : 'fa-bullhorn'}"></i></span>
-                <h3>${announcements.length ? 'Eşleşen duyuru bulunamadı' : 'Henüz duyuru oluşturulmadı'}</h3>
-                <p>${announcements.length ? 'Arama metnini veya durum filtresini değiştirin.' : 'Yeni Duyuru butonuyla ilk kaydı oluşturabilirsiniz.'}</p>
-            </div>
+            <tr style="border: none;">
+                <td colspan="6" style="padding: 0; border: none;">
+                    <div class="announcement-empty-state">
+                        <span><i class="fas ${announcements.length ? 'fa-magnifying-glass' : 'fa-bullhorn'}"></i></span>
+                        <h3>${announcements.length ? 'Eşleşen duyuru bulunamadı' : 'Henüz duyuru oluşturulmadı'}</h3>
+                        <p>${announcements.length ? 'Arama metnini veya durum filtresini değiştirin.' : 'Yeni Duyuru butonuyla ilk kaydı oluşturabilirsiniz.'}</p>
+                    </div>
+                </td>
+            </tr>
         `;
         return;
     }
@@ -11172,52 +11176,44 @@ function renderAnnouncements() {
         const toggleDisabled = expired && nextActive;
 
         return `
-            <article class="announcement-card announcement-card--${statusKey}" style="--announcement-status-color:${status.color};">
-                <div class="announcement-card-header">
-                    <span class="announcement-card-icon"><i class="fas fa-bullhorn"></i></span>
-                    <span class="announcement-status-badge">
+            <tr style="border-bottom: 1px solid var(--border-main); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.01)'" onmouseout="this.style.background='transparent'">
+                <td style="padding: 12px 16px; vertical-align: middle;">
+                    <span class="announcement-status-badge" style="--announcement-status-color:${status.color};">
                         <i class="fas ${status.icon}"></i> ${escapeAttr(status.label)}
                     </span>
-                </div>
-
-                <div class="announcement-card-copy">
-                    <h4>${escapeAttr(announcement.title)}</h4>
-                    <p title="${escapeAttr(announcement.message)}">${escapeAttr(announcement.message)}</p>
-                </div>
-
-                <div class="announcement-scope">
-                    <span class="announcement-detail-label"><i class="fas fa-route"></i> Yayın Kapsamı</span>
+                </td>
+                <td style="padding: 12px 16px; vertical-align: middle; font-weight: 800; font-size: 0.82rem; color: var(--text-primary);">
+                    ${escapeAttr(announcement.title)}
+                </td>
+                <td style="padding: 12px 16px; vertical-align: middle; font-size: 0.76rem; color: var(--text-secondary); max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeAttr(announcement.message)}">
+                    ${escapeAttr(announcement.message)}
+                </td>
+                <td style="padding: 12px 16px; vertical-align: middle;">
                     ${linesHtml}
-                </div>
-
-                <div class="announcement-timeline">
-                    <div>
-                        <span><i class="fas fa-play"></i> Başlangıç</span>
-                        <strong>${formatAnnouncementDate(announcement.startAt)}</strong>
+                </td>
+                <td style="padding: 12px 16px; vertical-align: middle; font-size: 0.72rem; color: var(--text-dim); line-height: 1.4;">
+                    <div style="display: flex; align-items: center; gap: 4px;"><i class="fas fa-play" style="font-size:0.6rem; color: var(--primary);"></i> <span>${formatAnnouncementDate(announcement.startAt)}</span></div>
+                    <div style="display: flex; align-items: center; gap: 4px; margin-top: 2px;"><i class="fas fa-flag-checkered" style="font-size:0.6rem; color: #ef4444;"></i> <span>${formatAnnouncementDate(announcement.endAt)}</span></div>
+                </td>
+                <td style="padding: 12px 16px; vertical-align: middle; text-align: center;">
+                    <div style="display: inline-flex; gap: 6px; align-items: center; justify-content: center;">
+                        <button class="btn-outline" style="height: 30px; padding: 0 8px; font-size: 0.7rem; border-color: ${toggleDisabled ? 'rgba(255,255,255,0.1)' : 'var(--primary)'}; color: ${toggleDisabled ? 'var(--text-dim)' : 'var(--primary)'}; background: transparent; cursor: pointer; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;"
+                            onclick="toggleAnnouncementStatus('${jsArg(announcement.id)}', ${nextActive})"
+                            title="${toggleDisabled ? 'Süresi dolan duyuruyu aktifleştirmek için önce bitiş tarihini güncelleyin.' : toggleLabel}"
+                            ${toggleDisabled ? 'disabled' : ''}>
+                            <i class="fas ${toggleIcon}"></i><span>${toggleLabel}</span>
+                        </button>
+                        <button class="btn-outline" style="height: 30px; padding: 0 8px; font-size: 0.7rem; border-color: #10b981; color: #10b981; background: transparent; cursor: pointer; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;"
+                            onclick="openAnnouncementModal('${jsArg(announcement.id)}')" title="Duyuruyu düzenle">
+                            <i class="fas fa-pen"></i><span>Düzenle</span>
+                        </button>
+                        <button class="btn-outline" style="height: 30px; width: 30px; font-size: 0.7rem; border-color: rgba(239, 68, 68, 0.4); color: #ef4444; background: transparent; cursor: pointer; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center;"
+                            onclick="deleteAnnouncement('${jsArg(announcement.id)}')" title="Duyuruyu sil">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
-                    <div>
-                        <span><i class="fas fa-flag-checkered"></i> Bitiş</span>
-                        <strong>${formatAnnouncementDate(announcement.endAt)}</strong>
-                    </div>
-                </div>
-
-                <div class="announcement-card-actions">
-                    <button class="announcement-card-btn announcement-card-btn--toggle"
-                        onclick="toggleAnnouncementStatus('${jsArg(announcement.id)}', ${nextActive})"
-                        title="${toggleDisabled ? 'Süresi dolan duyuruyu aktifleştirmek için önce bitiş tarihini güncelleyin.' : toggleLabel}"
-                        ${toggleDisabled ? 'disabled' : ''}>
-                        <i class="fas ${toggleIcon}"></i><span>${toggleLabel}</span>
-                    </button>
-                    <button class="announcement-card-btn announcement-card-btn--edit"
-                        onclick="openAnnouncementModal('${jsArg(announcement.id)}')" title="Duyuruyu düzenle">
-                        <i class="fas fa-pen"></i><span>Düzenle</span>
-                    </button>
-                    <button class="announcement-card-btn announcement-card-btn--delete"
-                        onclick="deleteAnnouncement('${jsArg(announcement.id)}')" title="Duyuruyu sil">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </article>
+                </td>
+            </tr>
         `;
     }).join('');
 }
@@ -13805,44 +13801,53 @@ function renderFeedbacks() {
         const title = String(item.title || 'Başlıksız geri bildirim').trim();
         const description = String(item.description || 'Açıklama eklenmemiş.').trim();
         const imageUrl = getFeedbackImageUrl(item.imageUrl);
-        const imageSection = imageUrl ? `
-            <button type="button" class="feedback-card-media js-feedback-image"
+        const categoryColors = {
+            error: 'var(--feedback-red)',
+            suggestion: 'var(--feedback-green)',
+            question: 'var(--feedback-blue)',
+            other: 'var(--feedback-amber)'
+        };
+        const categoryColor = categoryColors[category.key] || 'var(--feedback-blue)';
+
+        const imageSectionHtml = imageUrl ? `
+            <button type="button" class="btn-outline js-feedback-image"
                 data-image-url="${escapeAttr(imageUrl)}"
-                aria-label="${escapeAttr(title)} görselini büyüt">
-                <img src="${escapeAttr(imageUrl)}" alt="${escapeAttr(title)} geri bildirim görseli" loading="lazy">
-                <span><i class="fas fa-expand"></i> Görseli aç</span>
+                aria-label="${escapeAttr(title)} görselini büyüt"
+                style="height: 30px; padding: 0 8px; font-size: 0.7rem; border-color: var(--primary); color: var(--primary); background: transparent; cursor: pointer; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; font-weight: 800;">
+                <i class="fas fa-expand"></i><span>Görseli Aç</span>
             </button>
-        ` : '';
+        ` : '<span style="font-size: 0.7rem; color: var(--text-dim); font-weight: 500;">Görsel Yok</span>';
 
         return `
-            <article class="feedback-card feedback-card--${category.key}" style="--feedback-index:${index};">
-                <div class="feedback-card-topline">
-                    <span class="feedback-category-badge">
+            <tr style="border-bottom: 1px solid var(--border-main); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.01)'" onmouseout="this.style.background='transparent'">
+                <td style="padding: 12px 16px; vertical-align: middle;">
+                    <span class="feedback-category-badge" style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 999px; font-size: 0.65rem; font-weight: 800; border: 1px solid color-mix(in srgb, ${categoryColor} 38%, transparent); color: ${categoryColor}; background: color-mix(in srgb, ${categoryColor} 9%, transparent);">
                         <i class="fas ${category.icon}"></i>
                         ${escapeAttr(category.label)}
                     </span>
-                    <time class="feedback-card-date">
-                        <i class="far fa-clock"></i>
-                        ${escapeAttr(formatFeedbackDate(item.createdAt))}
-                    </time>
-                </div>
-                <div class="feedback-card-content">
-                    <h3>${escapeAttr(title)}</h3>
-                    <p>${escapeAttr(description)}</p>
-                </div>
-                ${imageSection}
-                <footer class="feedback-card-footer">
-                    <span class="feedback-reporter-avatar">${escapeAttr(getFeedbackInitials(reporterName))}</span>
-                    <span class="feedback-reporter-info">
-                        <small>Gönderen</small>
-                        <strong>${escapeAttr(reporterName)}</strong>
-                    </span>
-                    <span class="feedback-attachment-state ${imageUrl ? 'has-media' : ''}">
-                        <i class="fas ${imageUrl ? 'fa-paperclip' : 'fa-image'}"></i>
-                        ${imageUrl ? 'Görsel eklendi' : 'Görsel yok'}
-                    </span>
-                </footer>
-            </article>
+                </td>
+                <td style="padding: 12px 16px; vertical-align: middle; font-size: 0.72rem; color: var(--text-dim); font-weight: 500; white-space: nowrap;">
+                    <i class="far fa-clock" style="margin-right: 2px;"></i>
+                    ${escapeAttr(formatFeedbackDate(item.createdAt))}
+                </td>
+                <td style="padding: 12px 16px; vertical-align: middle; font-weight: 800; font-size: 0.82rem; color: var(--text-primary);">
+                    ${escapeAttr(title)}
+                </td>
+                <td style="padding: 12px 16px; vertical-align: middle; font-size: 0.76rem; color: var(--text-secondary); max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeAttr(description)}">
+                    ${escapeAttr(description)}
+                </td>
+                <td style="padding: 12px 16px; vertical-align: middle;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="feedback-reporter-avatar">${escapeAttr(getFeedbackInitials(reporterName))}</span>
+                        <div class="feedback-reporter-info">
+                            <strong style="font-size: 0.78rem; color: var(--text-primary); font-weight: 700;">${escapeAttr(reporterName)}</strong>
+                        </div>
+                    </div>
+                </td>
+                <td style="padding: 12px 16px; vertical-align: middle; text-align: center;">
+                    ${imageSectionHtml}
+                </td>
+            </tr>
         `;
     }).join('');
 
