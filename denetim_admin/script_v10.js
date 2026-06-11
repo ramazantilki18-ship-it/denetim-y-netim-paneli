@@ -2312,6 +2312,21 @@ function renderNCs(filter) {
         const auditorComment = String(nc.auditorComment || '').trim();
         const closureComment = String(nc.closureComment || '').trim();
         
+        const closedByName = nc.closedByName || nc.auditorName || owner || '-';
+        const approvedByName = (nc.approvedByName && nc.approvedByName !== '-')
+            ? nc.approvedByName
+            : (nc.status === 'completed' ? 'Ramazan Tilki' : '-');
+        
+        let closureMetaHtml = '';
+        if (nc.status === 'completed' || nc.status === 'waitingControl') {
+            closureMetaHtml = `
+                <div class="nc-closure-meta" style="margin-top:4px; font-size:0.68rem; color:#475569; display: flex; gap: 12px; flex-wrap: wrap;">
+                    <span><i class="fas fa-user-pen" style="color: #2563eb; margin-right: 4px;"></i><strong>Kapatan:</strong> ${escapeAttr(closedByName)}</span>
+                    ${nc.status === 'completed' ? `<span><i class="fas fa-user-check" style="color: #16a34a; margin-right: 4px;"></i><strong>Onaylayan:</strong> ${escapeAttr(approvedByName)}</span>` : ''}
+                </div>
+            `;
+        }
+
         const ans = audit.answers ? audit.answers.find(a => String(a.questionId) === String(nc.questionId) || String(a.questionText) === String(nc.questionText)) : null;
         const firstCommentHtml = ans ? (ans.comment || ans.detail || '').trim() : nc.detail;
 
@@ -2325,6 +2340,7 @@ function renderNCs(filter) {
                 <div class="nc-question-text">${nc.questionText || 'Belirtilmedi'}</div>
                 ${firstCommentHtml ? `<div class="nc-comment-text" style="margin-top:4px; font-size:0.7rem; color:#64748b;"><strong>Açıklama:</strong> ${firstCommentHtml}</div>` : ''}
                 ${closureComment ? `<div class="nc-closure-text"><strong>Kapanış:</strong> ${escapeAttr(closureComment)}</div>` : ''}
+                ${closureMetaHtml}
             </td>
             <td style="text-align:center;">
                 <div class="line-logo" style="background: ${appData.lineColors[line] || '#64748b'}; margin: 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; font-size: 0.54rem; border-radius: 50%; color: #fff; font-weight: 900;">${line}</div>
@@ -2873,6 +2889,21 @@ function inspectNC(id, parentAuditId = null) {
     const station = audit.station || nc.station || 'İstasyon Belirtilmedi';
     const lineColor = appData.lineColors?.[line] || '#64748b';
 
+    const closureDate = nc.closureDate ? new Date(nc.closureDate) : null;
+    const closureDateText = closureDate && !Number.isNaN(closureDate.getTime())
+        ? closureDate.toLocaleString('tr-TR', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        })
+        : '-';
+    const closedByName = nc.closedByName || nc.auditorName || auditUserName || '-';
+    const approvedByName = (nc.approvedByName && nc.approvedByName !== '-')
+        ? nc.approvedByName
+        : (normalizedStatus === 'completed' ? 'Ramazan Tilki' : '-');
+
     body.innerHTML = `
         <div class="nc-detail-shell" style="--nc-status-color:${statusMeta.color};--nc-score-color:${scoreColor};--nc-line-color:${escapeAttr(lineColor)};">
             <section class="nc-detail-overview">
@@ -2940,8 +2971,24 @@ function inspectNC(id, parentAuditId = null) {
                         <span><i class="fas fa-circle-check"></i></span>
                         <div><h3>Çözüm ve Kapanış</h3><p>Uygunsuzluk için uygulanan düzeltici işlem</p></div>
                     </div>
+                    
+                    <div class="nc-resolution-meta-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 12px;">
+                        <div class="nc-detail-owner-card" style="margin: 0;">
+                            <span style="color: #ea580c; background: color-mix(in srgb, #ea580c 11%, transparent);"><i class="fas fa-calendar-check"></i></span>
+                            <div><small>Kapatma Tarihi</small><strong>${escapeAttr(closureDateText)}</strong></div>
+                        </div>
+                        <div class="nc-detail-owner-card" style="margin: 0;">
+                            <span style="color: #2563eb; background: color-mix(in srgb, #2563eb 11%, transparent);"><i class="fas fa-user-pen"></i></span>
+                            <div><small>Kapatan Kişi</small><strong>${escapeAttr(closedByName)}</strong></div>
+                        </div>
+                        <div class="nc-detail-owner-card" style="margin: 0;">
+                            <span style="color: #16a34a; background: color-mix(in srgb, #16a34a 11%, transparent);"><i class="fas fa-user-check"></i></span>
+                            <div><small>Onaylayan Kişi</small><strong>${escapeAttr(approvedByName)}</strong></div>
+                        </div>
+                    </div>
+
                     ${nc.closureComment
-                        ? `<div class="nc-detail-resolution-text">${escapeAttr(nc.closureComment)}</div>`
+                        ? `<div class="nc-detail-resolution-text" style="margin-bottom: 12px;">${escapeAttr(nc.closureComment)}</div>`
                         : ''}
                     <div class="nc-detail-resolution-evidence">
                         <span class="nc-detail-resolution-label"><i class="fas fa-images"></i> Çözüm Kanıtları</span>
