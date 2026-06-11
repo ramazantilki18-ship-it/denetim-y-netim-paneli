@@ -13813,38 +13813,36 @@ function renderFeedbacks() {
             <button type="button" class="btn-outline js-feedback-image"
                 data-image-url="${escapeAttr(imageUrl)}"
                 aria-label="${escapeAttr(title)} görselini büyüt"
-                style="height: 30px; padding: 0 8px; font-size: 0.7rem; border-color: var(--primary); color: var(--primary); background: transparent; cursor: pointer; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; font-weight: 800;">
-                <i class="fas fa-expand"></i><span>Görseli Aç</span>
+                style="height: 26px; padding: 0 6px; font-size: 0.65rem; border-color: var(--primary); color: var(--primary); background: transparent; cursor: pointer; border-radius: 6px; display: inline-flex; align-items: center; gap: 3px; font-family: inherit; font-weight: 800;">
+                <i class="fas fa-expand"></i><span>Aç</span>
             </button>
-        ` : '<span style="font-size: 0.7rem; color: var(--text-dim); font-weight: 500;">Görsel Yok</span>';
+        ` : '<span style="font-size: 0.65rem; color: var(--text-dim); font-weight: 500;">—</span>';
 
         return `
             <tr style="border-bottom: 1px solid var(--border-main); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.01)'" onmouseout="this.style.background='transparent'">
-                <td style="padding: 12px 16px; vertical-align: middle;">
-                    <span class="feedback-category-badge" style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 999px; font-size: 0.65rem; font-weight: 800; border: 1px solid color-mix(in srgb, ${categoryColor} 38%, transparent); color: ${categoryColor}; background: color-mix(in srgb, ${categoryColor} 9%, transparent);">
+                <td style="padding: 8px 12px; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    <span class="feedback-category-badge" style="display: inline-flex; align-items: center; gap: 3px; padding: 3px 7px; border-radius: 999px; font-size: 0.6rem; font-weight: 800; border: 1px solid color-mix(in srgb, ${categoryColor} 38%, transparent); color: ${categoryColor}; background: color-mix(in srgb, ${categoryColor} 9%, transparent);">
                         <i class="fas ${category.icon}"></i>
                         ${escapeAttr(category.label)}
                     </span>
                 </td>
-                <td style="padding: 12px 16px; vertical-align: middle; font-size: 0.72rem; color: var(--text-dim); font-weight: 500; white-space: nowrap;">
+                <td style="padding: 8px 12px; vertical-align: middle; font-size: 0.7rem; color: var(--text-dim); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                     <i class="far fa-clock" style="margin-right: 2px;"></i>
                     ${escapeAttr(formatFeedbackDate(item.createdAt))}
                 </td>
-                <td style="padding: 12px 16px; vertical-align: middle; font-weight: 800; font-size: 0.82rem; color: var(--text-primary);">
+                <td style="padding: 8px 12px; vertical-align: middle; font-weight: 800; font-size: 0.78rem; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeAttr(title)}">
                     ${escapeAttr(title)}
                 </td>
-                <td style="padding: 12px 16px; vertical-align: middle; font-size: 0.76rem; color: var(--text-secondary); max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeAttr(description)}">
+                <td style="padding: 8px 12px; vertical-align: middle; font-size: 0.72rem; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeAttr(description)}">
                     ${escapeAttr(description)}
                 </td>
-                <td style="padding: 12px 16px; vertical-align: middle;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span class="feedback-reporter-avatar">${escapeAttr(getFeedbackInitials(reporterName))}</span>
-                        <div class="feedback-reporter-info">
-                            <strong style="font-size: 0.78rem; color: var(--text-primary); font-weight: 700;">${escapeAttr(reporterName)}</strong>
-                        </div>
+                <td style="padding: 8px 12px; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    <div style="display: flex; align-items: center; gap: 6px; min-width: 0;">
+                        <span class="feedback-reporter-avatar" style="flex-shrink: 0;">${escapeAttr(getFeedbackInitials(reporterName))}</span>
+                        <strong style="font-size: 0.72rem; color: var(--text-primary); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeAttr(reporterName)}</strong>
                     </div>
                 </td>
-                <td style="padding: 12px 16px; vertical-align: middle; text-align: center;">
+                <td style="padding: 8px 12px; vertical-align: middle; text-align: center;">
                     ${imageSectionHtml}
                 </td>
             </tr>
