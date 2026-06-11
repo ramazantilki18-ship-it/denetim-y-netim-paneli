@@ -79,6 +79,7 @@
                     <li><a href="#" class="nav-item" onclick="switchView('people-view')" title="Personel"><i class="fas fa-users"></i> <span>Personel</span></a></li>
                     <li><a href="#" class="nav-item" onclick="switchView('questions-view')" title="Soru Bankası"><i class="fas fa-question-circle"></i> <span>Soru Bankası</span></a></li>
                     <li><a href="#" class="nav-item" onclick="switchView('lines-view')" title="Hat & İstasyon"><i class="fas fa-industry"></i> <span>Hat & İstasyon</span></a></li>
+                    <li><a href="#" class="nav-item" onclick="switchView('nfc-view')" title="NFC Tanımları"><i class="fas fa-rss"></i> <span>NFC Tanımları</span></a></li>
                     <li><a href="#" class="nav-item" onclick="switchView('planning-view')" title="Görev Planlama"><i class="fas fa-calendar-alt"></i> <span>Görev Planlama</span></a></li>
                     <li><a href="#" class="nav-item" onclick="switchView('announcements-view')" title="Duyurular"><i class="fas fa-bullhorn"></i> <span>Duyurular</span></a></li>
                     <li id="feedbacks-nav-item" style="display: none;"><a href="#" class="nav-item" onclick="switchView('feedbacks-view')" title="Geri Bildirim Takip"><i class="fas fa-bug"></i> <span>Geri Bildirimler</span></a></li>
@@ -1532,6 +1533,55 @@
                 </section>
             </div>
 
+            <!-- NFC Section -->
+            <div id="nfc-view" class="view-section" style="display: none;">
+                <div class="nfc-action-bar" style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; background: var(--bg-card); padding: 1rem; border-radius: 16px; border: 1px solid var(--border-main);">
+                    <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; flex-grow: 1;">
+                        <div class="input-group" style="margin: 0; min-width: 180px;">
+                            <select id="nfc-filter-line" onchange="renderNfcList()" style="width:100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-primary); font-weight: 600;">
+                                <option value="all">Tüm Hatlar</option>
+                            </select>
+                        </div>
+                        <div class="input-group" style="margin: 0; flex-grow: 1; max-width: 320px;">
+                            <input type="search" id="nfc-search-input" placeholder="İstasyon veya NFC UID ara..." oninput="renderNfcList()" style="width:100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-primary); font-weight: 600;">
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 0.75rem; align-items: center;">
+                        <input type="file" id="nfc-import-input" accept=".xlsx, .xls" style="display: none;" onchange="importNfcsFromExcel(event)">
+                        <button class="btn-primary" onclick="document.getElementById('nfc-import-input').click()" style="height: 38px; padding: 0 1.25rem; font-size: 0.8rem; font-weight: 700; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; background: #3b82f6; border-color: #3b82f6;">
+                            <i class="fas fa-file-upload"></i> Excel'den Yükle
+                        </button>
+                        <button class="btn-primary" onclick="exportNfcsToExcel()" style="height: 38px; padding: 0 1.25rem; font-size: 0.8rem; font-weight: 700; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; background: #10b981; border-color: #10b981;">
+                            <i class="fas fa-file-excel"></i> Excel'e Aktar
+                        </button>
+                    </div>
+                </div>
+
+                <div class="data-section" style="border-radius: 20px; padding: 1.5rem; background: var(--bg-card); border: 1px solid var(--border-main);">
+                    <div class="table-responsive">
+                        <table class="cms-table" style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid var(--border-main); text-align: left;">
+                                    <th style="padding: 12px 16px; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary);">Hat</th>
+                                    <th style="padding: 12px 16px; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary);">İstasyon</th>
+                                    <th style="padding: 12px 16px; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary);">NFC Kart Uid (Kart ID)</th>
+                                    <th style="padding: 12px 16px; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); text-align: center;">Durum</th>
+                                    <th style="padding: 12px 16px; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); text-align: center;">İşlem</th>
+                                </tr>
+                            </thead>
+                            <tbody id="nfc-table-body">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="nfc-empty-state" style="display: none; flex-direction: column; align-items: center; justify-content: center; padding: 3rem 1.5rem; text-align: center;">
+                        <span style="font-size: 3rem; color: var(--text-dim); margin-bottom: 1rem;"><i class="fas fa-rss"></i></span>
+                        <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: var(--text-primary);">NFC kaydı bulunamadı</h3>
+                        <p style="margin: 0.5rem 0 0; font-size: 0.85rem; color: var(--text-dim);">Filtreleme kriterlerinize uygun NFC eşleşmesi bulunmuyor.</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Questions Section -->
             <div id="questions-view" class="view-section" style="display: none;">
                 <div class="data-section">
@@ -2345,6 +2395,41 @@
                 <div id="station-modal-body">
                     <!-- JS will populate -->
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NFC Edit Modal -->
+    <div id="nfc-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3>NFC Kodu Tanımla</h3>
+                <i class="fas fa-times close-modal" onclick="closeNfcModal()" style="cursor: pointer;"></i>
+            </div>
+            <div class="modal-body" style="padding: 2rem;">
+                <input type="hidden" id="nfc-edit-line">
+                <input type="hidden" id="nfc-edit-station">
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div>
+                        <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px;">Hat</span>
+                        <div id="nfc-modal-line-display" style="font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-top: 0.25rem;"></div>
+                    </div>
+                    <div>
+                        <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px;">İstasyon</span>
+                        <div id="nfc-modal-station-display" style="font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-top: 0.25rem;"></div>
+                    </div>
+                    <div class="input-group">
+                        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">NFC Kart UID (Kart ID)</label>
+                        <input type="text" id="nfc-uid-input" placeholder="Örn: 04677A221E6480"
+                            style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-primary); font-size: 1rem; font-weight: 700;">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding: 1.5rem; border-top: 1px solid var(--border-main); display: flex; justify-content: flex-end; gap: 1rem;">
+                <button class="btn-secondary" onclick="closeNfcModal()">Vazgeç</button>
+                <button class="btn-primary" onclick="saveNfcUid()">
+                    <i class="fas fa-save"></i> Kaydet
+                </button>
             </div>
         </div>
     </div>

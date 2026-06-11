@@ -847,6 +847,7 @@ function initRealtimeSync() {
             if (data.lines) appData.lines = data.lines;
             if (data.stations) appData.stations = data.stations;
             if (data.stationNumbers) appData.stationNumbers = data.stationNumbers;
+            if (data.stationNfcs) appData.stationNfcs = data.stationNfcs;
             
             runM1Migration();
         } else {
@@ -858,6 +859,8 @@ function initRealtimeSync() {
         renderAnnouncements();
         renderAll();
         populateStatsFilters();
+        populateNfcLineFilter();
+        renderNfcList();
         if (document.getElementById('user-modal')?.style.display === 'flex') {
             populatePersonnelPickers();
         }
@@ -1320,6 +1323,7 @@ const VIEW_TITLES = {
     'people-view': 'Personel Yönetimi',
     'permissions-view': 'Yetki Yönetimi',
     'lines-view': 'Hat ve İstasyon Yönetimi',
+    'nfc-view': 'NFC Tanımları',
     'questions-view': 'Soru Bankası Yönetimi',
     'planning-view': 'Görev Atama ve Planlama',
     'announcements-view': 'Duyuru Yönetimi',
@@ -1336,6 +1340,7 @@ const VIEW_DESCRIPTIONS = {
     'people-view': 'Personel, rol ve hat sorumluluklarını yönetin.',
     'permissions-view': 'Altı sistem rolü için modül erişim matrisini yönetin (RBAC).',
     'lines-view': 'Hat ve istasyon tanımlarını kurumsal ağ yapısında yönetin.',
+    'nfc-view': 'İstasyonların NFC kart UID tanımlarını listeleyin ve dışa aktarın.',
     'questions-view': 'Denetim tipleri, kategoriler ve soru setlerini yönetin.',
     'planning-view': 'Planlı görevleri ve denetim atamalarını oluşturun.',
     'announcements-view': 'Mobil uygulamada hat bazlı görünecek duyuruları planlayın.',
@@ -1357,6 +1362,7 @@ const NAV_VIEW_PERMISSIONS = {
     'permissions-view': 'perm_mgmt',
     'questions-view': 'question_mgmt',
     'lines-view': 'line_mgmt',
+    'nfc-view': 'line_mgmt',
     'planning-view': 'planning',
     'announcements-view': 'announcement_mgmt',
     'settings-view': 'settings'
@@ -1398,7 +1404,7 @@ function updatePermissionGatedUI() {
     });
 
     // YÖNETİM başlığı ve ayırıcı çizginin durumunu güncelle
-    const mgmtViews = ['people-view', 'questions-view', 'lines-view', 'planning-view', 'announcements-view', 'permissions-view'];
+    const mgmtViews = ['people-view', 'questions-view', 'lines-view', 'nfc-view', 'planning-view', 'announcements-view', 'permissions-view'];
     const hasAnyMgmtPermission = !fieldAuditorOnly && mgmtViews.some(viewId => {
         const perm = NAV_VIEW_PERMISSIONS[viewId];
         return perm ? hasPermission(perm) : false;
@@ -1490,10 +1496,247 @@ function switchView(viewId) {
     if (viewId === 'planning-view') renderPlanning();
     if (viewId === 'announcements-view') renderAnnouncements();
     if (viewId === 'permissions-view') renderPermissions();
+    if (viewId === 'nfc-view') {
+        populateNfcLineFilter();
+        renderNfcList();
+    }
     if (viewId === 'nc-management-view') {
         initNCFilters();
         renderNCs();
     }
+}
+
+function populateNfcLineFilter() {
+    const select = document.getElementById('nfc-filter-line');
+    if (!select) return;
+    const current = select.value || 'all';
+    select.innerHTML = '<option value="all">Tüm Hatlar</option>';
+    (appData.lines || []).forEach(line => {
+        select.add(new Option(line, line));
+    });
+    select.value = current;
+}
+
+function renderNfcList() {
+    const tableBody = document.getElementById('nfc-table-body');
+    const emptyState = document.getElementById('nfc-empty-state');
+    if (!tableBody) return;
+
+    const lineFilter = document.getElementById('nfc-filter-line')?.value || 'all';
+    const searchInput = document.getElementById('nfc-search-input');
+    const query = (searchInput?.value || '').toLowerCase().trim();
+
+    let html = '';
+    let matchCount = 0;
+
+    const lines = lineFilter === 'all' ? (appData.lines || []) : [lineFilter];
+    
+    lines.forEach(line => {
+        const stations = appData.stations?.[line] || [];
+        stations.forEach(station => {
+            const nfcKey = `${line}_${station}`;
+            const nfcData = appData.stationNfcs?.[nfcKey];
+            const nfcUid = (nfcData && nfcData.uid) ? nfcData.uid : '';
+            
+            const matchesSearch = !query || 
+                station.toLowerCase().includes(query) || 
+                nfcUid.toLowerCase().includes(query) || 
+                line.toLowerCase().includes(query);
+
+            if (matchesSearch) {
+                matchCount++;
+                const color = appData.lineColors?.[line] || '#64748b';
+                const badgeHtml = nfcUid 
+                    ? `<span style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-size: 0.75rem; padding: 4px 8px; border-radius: 6px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-check-circle"></i> Tanımlı</span>`
+                    : `<span style="background: rgba(239, 68, 68, 0.15); color: #ef4444; font-size: 0.75rem; padding: 4px 8px; border-radius: 6px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-exclamation-triangle"></i> Tanımsız</span>`;
+                
+                const escapedLine = escapeAttr(line).replace(/'/g, "\\'");
+                const escapedStation = escapeAttr(station).replace(/'/g, "\\'");
+                const escapedUid = escapeAttr(nfcUid).replace(/'/g, "\\'");
+
+                html += `
+                    <tr style="border-bottom: 1px solid var(--border-main); transition: background 0.2s;">
+                        <td style="padding: 12px 16px;">
+                            <span class="profile-line-logo" style="background-color: ${color}; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 0.8rem;">${escapeAttr(line)}</span>
+                        </td>
+                        <td style="padding: 12px 16px; font-weight: 600; color: var(--text-primary);">${escapeAttr(station)}</td>
+                        <td style="padding: 12px 16px; font-family: monospace; font-size: 0.9rem; color: var(--text-primary); font-weight: 700;">${nfcUid ? escapeAttr(nfcUid) : '<span style="color: var(--text-dim); font-weight: normal; font-style: italic;">Atanmamış</span>'}</td>
+                        <td style="padding: 12px 16px; text-align: center;">${badgeHtml}</td>
+                        <td style="padding: 12px 16px; text-align: center;">
+                            <button class="btn-outline" onclick="openNfcEditModal('${escapedLine}', '${escapedStation}', '${escapedUid}')" style="padding: 4px 8px; font-size: 0.75rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                                <i class="fas fa-edit"></i> Düzenle
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }
+        });
+    });
+
+    tableBody.innerHTML = html;
+    if (emptyState) {
+        emptyState.style.display = matchCount === 0 ? 'flex' : 'none';
+    }
+}
+
+function exportNfcsToExcel() {
+    if (typeof XLSX === 'undefined') {
+        showToast('Excel kütüphanesi yüklenemedi. Lütfen sayfayı yenileyip tekrar deneyin.');
+        return;
+    }
+
+    const lineFilter = document.getElementById('nfc-filter-line')?.value || 'all';
+    const lines = lineFilter === 'all' ? (appData.lines || []) : [lineFilter];
+    
+    const excelData = [];
+    
+    lines.forEach(line => {
+        const stations = appData.stations?.[line] || [];
+        stations.forEach(station => {
+            const nfcKey = `${line}_${station}`;
+            const nfcData = appData.stationNfcs?.[nfcKey];
+            const nfcUid = (nfcData && nfcData.uid) ? nfcData.uid : '';
+            
+            excelData.push({
+                'Hat': line,
+                'İstasyon': station,
+                'NFC Kart Uid (Kart ID)': nfcUid || 'Tanımlanmamış',
+                'Durum': nfcUid ? 'Tanımlı' : 'Tanımsız'
+            });
+        });
+    });
+
+    if (excelData.length === 0) {
+        showToast('Aktarılacak veri bulunamadı.');
+        return;
+    }
+
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'NFC Listesi');
+
+    const max_widths = [
+        { wch: 10 },
+        { wch: 25 },
+        { wch: 30 },
+        { wch: 15 }
+    ];
+    worksheet['!cols'] = max_widths;
+
+    XLSX.writeFile(workbook, `Metro_Istanbul_NFC_Listesi_${new Date().toISOString().slice(0,10)}.xlsx`);
+    showToast('Excel raporu başarıyla indirildi.');
+}
+
+function openNfcEditModal(line, station, currentUid) {
+    document.getElementById('nfc-edit-line').value = line;
+    document.getElementById('nfc-edit-station').value = station;
+    document.getElementById('nfc-modal-line-display').textContent = line;
+    document.getElementById('nfc-modal-station-display').textContent = station;
+    document.getElementById('nfc-uid-input').value = currentUid || '';
+    document.getElementById('nfc-modal').style.display = 'flex';
+}
+
+function closeNfcModal() {
+    document.getElementById('nfc-modal').style.display = 'none';
+    document.getElementById('nfc-edit-line').value = '';
+    document.getElementById('nfc-edit-station').value = '';
+    document.getElementById('nfc-uid-input').value = '';
+}
+
+async function saveNfcUid() {
+    const line = document.getElementById('nfc-edit-line').value;
+    const station = document.getElementById('nfc-edit-station').value;
+    const uid = document.getElementById('nfc-uid-input').value.trim();
+
+    if (!line || !station) {
+        showToast('Hata: Hat ve istasyon bilgileri eksik.');
+        return;
+    }
+
+    const saveBtn = document.querySelector('#nfc-modal .btn-primary');
+    if (saveBtn) saveBtn.disabled = true;
+
+    try {
+        const nfcKey = `${line}_${station}`;
+        const updatedNfcs = { ...appData.stationNfcs };
+        if (uid) {
+            updatedNfcs[nfcKey] = { uid: uid };
+        } else {
+            delete updatedNfcs[nfcKey];
+        }
+
+        await db.collection('system_config').doc('lines_stations').update({
+            stationNfcs: updatedNfcs
+        });
+        showToast('NFC kodu başarıyla güncellendi.');
+        closeNfcModal();
+    } catch (err) {
+        console.error('NFC kaydetme hatası:', err);
+        showToast('Hata: ' + (err.message || 'Kayıt başarısız oldu.'));
+    } finally {
+        if (saveBtn) saveBtn.disabled = false;
+    }
+}
+
+async function importNfcsFromExcel(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (typeof XLSX === 'undefined') {
+        showToast('Excel kütüphanesi yüklenemedi. Lütfen sayfayı yenileyip tekrar deneyin.');
+        event.target.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+            if (jsonData.length === 0) {
+                showToast('Dosya boş veya veri bulunamadı.');
+                return;
+            }
+
+            let updatedCount = 0;
+            const updatedNfcs = { ...appData.stationNfcs };
+
+            jsonData.forEach(row => {
+                const line = (row['Hat'] || row['line'] || '').toString().trim();
+                const station = (row['İstasyon'] || row['istasyon'] || row['station'] || '').toString().trim();
+                const rawUid = row['NFC Kart Uid (Kart ID)'] || row['NFC Kart Uid'] || row['NFC UID'] || row['UID'] || row['Nfc'] || row['nfc'] || row['nfc_uid'] || '';
+                const uid = rawUid.toString().trim();
+
+                if (line && station && uid) {
+                    const exists = appData.lines?.includes(line) && appData.stations?.[line]?.includes(station);
+                    if (exists) {
+                        const nfcKey = `${line}_${station}`;
+                        updatedNfcs[nfcKey] = { uid: uid };
+                        updatedCount++;
+                    }
+                }
+            });
+
+            if (updatedCount > 0) {
+                await db.collection('system_config').doc('lines_stations').update({
+                    stationNfcs: updatedNfcs
+                });
+                showToast(`${updatedCount} adet istasyonun NFC kodu başarıyla yüklendi.`);
+            } else {
+                showToast('Yüklenecek uygun hat ve istasyon eşleşmesi bulunamadı. Lütfen Excel formatını kontrol edin.', 'warning');
+            }
+        } catch (err) {
+            console.error('Excel içe aktarım hatası:', err);
+            showToast('Excel dosyası işlenirken bir hata oluştu.', 'error');
+        } finally {
+            event.target.value = '';
+        }
+    };
+    reader.readAsArrayBuffer(file);
 }
 
 
@@ -9928,6 +10171,11 @@ function openStationFormModal(lineName, oldName = '', oldNo = 1, callback) {
     const color = appData.lineColors?.[lineName] || '#2563eb';
     const isEdit = oldName !== '';
     
+    // Retrieve NFC data
+    const nfcKey = `${lineName}_${oldName}`;
+    const nfcData = (appData.stationNfcs && appData.stationNfcs[nfcKey]) || { uid: '' };
+    const oldNfcUid = nfcData.uid || '';
+    
     const modalDiv = document.createElement('div');
     modalDiv.id = 'custom-station-modal';
     modalDiv.className = 'modal-overlay station-form-modal';
@@ -9964,6 +10212,12 @@ function openStationFormModal(lineName, oldName = '', oldNo = 1, callback) {
                     <input type="text" id="station-form-name" placeholder="Örn: Üsküdar" value="${escapeAttr(oldName)}" 
                            style="width: 100%; padding: 11px 14px; border-radius: 10px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-primary); font-size: 0.95rem; font-weight: 700; box-sizing: border-box;">
                 </div>
+
+                <div class="input-group">
+                    <label style="display: block; font-size: 0.72rem; font-weight: 800; color: var(--text-secondary); margin-bottom: 0.45rem; text-transform: uppercase; letter-spacing: 0.8px;">NFC Kart Uid (Kart ID)</label>
+                    <input type="text" id="station-form-nfc-uid" placeholder="Örn: 04:A2:F3:8A:25:60:80" value="${escapeAttr(oldNfcUid)}" 
+                           style="width: 100%; padding: 11px 14px; border-radius: 10px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-primary); font-size: 0.95rem; font-weight: 700; box-sizing: border-box;">
+                </div>
             </div>
             <div class="modal-footer station-form-footer" style="padding: 1.25rem 1.5rem; border-top: 1px solid var(--border-main); display: flex; justify-content: flex-end; gap: 0.75rem; background: var(--bg-input); border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;">
                 <button class="btn-secondary" onclick="closeCustomStationModal()" style="height: 36px; padding: 0 1.25rem; font-size: 0.8rem; font-weight: 700; border-radius: 8px;">Vazgeç</button>
@@ -9984,6 +10238,7 @@ function openStationFormModal(lineName, oldName = '', oldNo = 1, callback) {
     document.getElementById('station-form-submit-btn').onclick = () => {
         const noVal = parseInt(document.getElementById('station-form-no').value, 10);
         const nameVal = document.getElementById('station-form-name').value.trim();
+        const nfcUidVal = document.getElementById('station-form-nfc-uid').value.trim();
         
         if (Number.isNaN(noVal) || noVal < 1) {
             showToast('Lütfen geçerli bir istasyon numarası giriniz.');
@@ -9994,7 +10249,7 @@ function openStationFormModal(lineName, oldName = '', oldNo = 1, callback) {
             return;
         }
         
-        callback(nameVal, noVal);
+        callback(nameVal, noVal, nfcUidVal);
         closeCustomStationModal();
     };
 }
@@ -10011,7 +10266,7 @@ function addStationToLine(lineName) {
         nextNo = Math.max(...numbers) + 1;
     }
 
-    openStationFormModal(lineName, '', nextNo, (name, no) => {
+    openStationFormModal(lineName, '', nextNo, (name, no, nfcUid) => {
         if (appData.stations[lineName].includes(name)) {
             showToast(`"${name}" istasyonu zaten mevcut!`);
             return;
@@ -10022,6 +10277,10 @@ function addStationToLine(lineName) {
 
         appData.stations[lineName].push(name);
         appData.stationNumbers[lineName][name] = no;
+
+        // Save NFC data
+        if (!appData.stationNfcs) appData.stationNfcs = {};
+        appData.stationNfcs[`${lineName}_${name}`] = { uid: nfcUid };
 
         saveLinesStationsToFirebase();
         showToast(`"${name}" istasyonu "${lineName}" hattına eklendi.`);
@@ -10035,7 +10294,7 @@ async function editStationInLine(lineName, stationName) {
     
     const currentNo = appData.stationNumbers?.[lineName]?.[stationName] ?? 1;
 
-    openStationFormModal(lineName, stationName, currentNo, async (name, no) => {
+    openStationFormModal(lineName, stationName, currentNo, async (name, no, nfcUid) => {
         // Remove old name
         appData.stations[lineName] = appData.stations[lineName].filter(s => s !== stationName);
         if (appData.stationNumbers && appData.stationNumbers[lineName]) {
@@ -10045,11 +10304,21 @@ async function editStationInLine(lineName, stationName) {
             if (!appData.stationNumbers[lineName]) appData.stationNumbers[lineName] = {};
         }
 
+        // Remove old NFC data
+        if (appData.stationNfcs) {
+            delete appData.stationNfcs[`${lineName}_${stationName}`];
+        } else {
+            appData.stationNfcs = {};
+        }
+
         // Add new name
         if (!appData.stations[lineName].includes(name)) {
             appData.stations[lineName].push(name);
         }
         appData.stationNumbers[lineName][name] = no;
+
+        // Add new NFC data
+        appData.stationNfcs[`${lineName}_${name}`] = { uid: nfcUid };
 
         await saveLinesStationsToFirebase();
         showToast(`"${stationName}" istasyonu güncellendi.`);
@@ -10087,6 +10356,9 @@ async function removeStationFromFirebase(lineName, stationName) {
         appData.stations[lineName] = appData.stations[lineName].filter(s => s !== stationName);
         if (appData.stationNumbers && appData.stationNumbers[lineName]) {
             delete appData.stationNumbers[lineName][stationName];
+        }
+        if (appData.stationNfcs) {
+            delete appData.stationNfcs[`${lineName}_${stationName}`];
         }
         await saveLinesStationsToFirebase();
         showToast(`"${stationName}" istasyonu silindi.`);
@@ -12034,6 +12306,11 @@ function viewStations(lineName) {
     const stationListHtml = stations.length
         ? stations.map((station, index) => {
             const num = stationNums[station] ?? index + 1;
+            const nfcKey = `${lineName}_${station}`;
+            const nfcData = appData.stationNfcs?.[nfcKey];
+            const nfcBadge = nfcData && nfcData.uid 
+                ? `<span class="station-nfc-badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; margin-left: 8px;"><i class="fa-solid fa-nfc-directional" style="margin-right:2px;"></i> NFC: ${escapeAttr(nfcData.uid)}</span>` 
+                : `<span class="station-nfc-badge" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; margin-left: 8px;"><i class="fas fa-ban" style="margin-right:2px;"></i> NFC Yok</span>`;
             return `
             <div class="station-premium-item station-network-item"
                 data-station-search="${escapeAttr(normalizeLineSearchText(`${num} ${station}`))}"
@@ -12041,7 +12318,7 @@ function viewStations(lineName) {
                 <div class="station-premium-name">
                     <span class="station-premium-index">${escapeAttr(num)}</span>
                     <span class="station-network-name">
-                        <strong>${escapeAttr(station)}</strong>
+                        <strong style="display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap;">${escapeAttr(station)} ${nfcBadge}</strong>
                         <small>${escapeAttr(lineName)} hattı · ${escapeAttr(num)}. sıra</small>
                     </span>
                 </div>
@@ -13170,7 +13447,8 @@ async function runM1Migration() {
         lineColors: appData.lineColors,
         lines: appData.lines,
         stations: appData.stations,
-        stationNumbers: appData.stationNumbers
+        stationNumbers: appData.stationNumbers,
+        stationNfcs: appData.stationNfcs || {}
     });
     
     console.log('M1 Migration / Station Numbers successfully applied and saved to Firestore!');
@@ -13220,7 +13498,8 @@ async function seedLinesStationsToFirebase() {
             lineColors: appData.lineColors || {},
             lines: appData.lines || [],
             stations: appData.stations || {},
-            stationNumbers: appData.stationNumbers || {}
+            stationNumbers: appData.stationNumbers || {},
+            stationNfcs: appData.stationNfcs || {}
         });
         console.log('Lines/Stations seeded to Firestore.');
     } catch (e) {
@@ -13234,7 +13513,8 @@ async function saveLinesStationsToFirebase() {
             lineColors: appData.lineColors || {},
             lines: appData.lines || [],
             stations: appData.stations || {},
-            stationNumbers: appData.stationNumbers || {}
+            stationNumbers: appData.stationNumbers || {},
+            stationNfcs: appData.stationNfcs || {}
         }, { merge: true });
         console.log('Lines/Stations saved to Firestore.');
     } catch (e) {
