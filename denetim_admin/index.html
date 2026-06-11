@@ -1629,9 +1629,9 @@
                         <div class="planning-tabs">
                             <button class="tab-btn active" onclick="switchPlanTab('all', this)">Tümü</button>
                             <button class="tab-btn" onclick="switchPlanTab('manual', this)">Manuel</button>
-                            <button class="tab-btn" onclick="switchPlanTab('monthly', this)">Aylık Plan</button>
-                            <button class="tab-btn" onclick="switchPlanTab('yearly', this)">Yıllık Plan</button>
-                            <button class="tab-btn" onclick="switchPlanTab('yearly-weekly', this)">Yıllık Haftalık Plan</button>
+                            <button class="tab-btn" onclick="switchPlanTab('monthly', this)">Aylık</button>
+                            <button class="tab-btn" onclick="switchPlanTab('yearly', this)">Yıllık</button>
+                            <button class="tab-btn" onclick="switchPlanTab('yearly-weekly', this)">Yıllık Haftalık</button>
                         </div>
                         <div class="planning-actions">
                             <input type="file" id="planning-excel-import" accept=".xlsx, .xls" style="display:none;" onchange="handlePlanningExcelImport(event)">
@@ -2260,9 +2260,19 @@
                      <!-- Manual/Monthly Station Selection -->
                      <div id="standard-station-selection" class="input-group">
                          <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">İstasyon Seçimi</label>
-                         <div id="plan-stations-grid" style="display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 1rem; background: var(--bg-input); border-radius: 12px; border: 1px solid var(--border-main);">
+                        <div id="plan-stations-grid" style="display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 1rem; background: var(--bg-input); border-radius: 12px; border: 1px solid var(--border-main);">
                              <!-- JS will populate -->
                          </div>
+                     </div>
+
+                     <!-- Yearly Selector -->
+                     <div id="yearly-date-fields" class="input-group" style="display: none;">
+                         <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Planlama Yılı</label>
+                         <select id="plan-year-only" onchange="handleYearOnlyChange()" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-primary);">
+                             <option value="2026" selected>2026</option>
+                             <option value="2027">2027</option>
+                             <option value="2028">2028</option>
+                         </select>
                      </div>
 
                      <!-- Yearly Station Distribution -->
@@ -2330,15 +2340,7 @@
                         </div>
                      </div>
 
-                     <!-- Yearly Selector -->
-                     <div id="yearly-date-fields" class="input-group" style="display: none;">
-                         <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Planlama Yılı</label>
-                         <select id="plan-year-only" onchange="renderYearlyMonths()" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-primary);">
-                             <option value="2026" selected>2026</option>
-                             <option value="2027">2027</option>
-                             <option value="2028">2028</option>
-                         </select>
-                     </div>
+
                     <div class="input-group">
                             <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Görev Türü</label>
                             <select id="plan-task-type" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-primary);">

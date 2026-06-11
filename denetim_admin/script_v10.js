@@ -3731,6 +3731,15 @@ function togglePlanPeriodFields() {
     }
 }
 
+function handleYearOnlyChange() {
+    const type = document.getElementById('plan-period-type').value;
+    if (type === 'yearly') {
+        renderYearlyMonths();
+    } else if (type === 'yearly_weekly') {
+        renderYearlyWeeklyMonths();
+    }
+}
+
 function renderMonthlyWeeks() {
     const container = document.getElementById('monthly-weeks-container');
     const line = document.getElementById('plan-line').value;
