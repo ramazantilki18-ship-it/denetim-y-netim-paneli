@@ -1,0 +1,48 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ─── Yardımcı fonksiyonlar ───────────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isImage() {
+      return request.resource != null
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    function isUnder10MB() {
+      return request.resource != null
+        && request.resource.size < 10 * 1024 * 1024;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        (firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in ['admin', 'Super_Admin']
+         || firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.roleId == 'Super_Admin');
+    }
+
+    // ─── Denetim fotoğrafları: audits/{auditId}/answers/... ─────────────
+    match /audits/{auditId}/{allPaths=**} {
+      // PDF ve web panelde görüntüleme için okuma açık
+      allow read: if true;
+      // Yükleme: giriş yapmış + resim + max 10 MB
+      allow write: if isSignedIn() && isImage() && isUnder10MB();
+      allow delete: if isAdmin();
+    }
+
+    // ─── Diğer dosyalar (gelecek kullanım) ──────────────────────────────
+    match /uploads/{allPaths=**} {
+      allow read: if true;
+      allow write: if isSignedIn() && isImage() && isUnder10MB();
+      allow delete: if isAdmin();
+    }
+
+    // ─── Varsayılan: kapalı ───────────────────────────────────────────────
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,24 @@
+# System Files
+.DS_Store
+Thumbs.db
+node_modules/
+.tmp_dart/
+.dart_tool/
+
+# Admin Backups
+denetim_admin/backups/
+denetim_admin/yedekler/
+denetim_admin/*.bak
+denetim_admin/*_bak
+denetim_admin/index.html.*
+denetim_admin/script_v4.js
+denetim_admin/script_v5.js
+denetim_admin/script_v6.js
+denetim_admin/script_v9.js
+denetim_admin/script.js
+
+# App build outputs
+denetim_app/build/
+denetim_app/.flutter-plugins
+denetim_app/.flutter-plugins-dependencies
+denetim_app/*.iml

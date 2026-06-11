@@ -1,0 +1,12 @@
+rules_version = '2';
+
+// GELİŞTİRME ORTAMI — Sadece test için kullanın, canlıya almayın.
+// Firebase Console → Firestore → Rules → bu içeriği yapıştırın.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

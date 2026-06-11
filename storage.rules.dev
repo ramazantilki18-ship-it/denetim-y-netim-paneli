@@ -1,0 +1,12 @@
+rules_version = '2';
+
+// GELİŞTİRME ORTAMI — Sadece test için kullanın, canlıya almayın.
+// Firebase Console → Storage → Rules → bu içeriği yapıştırın.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

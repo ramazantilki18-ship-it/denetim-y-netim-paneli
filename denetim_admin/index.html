@@ -1,0 +1,2368 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kurumsal Denetim | Admin Kontrol Paneli</title>
+    <link rel="stylesheet" href="style_v4.css?v=63">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <!-- SheetJS Excel Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+
+<body>
+    <!-- Login Overlay -->
+    <div id="login-overlay" class="login-overlay">
+        <div class="login-card">
+            <div class="login-header">
+                <img src="assets/metro-istanbul-logo.svg" alt="Logo" class="login-logo">
+                <h2>DENETİM SİSTEMİ</h2>
+                <p>Yönetici Paneline Giriş Yapın</p>
+            </div>
+            <form class="login-form" id="login-form" onsubmit="handleLogin(event)">
+                <div class="input-group">
+                    <label>E-POSTA</label>
+                    <input type="email" id="login-email" name="email" required placeholder="admin@test.com">
+                </div>
+                <div class="input-group">
+                    <label>ŞİFRE</label>
+                    <input type="password" id="login-password" name="password" required placeholder="••••••••">
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 1.5rem;">
+                    <input type="checkbox" id="remember-me" style="width: 16px; height: 16px; cursor: pointer;">
+                    <label for="remember-me" style="margin: 0; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer;">Beni Hatırla</label>
+                </div>
+                <button type="submit" class="btn-primary login-btn">GİRİŞ YAP</button>
+            </form>
+            <div id="login-error" class="login-error" style="display: none; color: #ef4444; font-size: 0.85rem; margin-top: 1rem; text-align: center; font-weight: 600;"></div>
+        </div>
+    </div>
+
+    <div class="app-container" id="main-app" style="display: none;">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <img src="assets/metro-istanbul-logo.svg" alt="Metro İstanbul Logo" class="logo-img"
+                    onerror="this.onerror=null; this.style.display='none';">
+                <div class="logo-text">
+                    <span class="brand-sub">DENETİM SİSTEMİ</span>
+                </div>
+                <!-- Sidebar Toggle Trigger -->
+                <button id="sidebar-toggle" onclick="toggleSidebarCompact()" title="Menüyü Daralt / Genişlet">
+                    <i class="fas fa-chevron-left" id="sidebar-toggle-icon"></i>
+                </button>
+            </div>
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="#" class="nav-item active" onclick="switchView('dashboard-view')" title="Genel Bakış"><i class="fas fa-chart-pie"></i> <span>Genel Bakış</span></a></li>
+                    <li><a href="#" class="nav-item" onclick="switchView('audits-view')" title="Denetimler"><i class="fas fa-clipboard-check"></i> <span>Denetimler</span></a></li>
+                    <li><a href="#" class="nav-item" onclick="switchView('nc-management-view')" title="Uygunsuzluklar"><i class="fas fa-exclamation-circle"></i> <span>Uygunsuzluklar</span></a></li>
+                    <li><a href="#" class="nav-item" onclick="switchView('stats-view')" title="İstatistikler"><i class="fas fa-chart-bar"></i> <span>İstatistikler</span></a></li>
+                    <li><a href="#" class="nav-item" onclick="switchView('reports-view')" title="Raporlar"><i class="fas fa-file-invoice"></i> <span>Raporlar</span></a></li>
+                    
+                    <div id="management-divider" class="nav-divider" style="margin: 1rem 0; height: 1px; background: var(--glass-border);"></div>
+                    <div id="management-header" class="nav-header" style="padding: 0 1rem 0.5rem; font-size: 0.75rem; font-weight: 700; color: var(--text-dim); letter-spacing: 1px;">YÖNETİM</div>
+                    
+                    <li><a href="#" class="nav-item" onclick="switchView('people-view')" title="Personel"><i class="fas fa-users"></i> <span>Personel</span></a></li>
+                    <li><a href="#" class="nav-item" onclick="switchView('questions-view')" title="Soru Bankası"><i class="fas fa-question-circle"></i> <span>Soru Bankası</span></a></li>
+                    <li><a href="#" class="nav-item" onclick="switchView('lines-view')" title="Hat & İstasyon"><i class="fas fa-industry"></i> <span>Hat & İstasyon</span></a></li>
+                    <li><a href="#" class="nav-item" onclick="switchView('planning-view')" title="Görev Planlama"><i class="fas fa-calendar-alt"></i> <span>Görev Planlama</span></a></li>
+                    <li><a href="#" class="nav-item" onclick="switchView('announcements-view')" title="Duyurular"><i class="fas fa-bullhorn"></i> <span>Duyurular</span></a></li>
+                    <li id="feedbacks-nav-item" style="display: none;"><a href="#" class="nav-item" onclick="switchView('feedbacks-view')" title="Geri Bildirim Takip"><i class="fas fa-bug"></i> <span>Geri Bildirimler</span></a></li>
+                    <li><a href="#" class="nav-item" onclick="switchView('permissions-view')" title="Yetkiler"><i class="fas fa-shield-alt"></i> <span>Yetkiler</span></a></li>
+
+
+                    <li id="refresh-nav-item" class="nav-utility nav-refresh" style="display: none; margin-top: auto; padding-top: 1rem;">
+                        <a href="#" class="nav-item" onclick="location.reload(true)" style="background: rgba(139, 92, 246, 0.12); color: #8b5cf6;" title="Yenile">
+                            <i class="fas fa-sync-alt"></i> <span>Yenile</span>
+                        </a>
+                    </li>
+                    <li class="nav-utility nav-settings"><a href="#" class="nav-item" onclick="switchView('settings-view')" title="Ayarlar"><i class="fas fa-cog"></i> <span>Ayarlar</span></a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header>
+                <div class="panel-page-title" style="flex-grow: 1; min-width: 0;">
+                    <span class="panel-page-kicker" id="active-page-kicker" aria-hidden="true"></span>
+                    <h1 id="active-page-title">Genel Bakış</h1>
+                    <p class="panel-page-description" id="active-page-description">Operasyonel durum, denetim performansı ve aksiyon takibi.</p>
+                </div>
+                <div class="user-profile premium-user-profile">
+                    <div class="user-info">
+                        <div class="user-title-row">
+                            <span id="user-display-name">Yükleniyor...</span>
+                            <span id="user-display-role">...</span>
+                        </div>
+                        <div class="user-lines-row" id="user-display-lines" style="display: none;">Hat bilgisi yükleniyor...</div>
+                        <div class="user-lines-logos" id="user-display-lines-logos" style="margin-top: 0.35rem;"></div>
+                    </div>
+                    <button class="btn-outline premium-theme-toggle" onclick="toggleDarkMode()" title="Temayı Değiştir">
+                        <i class="fas fa-sun" id="theme-toggle-icon"></i>
+                    </button>
+                    <button class="btn-outline premium-logout" onclick="handleLogout()" title="Çıkış Yap">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- DASHBOARD VIEW -->
+        <div id="dashboard-view" class="view-section active">
+            <style>
+                #dashboard-view .data-section,
+                #dashboard-view .chart-container,
+                #dashboard-view .table-container,
+                #dashboard-view .table-responsive,
+                #dashboard-view .section-header { 
+                    background: transparent !important; 
+                    background-color: transparent !important; 
+                    border: none !important; 
+                    box-shadow: none !important; 
+                }
+                #dashboard-view .chart-container { padding: 0 !important; }
+                #dashboard-view #auditor-performance-table { background: transparent !important; border: none !important; }
+                #dashboard-view #auditor-performance-table tr { background: transparent !important; }
+                #dashboard-view #recent-audits-table { background: transparent !important; border: none !important; }
+                #dashboard-view #recent-audits-table tr { background: transparent !important; }
+                #dashboard-view #performance-matrix-container { background: transparent !important; border: none !important; box-shadow: none !important; }
+            </style>
+                <!-- Custom Select Styles -->
+                <style>
+                    /* Custom Select Styles */
+                    .custom-select-wrapper {
+                        position: relative;
+                        width: 100%;
+                    }
+                    .custom-select-trigger {
+                        height: 32px;
+                        padding: 0 0.6rem;
+                        border-radius: 8px;
+                        background: transparent !important;
+                        border: 1px solid rgba(249, 115, 22, 0.22);
+                        color: var(--text-primary);
+                        font-size: 0.75rem;
+                        font-weight: 700;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 0.35rem;
+                        cursor: pointer;
+                        transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+                        box-sizing: border-box;
+                        width: 100%;
+                    }
+                    .custom-select-trigger:hover {
+                        border-color: rgba(249, 115, 22, 0.6) !important;
+                        background: rgba(249, 115, 22, 0.08) !important;
+                        box-shadow: 0 4px 12px rgba(249, 115, 22, 0.16);
+                        color: #f97316;
+                    }
+                    /* Smooth hover dynamic arrow shift */
+                    .custom-select-wrapper:hover .fa-chevron-down {
+                        color: #f97316 !important;
+                        transform: translateY(1px);
+                    }
+                    .custom-select-label {
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        text-align: center;
+                        flex: 0 1 auto;
+                        max-width: calc(100% - 14px);
+                    }
+                    .custom-select-options-card {
+                        position: absolute;
+                        top: calc(100% + 6px);
+                        left: 0;
+                        right: 0;
+                        z-index: 999;
+                        background: rgba(11, 34, 61, 0.95) !important;
+                        border: 1px solid rgba(249, 115, 22, 0.35);
+                        border-radius: 10px;
+                        box-shadow: 0 12px 30px rgba(249, 115, 22, 0.2);
+                        max-height: 220px;
+                        overflow-y: auto;
+                        display: none;
+                        padding: 0.45rem;
+                        backdrop-filter: blur(20px);
+                    }
+                    body.light-mode .custom-select-options-card {
+                        background: rgba(249, 251, 253, 0.96) !important;
+                        box-shadow: 0 12px 30px rgba(249, 115, 22, 0.12);
+                    }
+                    .custom-option-item {
+                        display: flex;
+                        align-items: center;
+                        gap: 0.55rem;
+                        padding: 0.45rem 0.55rem;
+                        border-radius: 6px;
+                        font-size: 0.76rem;
+                        color: var(--text-primary);
+                        cursor: pointer;
+                        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                        user-select: none;
+                    }
+                    .custom-option-item:hover {
+                        background: rgba(249, 115, 22, 0.1) !important;
+                        color: #f97316 !important;
+                        padding-left: 0.75rem;
+                    }
+                    .custom-option-item.selected {
+                        background: rgba(249, 115, 22, 0.16) !important;
+                        color: #f97316 !important;
+                        font-weight: 700;
+                    }
+                    /* Elegant custom-styled checkboxes */
+                    .custom-option-item input[type="checkbox"] {
+                        appearance: none;
+                        -webkit-appearance: none;
+                        width: 14px;
+                        height: 14px;
+                        border: 1.5px solid rgba(249, 115, 22, 0.4);
+                        border-radius: 3px;
+                        outline: none;
+                        transition: all 0.2s ease;
+                        position: relative;
+                        cursor: pointer;
+                        background: transparent;
+                        flex-shrink: 0;
+                    }
+                    .custom-option-item input[type="checkbox"]:checked {
+                        background: #f97316;
+                        border-color: #f97316;
+                    }
+                    .custom-option-item input[type="checkbox"]:checked::after {
+                        content: "\f00c";
+                        font-family: "Font Awesome 6 Free";
+                        font-weight: 900;
+                        font-size: 0.55rem;
+                        color: #ffffff;
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                    }
+                    /* Premium SaaS label style in filter-card */
+                    .filter-card label {
+                        text-align: center;
+                        display: block;
+                        width: 100%;
+                        font-size: 0.64rem;
+                        font-weight: 800;
+                        color: #f97316;
+                        text-transform: uppercase;
+                        letter-spacing: 0.8px;
+                        margin-bottom: 0.2rem;
+                        text-shadow: 0 1px 3px rgba(249, 115, 22, 0.12);
+                    }
+                </style>
+
+                <!-- Global Filter Bar (Sade & Kullanışlı Çoklu Seçim) -->
+                <div class="filter-card" style="margin: 0 auto 1.25rem auto; max-width: 100%; width: 100%; padding: 0.45rem 0.75rem; border-radius: 12px; background: transparent !important; border: 1px solid rgba(249, 115, 22, 0.35); box-shadow: 0 8px 24px rgba(249, 115, 22, 0.15); display: flex; flex-direction: column; z-index: 10; position: relative;">
+                    
+                    <!-- Hidden original selects for system background functionality -->
+                    <div style="display: none;">
+                        <select id="dashboard-filter-type" class="cms-input audit-type-filter" onchange="renderAll()"></select>
+                        <select id="dashboard-filter-line" class="cms-input" multiple onchange="populateDashboardFilters(); renderAll();"></select>
+                        <select id="dashboard-filter-station" class="cms-input" multiple onchange="renderAll()"></select>
+                        <select id="dashboard-filter-user" class="cms-input" multiple onchange="renderAll()"></select>
+                        <select id="dashboard-filter-year" class="cms-input" multiple onchange="renderAll()"></select>
+                        <select id="dashboard-filter-month" class="cms-input" multiple onchange="renderAll()"></select>
+                    </div>
+
+                    <!-- Custom Dropdown Filters Row -->
+                    <div class="dashboard-filters-wrapper">
+                        <div class="dashboard-filters-grid">
+                            
+                            <!-- Dropdown 1: Denetim Tipi -->
+                            <div class="custom-select-wrapper" id="custom-wrap-type">
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-type')">
+                                    <span class="custom-select-label">Tüm Tipler</span>
+                                    <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                                </div>
+                                <div class="custom-select-options-card">
+                                    <div class="custom-options-list" id="custom-options-type"></div>
+                                </div>
+                            </div>
+
+                            <!-- Dropdown 2: Hatlar -->
+                            <div class="custom-select-wrapper" id="custom-wrap-line">
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-line')">
+                                    <span class="custom-select-label">Tüm Hatlar</span>
+                                    <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                                </div>
+                                <div class="custom-select-options-card">
+                                    <div class="custom-options-list" id="custom-options-line"></div>
+                                </div>
+                            </div>
+
+                            <!-- Dropdown 3: İstasyonlar -->
+                            <div class="custom-select-wrapper" id="custom-wrap-station">
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-station')">
+                                    <span class="custom-select-label">Tüm İstasyonlar</span>
+                                    <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                                </div>
+                                <div class="custom-select-options-card">
+                                    <div class="custom-options-list" id="custom-options-station"></div>
+                                </div>
+                            </div>
+
+                            <!-- Dropdown 4: Denetçiler -->
+                            <div class="custom-select-wrapper" id="custom-wrap-user">
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-user')">
+                                    <span class="custom-select-label">Tüm Denetçiler</span>
+                                    <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                                </div>
+                                <div class="custom-select-options-card">
+                                    <div class="custom-options-list" id="custom-options-user"></div>
+                                </div>
+                            </div>
+
+                            <!-- Dropdown 5: Yıllar -->
+                            <div class="custom-select-wrapper" id="custom-wrap-year">
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-year')">
+                                    <span class="custom-select-label">Tüm Yıllar</span>
+                                    <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                                </div>
+                                <div class="custom-select-options-card">
+                                    <div class="custom-options-list" id="custom-options-year"></div>
+                                </div>
+                            </div>
+
+                            <!-- Dropdown 6: Aylar -->
+                            <div class="custom-select-wrapper" id="custom-wrap-month">
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-month')">
+                                    <span class="custom-select-label">Tüm Aylar</span>
+                                    <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                                </div>
+                                <div class="custom-select-options-card">
+                                    <div class="custom-options-list" id="custom-options-month"></div>
+                                </div>
+                            </div>
+
+                        </div>
+                        <div style="display: flex; gap: 0.4rem; flex-shrink: 0; align-items: center;">
+                            <button class="btn-outline" onclick="clearFilters('dashboard')" style="background: transparent; border: 1px dashed rgba(249, 115, 22, 0.4); color: #f97316; height: 32px; padding: 0 0.8rem; border-radius: 8px; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 0.35rem; cursor: pointer; transition: all 0.2s;"><i class="fas fa-filter-circle-xmark"></i> Temizle</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <section class="stats-grid stats-grid-5 dashboard-stat-grid">
+                    <div class="stat-card dashboard-stat-card dashboard-stat-card-clickable" role="button" tabindex="0"
+                        data-dashboard-view="audits-view" onclick="openDashboardStatCard(this)"
+                        onkeydown="handleDashboardStatCardKey(event, this)"
+                        title="Denetimleri görüntüle"
+                        style="--stat-accent: #3b82f6; --stat-accent-rgb: 59, 130, 246;">
+                        <h3 class="dashboard-stat-title">
+                            <span class="dashboard-stat-icon"><i class="fas fa-chart-line"></i></span>
+                            Operasyon Başarısı
+                        </h3>
+                        <div class="stat-value dashboard-stat-value" id="stat-avg-score">%0</div>
+                        <div class="dashboard-stat-footer">
+                            <span class="stat-trend">Denetim başarı ortalaması</span>
+                            <span class="dashboard-stat-badge" id="stat-total-audits">0 Adet</span>
+                        </div>
+                    </div>
+                    <div class="stat-card dashboard-stat-card dashboard-stat-card-clickable" role="button" tabindex="0"
+                        data-nc-filter="Geciken" onclick="openDashboardStatCard(this)"
+                        onkeydown="handleDashboardStatCardKey(event, this)"
+                        title="Geciken uygunsuzlukları görüntüle"
+                        style="--stat-accent: #ef4444; --stat-accent-rgb: 239, 68, 68;">
+                        <h3 class="dashboard-stat-title">
+                            <span class="dashboard-stat-icon"><i class="fas fa-clock-rotate-left"></i></span>
+                            Geciken Aksiyon
+                        </h3>
+                        <div class="stat-value dashboard-stat-value" id="stat-delayed-nc">0</div>
+                        <div class="dashboard-stat-footer">
+                            <span class="stat-trend">Acil müdahale bekleyen</span>
+                        </div>
+                    </div>
+                    <div class="stat-card dashboard-stat-card dashboard-stat-card-clickable" role="button" tabindex="0"
+                        data-nc-filter="Kontrol" onclick="openDashboardStatCard(this)"
+                        onkeydown="handleDashboardStatCardKey(event, this)"
+                        title="Kontrol bekleyen uygunsuzlukları görüntüle"
+                        style="--stat-accent: #f59e0b; --stat-accent-rgb: 245, 158, 11;">
+                        <h3 class="dashboard-stat-title">
+                            <span class="dashboard-stat-icon"><i class="fas fa-hourglass-half"></i></span>
+                            Onay Bekleyenler
+                        </h3>
+                        <div class="stat-value dashboard-stat-value" id="stat-control-nc">0</div>
+                        <div class="dashboard-stat-footer">
+                            <span class="stat-trend">Kontrol onayı bekliyor</span>
+                        </div>
+                    </div>
+                    <div class="stat-card dashboard-stat-card dashboard-stat-card-clickable" role="button" tabindex="0"
+                        data-nc-filter="Kapalı" onclick="openDashboardStatCard(this)"
+                        onkeydown="handleDashboardStatCardKey(event, this)"
+                        title="Kapatılan uygunsuzlukları görüntüle"
+                        style="--stat-accent: #10b981; --stat-accent-rgb: 16, 185, 129;">
+                        <h3 class="dashboard-stat-title">
+                            <span class="dashboard-stat-icon"><i class="fas fa-circle-check"></i></span>
+                            Çözüm Performansı
+                        </h3>
+                        <div class="stat-value dashboard-stat-value" id="stat-closure-rate">%0</div>
+                        <div class="dashboard-stat-footer">
+                            <span class="stat-trend">Aksiyon kapatma başarısı</span>
+                            <span class="dashboard-stat-badge" id="stat-closed-nc">0 Adet</span>
+                        </div>
+                    </div>
+                    <div class="stat-card dashboard-stat-card dashboard-stat-card-clickable" role="button" tabindex="0"
+                        data-nc-filter="Kapalı" onclick="openDashboardStatCard(this)"
+                        onkeydown="handleDashboardStatCardKey(event, this)"
+                        title="Kapatılan aksiyonları görüntüle"
+                        style="--stat-accent: #06b6d4; --stat-accent-rgb: 6, 182, 212;">
+                        <h3 class="dashboard-stat-title">
+                            <span class="dashboard-stat-icon"><i class="fas fa-stopwatch"></i></span>
+                            Zamanında Kapatma
+                        </h3>
+                        <div class="stat-value dashboard-stat-value" id="stat-ontime-rate">%0</div>
+                        <div class="dashboard-stat-footer">
+                            <span class="stat-trend">Süresi içinde kapatılan aksiyon</span>
+                            <span class="dashboard-stat-badge" id="stat-ontime-count">0 / 0</span>
+                        </div>
+                    </div>
+                </section>
+                <!-- Gizli eski alan (redirectToNC'lerin kırılmaması için) -->
+                <div id="stat-open-nc" style="display:none;">0</div>
+
+                <!-- Charts Section -->
+                <section class="charts-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin-bottom: 1.5rem;">
+                    <div class="chart-container" style="background: var(--bg-card); border: 1px solid var(--border-main); border-radius: 18px; padding: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+                        <h3 style="margin-bottom: 1.25rem; font-size: 0.95rem; font-weight: 800; color: var(--text-primary); display:flex; align-items:center; gap:0.4rem;"><i class="fas fa-chart-line" style="color:var(--primary);"></i> Denetim Performans Trendi</h3>
+                        <div style="height: 280px; position: relative;">
+                            <canvas id="performanceChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container" style="background: var(--bg-card); border: 1px solid var(--border-main); border-radius: 18px; padding: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+                        <h3 style="margin-bottom: 1.25rem; font-size: 0.95rem; font-weight: 800; color: var(--text-primary); display:flex; align-items:center; gap:0.4rem;"><i class="fas fa-chart-bar" style="color:#f43f5e;"></i> Kategori Bazlı Performans</h3>
+                        <div style="height: 280px; position: relative;">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Auditor Performance Section -->
+                <section class="data-section" style="margin-bottom: 1.5rem; background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important;">
+                    <div class="section-header" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; margin-bottom:1rem;">
+                        <div>
+                            <h2 style="margin:0; font-size:1.25rem; font-weight:900;"><i class="fas fa-users-cog" style="color:#06b6d4; margin-right:8px;"></i>Kişi Bazlı Denetim Performansı</h2>
+                            <p style="margin: 0.2rem 0 0 0; font-size:0.75rem; color:var(--text-secondary);">Denetçilerin gerçekleştirdiği denetim adetleri.</p>
+                        </div>
+                    </div>
+                    <div style="max-height: 400px; overflow-y: auto; padding-right: 0.5rem; margin-right: -0.5rem;" class="custom-scrollbar">
+                        <div id="auditor-horizontal-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.5rem;">
+                            <!-- Dinamik olarak kartlar JS ile eklenecek -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Recent Data Table -->
+                <section class="data-section" style="background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important;">
+                    <div class="section-header">
+                        <h2>Son Denetimler</h2>
+                        <button class="btn-primary" onclick="switchView('audits-view')">
+                            Tümünü Gör
+                        </button>
+                    </div>
+                    <div class="table-responsive" style="background: transparent !important; border: none !important; box-shadow: none !important;">
+                        <table id="recent-audits-table">
+                            <thead>
+                                <tr>
+                                    <th>Tarih</th>
+                                    <th>Saat</th>
+                                    <th>Denetim Tipi</th>
+                                    <th style="text-align:center;">Hat</th>
+                                    <th>İstasyon</th>
+                                    <th>Kullanıcı</th>
+                                    <th style="text-align:center;">Puan</th>
+                                    <th style="text-align:center;">Durum</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- JS will populate this -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Station Matrix Section -->
+                <section class="data-section" style="margin-top: 2rem; background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important;">
+                    <div class="section-header">
+                        <h2>Denetim Performans Matrisi</h2>
+                    </div>
+                    <div class="table-responsive" id="performance-matrix-container" style="background: transparent !important; border: none !important; box-shadow: none !important;">
+                        <!-- Tables will be dynamically rendered here grouped by Audit Type -->
+                    </div>
+                </section>
+            </div>
+
+            <!-- Statistics Section (Dynamic) -->
+            <div id="stats-view" class="view-section" style="display: none;">
+                <!-- Premium Stats Filter Bar -->
+                <div class="filter-card" style="margin-bottom: 1.25rem; max-width: 100%; width: 100%; padding: 0.45rem 0.75rem; border-radius: 12px; background: transparent !important; border: 1px solid rgba(249, 115, 22, 0.35); box-shadow: 0 8px 24px rgba(249, 115, 22, 0.15); display: flex; flex-direction: column; z-index: 10; position: relative;">
+                    
+                    <!-- Hidden original selects -->
+                    <div style="display: none;">
+                        <select id="filter-stats-type" class="cms-input audit-type-filter audit-multi-filter" multiple onchange="handleAuditMultiFilterChange(this); updateStats()">
+                            <option value="all">Tüm Denetim Tipleri</option>
+                        </select>
+                        <select id="filter-stats-line" class="cms-input audit-multi-filter" multiple onchange="handleAuditMultiFilterChange(this); populateStatsFilters(); updateStats()">
+                            <option value="all">Tüm Hatlar</option>
+                        </select>
+                        <select id="filter-stats-station" class="cms-input audit-multi-filter" multiple onchange="handleAuditMultiFilterChange(this); updateStats()">
+                            <option value="all">Tüm İstasyonlar</option>
+                        </select>
+                        <select id="filter-stats-user" class="cms-input audit-multi-filter" multiple onchange="handleAuditMultiFilterChange(this); updateStats()">
+                            <option value="all">Tüm Denetçiler</option>
+                        </select>
+                        <select id="filter-stats-year" class="cms-input audit-multi-filter" multiple onchange="handleAuditMultiFilterChange(this); updateStats()">
+                            <option value="all">Tüm Yıllar</option>
+                        </select>
+                        <select id="filter-stats-month" class="cms-input audit-multi-filter" multiple onchange="handleAuditMultiFilterChange(this); updateStats()">
+                            <option value="all">Tüm Aylar</option>
+                            <option value="1">Ocak</option>
+                            <option value="2">Şubat</option>
+                            <option value="3">Mart</option>
+                            <option value="4">Nisan</option>
+                            <option value="5">Mayıs</option>
+                            <option value="6">Haziran</option>
+                            <option value="7">Temmuz</option>
+                            <option value="8">Ağustos</option>
+                            <option value="9">Eylül</option>
+                            <option value="10">Ekim</option>
+                            <option value="11">Kasım</option>
+                            <option value="12">Aralık</option>
+                        </select>
+                    </div>
+
+                    <!-- Custom Dropdown Filters Row -->
+                    <div style="display: flex; gap: 0.5rem; align-items: center; width: 100%; flex-wrap: nowrap;">
+                        <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.5rem; flex: 1;">
+                            <div class="custom-select-wrapper" id="custom-wrap-stats-type">
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-stats-type')">
+                                    <span class="custom-select-label">Tüm Tipler</span>
+                                    <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                                </div>
+                                <div class="custom-select-options-card">
+                                    <div class="custom-options-list" id="custom-options-stats-type"></div>
+                                </div>
+                            </div>
+                            <div class="custom-select-wrapper" id="custom-wrap-stats-line">
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-stats-line')">
+                                    <span class="custom-select-label">Tüm Hatlar</span>
+                                    <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                                </div>
+                                <div class="custom-select-options-card">
+                                    <div class="custom-options-list" id="custom-options-stats-line"></div>
+                                </div>
+                            </div>
+                            <div class="custom-select-wrapper" id="custom-wrap-stats-station">
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-stats-station')">
+                                    <span class="custom-select-label">Tüm İstasyonlar</span>
+                                    <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                                </div>
+                                <div class="custom-select-options-card">
+                                    <div class="custom-options-list" id="custom-options-stats-station"></div>
+                                </div>
+                            </div>
+                            <div class="custom-select-wrapper" id="custom-wrap-stats-user">
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-stats-user')">
+                                    <span class="custom-select-label">Tüm Denetçiler</span>
+                                    <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                                </div>
+                                <div class="custom-select-options-card">
+                                    <div class="custom-options-list" id="custom-options-stats-user"></div>
+                                </div>
+                            </div>
+                            <div class="custom-select-wrapper" id="custom-wrap-stats-year">
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-stats-year')">
+                                    <span class="custom-select-label">Tüm Yıllar</span>
+                                    <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                                </div>
+                                <div class="custom-select-options-card">
+                                    <div class="custom-options-list" id="custom-options-stats-year"></div>
+                                </div>
+                            </div>
+                            <div class="custom-select-wrapper" id="custom-wrap-stats-month">
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-stats-month')">
+                                    <span class="custom-select-label">Tüm Aylar</span>
+                                    <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                                </div>
+                                <div class="custom-select-options-card">
+                                    <div class="custom-options-list" id="custom-options-stats-month"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 0.4rem; flex-shrink: 0; align-items: center;">
+                            <button class="btn-outline" onclick="clearFilters('stats')" style="background: transparent; border: 1px dashed rgba(249, 115, 22, 0.4); color: #f97316; height: 32px; padding: 0 0.8rem; border-radius: 8px; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 0.35rem; cursor: pointer; transition: all 0.2s;"><i class="fas fa-filter-circle-xmark"></i> Temizle</button>
+                            <button class="btn-primary" onclick="window.print()" style="height: 32px; padding: 0 0.8rem; border-radius: 8px; font-size: 0.75rem;"><i class="fas fa-print"></i> Yazdır</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="legacy-stats-layout">
+                <!-- Metrics Grid -->
+                <div class="stats-grid stats-grid-5" style="margin-bottom: 2.5rem;">
+                    <div class="stat-card" style="background: linear-gradient(135deg, var(--primary), #6d28d9); color: white; border-radius: 24px;">
+                        <div class="stat-icon" style="background: rgba(255,255,255,0.2);"><i class="fas fa-star"></i></div>
+                        <div class="stat-value" id="stats-avg-score" style="color: white;">0.0</div>
+                        <div class="stat-label" style="color: rgba(255,255,255,0.8);">ORTALAMA PUAN</div>
+                    </div>
+                    <div class="stat-card" style="border-radius: 24px;">
+                        <div class="stat-icon"><i class="fas fa-clipboard-check"></i></div>
+                        <div class="stat-value" id="stats-total-audits">0</div>
+                        <div class="stat-label">TOPLAM DENETİM</div>
+                    </div>
+                    <div class="stat-card" style="border-radius: 24px;">
+                        <div class="stat-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;"><i class="fas fa-exclamation-circle"></i></div>
+                        <div class="stat-value" id="stats-open-nc" style="color: #ef4444;">0</div>
+                        <div class="stat-label">AÇIK İŞLER</div>
+                    </div>
+                    <div class="stat-card" style="border-radius: 24px;">
+                        <div class="stat-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;"><i class="fas fa-clock"></i></div>
+                        <div class="stat-value" id="stats-overdue-nc" style="color: #f59e0b;">0</div>
+                        <div class="stat-label">GECİKENLER</div>
+                    </div>
+                    <div class="stat-card" style="border-radius: 24px;">
+                        <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;"><i class="fas fa-check-double"></i></div>
+                        <div class="stat-value" id="stats-completed-nc" style="color: #10b981;">0</div>
+                        <div class="stat-label">TAMAMLANAN</div>
+                    </div>
+                </div>
+
+                <!-- Charts Container -->
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem;">
+                    <!-- Trend Analysis -->
+                    <div class="data-section" style="border-radius: 24px;">
+                        <div class="section-header" style="border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                            <div>
+                                <h3 style="font-size: 1rem; color: var(--text-primary);">PERFORMANS TREND ANALİZİ</h3>
+                                <p style="font-size: 0.75rem; color: var(--text-dim);">Yıl içerisindeki denetim performans gelişimini gösterir.</p>
+                            </div>
+                        </div>
+                        <div style="height: 300px; position: relative;">
+                            <canvas id="performanceChartStats"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Line Distribution -->
+                    <div class="data-section" style="border-radius: 24px;">
+                        <div class="section-header" style="border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                            <div>
+                                <h3 style="font-size: 1rem; color: var(--text-primary);">HAT BAZLI DENETİM DAĞILIMI</h3>
+                                <p style="font-size: 0.75rem; color: var(--text-dim);">Hangi hatlarda kaç adet denetim gerçekleştirildiğini gösterir.</p>
+                            </div>
+                        </div>
+                        <div style="height: 300px; position: relative;">
+                            <canvas id="lineDistChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Category Performance -->
+                    <div class="data-section" style="border-radius: 24px;">
+                        <div class="section-header" style="border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                            <div>
+                                <h3 style="font-size: 1rem; color: var(--text-primary);">KATEGORİ BAŞARI ORANLARI</h3>
+                                <p style="font-size: 0.75rem; color: var(--text-dim);">Denetim kategorileri özelindeki başarı yüzdeleri.</p>
+                            </div>
+                        </div>
+                        <div style="height: 300px; position: relative;">
+                            <canvas id="categoryChartStats"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- NC Status Distribution -->
+                    <div class="data-section" style="border-radius: 24px;">
+                        <div class="section-header" style="border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                            <div>
+                                <h3 style="font-size: 1rem; color: var(--text-primary);">UYGUNSUZLUK DURUM DAĞILIMI</h3>
+                                <p style="font-size: 0.75rem; color: var(--text-dim);">Açık, kapalı ve gecikmiş uygunsuzlukların oranı.</p>
+                            </div>
+                        </div>
+                        <div style="height: 300px; position: relative;">
+                            <canvas id="ncStatusChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analysis Tables / Lists -->
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem; margin-top: 2rem;">
+                    <!-- Timeliness Analysis -->
+                    <div class="data-section" style="border-radius: 24px;">
+                        <div class="section-header" style="border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                            <div>
+                                <h3 style="font-size: 1rem; color: var(--text-primary);">KULLANICI BAZLI ZAMANINDA GERÇEKLEŞTİRME PERFORMANSI</h3>
+                                <p style="font-size: 0.75rem; color: var(--text-dim);">Denetçilerin planlanan görevleri tamamlama oranları.</p>
+                            </div>
+                        </div>
+                        <div style="height: 300px; position: relative;">
+                            <canvas id="timelinessChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- NC Priority areas -->
+                    <div class="data-section" style="border-radius: 24px;">
+                        <div class="section-header" style="border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                            <div>
+                                <h3 style="font-size: 1rem; color: var(--text-primary);">EN ÇOK UYGUNSUZLUK ÇIKAN ALANLAR</h3>
+                                <p style="font-size: 0.75rem; color: var(--text-dim);">En sık uygunsuzluk çıkan denetim kategorileri.</p>
+                            </div>
+                        </div>
+                        <div id="nc-priority-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            <!-- JS will populate -->
+                        </div>
+                    </div>
+
+                    <!-- Role Comparison Analysis -->
+                    <div class="data-section" style="border-radius: 24px;">
+                        <div class="section-header" style="border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                            <div>
+                                <h3 style="font-size: 1rem; color: var(--text-primary);">DENETÇİ ROL KIYASLAMA ANALİZİ</h3>
+                                <p style="font-size: 0.75rem; color: var(--text-dim);">Farklı rollerin aynı lokasyondaki denetim puanı farkları.</p>
+                            </div>
+                        </div>
+                        <div style="height: 300px; position: relative;">
+                            <canvas id="roleComparisonChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performance Matrixes (Matching App 1:1) -->
+                <div style="margin-top: 2rem;">
+                    <!-- Line Category Success Matrix -->
+                    <div class="data-section" style="border-radius: 24px; margin-bottom: 2rem;">
+                        <div class="section-header" style="border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                            <div>
+                                <h3 style="font-size: 1rem; color: var(--text-primary);">HAT BAZLI KATEGORİ BAŞARI MATRİSİ</h3>
+                                <p style="font-size: 0.75rem; color: var(--text-dim);">Hatların kategoriler özelindeki detaylı başarı puanları.</p>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="matrix-table" style="width: 100%; border-collapse: collapse;">
+                                <thead id="line-matrix-head"></thead>
+                                <tbody id="line-matrix-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Station Category Success Matrix -->
+                    <div class="data-section" style="border-radius: 24px;">
+                        <div class="section-header" style="border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                            <div>
+                                <h3 style="font-size: 1rem; color: var(--text-primary);">İSTASYON BAZLI KATEGORİ BAŞARI MATRİSİ</h3>
+                                <p style="font-size: 0.75rem; color: var(--text-dim);">İstasyonların kategori bazında performans dökümü.</p>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="matrix-table" style="width: 100%; border-collapse: collapse;">
+                                <thead id="station-matrix-head"></thead>
+                                <tbody id="station-matrix-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                </div>
+
+                <section class="stats-kpi-grid">
+                    <article class="stats-kpi-card" style="--kpi-color:#3b82f6;--kpi-rgb:59,130,246;">
+                        <span class="stats-kpi-icon"><i class="fas fa-clipboard-check"></i></span>
+                        <div><span class="stats-kpi-label">Toplam Denetim</span><strong id="stats-kpi-audits">0</strong></div>
+                        <small id="stats-kpi-audits-note">Kapsamdaki kayıt sayısı</small>
+                    </article>
+                    <article class="stats-kpi-card" style="--kpi-color:#8b5cf6;--kpi-rgb:139,92,246;">
+                        <span class="stats-kpi-icon"><i class="fas fa-star"></i></span>
+                        <div><span class="stats-kpi-label">Ortalama Puan</span><strong id="stats-kpi-average">%0</strong></div>
+                        <small id="stats-kpi-average-note">Aritmetik ortalama</small>
+                    </article>
+                    <article class="stats-kpi-card" style="--kpi-color:#06b6d4;--kpi-rgb:6,182,212;">
+                        <span class="stats-kpi-icon"><i class="fas fa-scale-balanced"></i></span>
+                        <div><span class="stats-kpi-label">Medyan Puan</span><strong id="stats-kpi-median">%0</strong></div>
+                        <small id="stats-kpi-median-note">Aykırı değerlere dayanıklı</small>
+                    </article>
+                    <article class="stats-kpi-card" style="--kpi-color:#10b981;--kpi-rgb:16,185,129;">
+                        <span class="stats-kpi-icon"><i class="fas fa-arrow-trend-up"></i></span>
+                        <div><span class="stats-kpi-label">Başarı Oranı</span><strong id="stats-kpi-pass-rate">%0</strong></div>
+                        <small id="stats-kpi-pass-note">Eşik üstü denetimler</small>
+                    </article>
+                    <article class="stats-kpi-card" style="--kpi-color:#f97316;--kpi-rgb:249,115,22;">
+                        <span class="stats-kpi-icon"><i class="fas fa-triangle-exclamation"></i></span>
+                        <div><span class="stats-kpi-label">Uygunsuzluk Yoğunluğu</span><strong id="stats-kpi-nc-density">0</strong></div>
+                        <small>Denetim başına uygunsuzluk</small>
+                    </article>
+                    <article class="stats-kpi-card" style="--kpi-color:#22c55e;--kpi-rgb:34,197,94;">
+                        <span class="stats-kpi-icon"><i class="fas fa-circle-check"></i></span>
+                        <div><span class="stats-kpi-label">Kapatma Oranı</span><strong id="stats-kpi-closure-rate">%0</strong></div>
+                        <small id="stats-kpi-closure-note">Kapatılan / toplam aksiyon</small>
+                    </article>
+                    <article class="stats-kpi-card" style="--kpi-color:#e11d48;--kpi-rgb:225,29,72;">
+                        <span class="stats-kpi-icon"><i class="fas fa-clock-rotate-left"></i></span>
+                        <div><span class="stats-kpi-label">Gecikme Oranı</span><strong id="stats-kpi-overdue-rate">%0</strong></div>
+                        <small id="stats-kpi-overdue-note">Geciken / açık aksiyon</small>
+                    </article>
+                    <article class="stats-kpi-card" style="--kpi-color:#f59e0b;--kpi-rgb:245,158,11;">
+                        <span class="stats-kpi-icon"><i class="fas fa-wave-square"></i></span>
+                        <div><span class="stats-kpi-label">Puan Oynaklığı</span><strong id="stats-kpi-volatility">0</strong></div>
+                        <small>Standart sapma</small>
+                    </article>
+                </section>
+
+                <section class="stats-comparison-panel">
+                    <div class="stats-panel-heading">
+                        <div><span class="stats-section-kicker">Dönem Karşılaştırması</span><h3>Son 30 gün ve önceki 30 gün</h3></div>
+                        <span class="stats-period-label" id="stats-period-label">Veri tarihi baz alınır</span>
+                    </div>
+                    <div class="stats-comparison-grid">
+                        <div class="stats-compare-item"><span>Denetim Hacmi</span><strong id="stats-compare-audits">0</strong><small id="stats-compare-audits-delta">-</small></div>
+                        <div class="stats-compare-item"><span>Ortalama Puan</span><strong id="stats-compare-score">%0</strong><small id="stats-compare-score-delta">-</small></div>
+                        <div class="stats-compare-item"><span>Uygunsuzluk</span><strong id="stats-compare-nc">0</strong><small id="stats-compare-nc-delta">-</small></div>
+                        <div class="stats-compare-item"><span>Kapatma Oranı</span><strong id="stats-compare-closure">%0</strong><small id="stats-compare-closure-delta">-</small></div>
+                    </div>
+                </section>
+
+                <section class="stats-dashboard-grid stats-dashboard-grid-main">
+                    <article class="stats-analytics-card stats-span-2">
+                        <div class="stats-card-heading"><div><span class="stats-section-kicker">Zaman Serisi</span><h3>Performans ve Denetim Hacmi</h3><p>Aylık Ortalama ilgili ayın puanını, Son 3 Ayın Ortalaması genel performans yönünü, mavi çubuklar ise aynı aydaki denetim adedini gösterir.</p></div><span class="stats-card-chip">7 dönem görünür · Kaydırılabilir</span></div>
+                        <div id="stats-trend-scroll" class="stats-horizontal-scroll">
+                            <div id="stats-trend-canvas-wrap" class="stats-trend-canvas-wrap">
+                                <div class="stats-chart stats-trend-combined"><canvas id="stats-trend-chart"></canvas></div>
+                            </div>
+                        </div>
+                    </article>
+                    <article class="stats-analytics-card">
+                        <div class="stats-card-heading"><div><span class="stats-section-kicker">Aksiyon Sağlığı</span><h3>Uygunsuzluk Durumu</h3><p>Açık, geciken, kontrolde ve kapalı kayıtların oranı.</p></div></div>
+                        <div class="stats-chart stats-chart-large"><canvas id="stats-nc-status-chart"></canvas></div>
+                    </article>
+                    <article class="stats-analytics-card stats-span-2">
+                        <div class="stats-card-heading"><div><span class="stats-section-kicker">Hat Kıyaslaması</span><h3>Puan ve Uygunsuzluk Yoğunluğu</h3><p>Hatların ortalama başarısı ile denetim başına risk yoğunluğunu birlikte gösterir.</p></div></div>
+                        <div id="stats-line-performance-scroll" class="stats-comparison-scroll">
+                            <div id="stats-line-performance-canvas-wrap" class="stats-comparison-canvas-wrap">
+                                <div class="stats-chart stats-comparison-chart"><canvas id="stats-line-performance-chart"></canvas></div>
+                            </div>
+                        </div>
+                    </article>
+                    <article class="stats-analytics-card">
+                        <div class="stats-card-heading"><div><span class="stats-section-kicker">Dağılım</span><h3>Puan Segmentleri</h3><p>Denetimlerin başarı bantlarına dağılımı.</p></div></div>
+                        <div class="stats-chart"><canvas id="stats-score-distribution-chart"></canvas></div>
+                    </article>
+                </section>
+
+                <section class="stats-dashboard-grid stats-dashboard-grid-secondary">
+                    <article class="stats-analytics-card stats-category-analysis-card">
+                        <div class="stats-card-heading"><div><span class="stats-section-kicker">Kategori Analizi</span><h3>Başarı ve Risk Oranı</h3><p>Her kategori için ortalama başarı ile uygunsuz cevap oranını karşılaştırır.</p></div><span class="stats-card-chip">En düşük başarı üstte</span></div>
+                        <div id="stats-category-scroll" class="stats-category-scroll">
+                            <div id="stats-category-canvas-wrap" class="stats-category-canvas-wrap">
+                                <div class="stats-chart stats-category-chart"><canvas id="stats-category-chart"></canvas></div>
+                            </div>
+                        </div>
+                    </article>
+                    <article class="stats-analytics-card">
+                        <div class="stats-card-heading"><div><span class="stats-section-kicker">Denetçi Kıyaslaması</span><h3>Kalite ve Üretkenlik</h3><p>Kullanıcı adı, ortalama puan ve tamamlanan denetim adedi birlikte gösterilir.</p></div><span class="stats-card-chip">Değerler sürekli görünür</span></div>
+                        <div id="stats-auditor-scroll" class="stats-comparison-scroll">
+                            <div id="stats-auditor-canvas-wrap" class="stats-comparison-canvas-wrap">
+                                <div class="stats-chart stats-comparison-chart"><canvas id="stats-auditor-chart"></canvas></div>
+                            </div>
+                        </div>
+                    </article>
+                    <article class="stats-analytics-card">
+                        <div class="stats-card-heading"><div><span class="stats-section-kicker">Risk Dağılımı</span><h3>Hat Bazlı Aksiyon Durumu</h3><p>Hat adı ve her durumdaki aksiyon adedi doğrudan grafik üzerinde gösterilir.</p></div><span class="stats-card-chip">Hat bazlı</span></div>
+                        <div id="stats-line-nc-scroll" class="stats-comparison-scroll">
+                            <div id="stats-line-nc-canvas-wrap" class="stats-comparison-canvas-wrap">
+                                <div class="stats-chart stats-comparison-chart"><canvas id="stats-line-nc-chart"></canvas></div>
+                            </div>
+                        </div>
+                    </article>
+                    <article class="stats-analytics-card">
+                        <div class="stats-card-heading"><div><span class="stats-section-kicker">Plan Disiplini</span><h3>Planlanan ve Gerçekleşen Denetim</h3><p>Plan tarihi, denetçi, hat ve istasyon kapsamına göre gerçekleşen denetimler hesaplanır.</p></div></div>
+                        <div id="stats-plan-actual-scroll" class="stats-comparison-scroll">
+                            <div id="stats-plan-actual-canvas-wrap" class="stats-comparison-canvas-wrap">
+                                <div class="stats-chart stats-comparison-chart"><canvas id="stats-plan-actual-chart"></canvas></div>
+                            </div>
+                        </div>
+                    </article>
+                </section>
+
+                <section class="stats-dashboard-grid stats-dashboard-grid-tables">
+                    <article class="stats-analytics-card">
+                        <div class="stats-card-heading"><div><span class="stats-section-kicker">Lokasyon Sıralaması</span><h3>İstasyon Performans Tablosu</h3><p>Denetim adedi, ortalama, medyan, uygunsuzluk yoğunluğu ve kapatma başarısı.</p></div><span class="stats-card-chip">7 kayıt görünür · Kaydırılabilir</span></div>
+                        <div class="stats-table-wrap stats-seven-row-scroll"><table class="stats-pro-table"><thead><tr><th>İstasyon</th><th class="stats-number-col">Denetim</th><th class="stats-number-col">Ort.</th><th class="stats-number-col">Medyan</th><th class="stats-number-col">Uygunsuzluk / Denetim</th><th class="stats-number-col">Kapatma</th></tr></thead><tbody id="stats-station-ranking-body"></tbody></table></div>
+                    </article>
+                    <article class="stats-analytics-card">
+                        <div class="stats-card-heading"><div><span class="stats-section-kicker">Kök Neden Göstergesi</span><h3>En Riskli Sorular</h3><p>Tüm soru ve bulgular risk oranına göre sıralanır.</p></div><span class="stats-card-chip">7 kayıt görünür · Kaydırılabilir</span></div>
+                        <div class="stats-table-wrap stats-seven-row-scroll"><table class="stats-pro-table"><thead><tr><th>Soru / Bulgu</th><th>Kategori</th><th class="stats-number-col">Örnek</th><th class="stats-number-col">Risk</th><th class="stats-number-col">Ort.</th></tr></thead><tbody id="stats-question-risk-body"></tbody></table></div>
+                    </article>
+                </section>
+
+                <section class="stats-analytics-card stats-matrix-card">
+                    <div class="stats-card-heading"><div><span class="stats-section-kicker">Isı Matrisi</span><h3>Hat ve Kategori Başarı Matrisi</h3><p>Tüm hücreler gerçek soru cevaplarından hesaplanır; rastgele veya tahmini değer kullanılmaz.</p></div><span class="stats-card-chip">Cevap bazlı</span></div>
+                    <div class="stats-table-wrap"><table class="stats-pro-table stats-heatmap-table"><thead id="stats-line-category-head"></thead><tbody id="stats-line-category-body"></tbody></table></div>
+                </section>
+
+                <section class="stats-dashboard-grid stats-insights-grid">
+                    <article class="stats-analytics-card">
+                        <div class="stats-card-heading"><div><span class="stats-section-kicker">Otomatik Bulgular</span><h3>Yönetici İçgörüleri</h3><p>Veri setindeki dikkat çekici performans ve risk sinyalleri.</p></div></div>
+                        <div id="stats-insights-list" class="stats-insights-list"></div>
+                    </article>
+                    <article class="stats-analytics-card">
+                        <div class="stats-card-heading"><div><span class="stats-section-kicker">Veri Güveni</span><h3>Analiz Kalitesi</h3><p>Sonuçları yorumlarken dikkate alınması gereken veri kapsamı.</p></div></div>
+                        <div id="stats-data-quality" class="stats-data-quality"></div>
+                    </article>
+                </section>
+            </div>
+
+            <!-- Audits Section -->
+            <div id="audits-view" class="view-section" style="display: none;">
+                
+                <!-- Premium Audits Filter Bar (Tek Satır, Kutu İşaretlemeli) -->
+                <div class="filter-card audit-filter-panel">
+                    
+                    <!-- Hidden original selects for system background functionality -->
+                    <div style="display: none;">
+                        <select id="audit-filter-type" class="cms-input audit-type-filter audit-multi-filter" multiple onchange="handleAuditMultiFilterChange(this); renderAllAuditsTable()"></select>
+                        <select id="audit-filter-month" class="cms-input audit-multi-filter" multiple onchange="handleAuditMultiFilterChange(this); renderAllAuditsTable()">
+                            <option value="all">Tüm Aylar</option>
+                            <option value="1">Ocak</option>
+                            <option value="2">Şubat</option>
+                            <option value="3">Mart</option>
+                            <option value="4">Nisan</option>
+                            <option value="5">Mayıs</option>
+                            <option value="6">Haziran</option>
+                            <option value="7">Temmuz</option>
+                            <option value="8">Ağustos</option>
+                            <option value="9">Eylül</option>
+                            <option value="10">Ekim</option>
+                            <option value="11">Kasım</option>
+                            <option value="12">Aralık</option>
+                        </select>
+                        <select id="audit-filter-year" class="cms-input audit-multi-filter" multiple onchange="handleAuditMultiFilterChange(this); renderAllAuditsTable()">
+                            <option value="all">Tüm Yıllar</option>
+                        </select>
+                        <select id="audit-filter-line" class="cms-input audit-multi-filter" multiple onchange="handleAuditMultiFilterChange(this); populateStatsFilters(); renderAllAuditsTable()">
+                            <option value="all">Tüm Hatlar</option>
+                        </select>
+                        <select id="audit-filter-station" class="cms-input audit-multi-filter" multiple onchange="handleAuditMultiFilterChange(this); renderAllAuditsTable()">
+                            <option value="all">Tüm İstasyonlar</option>
+                        </select>
+                        <select id="audit-filter-user" class="cms-input audit-multi-filter" multiple onchange="handleAuditMultiFilterChange(this); renderAllAuditsTable()">
+                            <option value="all">Tüm Kullanıcılar</option>
+                        </select>
+                        <select id="audit-filter-status" class="cms-input audit-multi-filter" multiple onchange="handleAuditMultiFilterChange(this); renderAllAuditsTable()">
+                            <option value="all">Tüm Durumlar</option>
+                            <option value="completed">Tamamlandı</option>
+                            <option value="review">İnceleniyor</option>
+                            <option value="critical">Kritik</option>
+                        </select>
+                    </div>
+
+                    <!-- Custom Dropdown Filters Row (Audits) -->
+                    <div class="audit-filter-row">
+                        
+                        <!-- Grid of 7 custom filters in single row -->
+                        <div class="audit-filter-grid">
+                            
+                            <!-- Dropdown 1: Denetim Tipi -->
+                            <div class="custom-select-wrapper" id="custom-wrap-audit-type">
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-audit-type')">
+                                    <span class="custom-select-label">Tüm Tipler</span>
+                                    <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                                </div>
+                                <div class="custom-select-options-card">
+                                    <div class="custom-options-list" id="custom-options-audit-type"></div>
+                                </div>
+                            </div>
+
+                            <!-- Dropdown 2: Aylar -->
+                            <div class="custom-select-wrapper" id="custom-wrap-audit-month">
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-audit-month')">
+                                    <span class="custom-select-label">Tüm Aylar</span>
+                                    <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                                </div>
+                                <div class="custom-select-options-card">
+                                    <div class="custom-options-list" id="custom-options-audit-month"></div>
+                                </div>
+                            </div>
+
+                            <!-- Dropdown 3: Yıllar -->
+                            <div class="custom-select-wrapper" id="custom-wrap-audit-year">
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-audit-year')">
+                                    <span class="custom-select-label">Tüm Yıllar</span>
+                                    <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                                </div>
+                                <div class="custom-select-options-card">
+                                    <div class="custom-options-list" id="custom-options-audit-year"></div>
+                                </div>
+                            </div>
+
+                            <!-- Dropdown 4: Hatlar -->
+                            <div class="custom-select-wrapper" id="custom-wrap-audit-line">
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-audit-line')">
+                                    <span class="custom-select-label">Tüm Hatlar</span>
+                                    <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                                </div>
+                                <div class="custom-select-options-card">
+                                    <div class="custom-options-list" id="custom-options-audit-line"></div>
+                                </div>
+                            </div>
+
+                            <!-- Dropdown 5: İstasyonlar -->
+                            <div class="custom-select-wrapper" id="custom-wrap-audit-station">
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-audit-station')">
+                                    <span class="custom-select-label">Tüm İstasyonlar</span>
+                                    <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                                </div>
+                                <div class="custom-select-options-card">
+                                    <div class="custom-options-list" id="custom-options-audit-station"></div>
+                                </div>
+                            </div>
+
+                            <!-- Dropdown 6: Kullanıcılar -->
+                            <div class="custom-select-wrapper" id="custom-wrap-audit-user">
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-audit-user')">
+                                    <span class="custom-select-label">Tüm Kullanıcılar</span>
+                                    <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                                </div>
+                                <div class="custom-select-options-card">
+                                    <div class="custom-options-list" id="custom-options-audit-user"></div>
+                                </div>
+                            </div>
+
+                            <!-- Dropdown 7: Durumlar -->
+                            <div class="custom-select-wrapper" id="custom-wrap-audit-status">
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-audit-status')">
+                                    <span class="custom-select-label">Tüm Durumlar</span>
+                                    <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                                </div>
+                                <div class="custom-select-options-card">
+                                    <div class="custom-options-list" id="custom-options-audit-status"></div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Bulk Actions and Action Buttons in single line -->
+                        <div class="audit-filter-actions">
+                            <button class="btn-outline audit-clear-filter-button" onclick="clearFilters('audits')"><i class="fas fa-filter-circle-xmark"></i> Temizle</button>
+                            <button class="btn-primary audit-bulk-button audit-bulk-button--pdf" id="bulk-audit-share-btn" onclick="shareBulkAuditPDFs()" style="display:none;"><i class="fas fa-download"></i> PDF İndir</button>
+                            <button class="btn-outline audit-bulk-button audit-bulk-button--delete" id="bulk-audit-delete-btn" onclick="deleteBulkAudits()" style="display:none;"><i class="fas fa-trash-alt"></i> Seçilenleri Sil</button>
+                        </div>
+
+                    </div>
+
+                </div>
+                <div class="data-section">
+                    <div class="table-responsive audit-table-shell">
+                        <table id="all-audits-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:30px;"><input type="checkbox" id="select-all-audits" onclick="toggleSelectAllAudits(this)" title="Tümünü Seç"></th>
+                                    <th style="width:52px;">ID</th>
+                                    <th id="audit-date-sort-header" aria-sort="descending" style="width:72px;">
+                                        <button type="button" class="table-date-sort-button" onclick="toggleAuditDateSort()" title="En yeni kayıtlar üstte. Eski kayıtları üste almak için tıklayın.">
+                                            Tarih <i id="audit-date-sort-icon" class="fas fa-arrow-down"></i>
+                                        </button>
+                                    </th>
+                                    <th style="width:48px;">Saat</th>
+                                    <th style="width:105px;">Denetim Tipi</th>
+                                    <th style="width:42px; text-align:center;">Hat</th>
+                                    <th style="width:auto;">İstasyon</th>
+                                    <th style="width:100px;">Kullanıcı</th>
+                                    <th style="width:54px;">Puan</th>
+                                    <th style="width:82px;">Durum</th>
+                                    <th style="width:64px; text-align:center;">İşlem</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- JS will populate this -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- People (Users) Section -->
+            <div id="people-view" class="view-section" style="display: none;">
+                <div class="section-header" style="justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0;">Personel Yönetimi</h2>
+                    </div>
+                    <div class="people-header-actions">
+                        <input type="file" id="people-excel-import" accept=".xlsx, .xls" style="display:none;" onchange="handlePeopleExcelImport(event)">
+                        <button class="btn-outline people-header-btn people-header-btn--template" onclick="downloadPeopleTemplate()"><i class="fas fa-download"></i> Şablon İndir</button>
+                        <button class="btn-outline people-header-btn people-header-btn--excel" onclick="document.getElementById('people-excel-import').click()"><i class="fas fa-file-excel"></i> Excel'den Yükle</button>
+                        <button class="btn-primary people-header-btn people-header-btn--add" onclick="openAddUserModal()"><i class="fas fa-user-plus"></i> Yeni Personel</button>
+                    </div>
+                </div>
+                <div class="people-grid" id="people-list">
+                    <!-- JS will populate cards here -->
+                </div>
+            </div>
+
+            <!-- NC Management Section -->
+            <div id="nc-management-view" class="view-section" style="display: none;">
+                <div class="section-header nc-command-bar">
+                    <div class="header-actions nc-command-bar-inner" style="display:flex;gap:0.75rem;align-items:center;width:100%;justify-content:space-between;">
+                        <div id="nc-filter-tabs" role="tablist" aria-label="Uygunsuzluk durumları">
+                            <button class="nc-filter-btn active" data-status="open" role="tab" aria-selected="true"
+                                onclick="filterNCs('Açık', this)">
+                                <span class="nc-filter-label">Açık</span>
+                                <span class="nc-filter-count" id="nc-count-open">0</span>
+                            </button>
+                            <button class="nc-filter-btn" data-status="overdue" role="tab" aria-selected="false"
+                                onclick="filterNCs('Geciken', this)">
+                                <span class="nc-filter-label">Geciken</span>
+                                <span class="nc-filter-count" id="nc-count-delayed">0</span>
+                            </button>
+                            <button class="nc-filter-btn" data-status="control" role="tab" aria-selected="false"
+                                onclick="filterNCs('Kontrol', this)">
+                                <span class="nc-filter-label">Kontrol</span>
+                                <span class="nc-filter-count" id="nc-count-control">0</span>
+                            </button>
+                            <button class="nc-filter-btn" data-status="closed" role="tab" aria-selected="false"
+                                onclick="filterNCs('Kapalı', this)">
+                                <span class="nc-filter-label">Kapalı</span>
+                                <span class="nc-filter-count" id="nc-count-closed">0</span>
+                            </button>
+                        </div>
+                        <div style="display:flex;gap:0.75rem;align-items:center;">
+                        <button class="btn-primary nc-bulk-pdf-button" id="bulk-nc-share-btn" onclick="shareBulkNCPDFs()" style="display:none;background:linear-gradient(135deg,#8b5cf6,#6d28d9);padding:0.5rem 1.2rem;border-radius:12px;font-weight:700;"><i class="fas fa-download"></i> PDF İndir</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="data-section">
+                    <!-- Premium NC Filter Bar -->
+                    <div class="filter-card nc-filter-panel">
+                        
+                        <!-- Hidden original selects -->
+                        <div style="display: none;">
+                            <select id="nc-filter-type" class="cms-input audit-type-filter audit-multi-filter" multiple onchange="handleAuditMultiFilterChange(this); handleNcAuditTypeChange()">
+                                <option value="all">Tüm Denetim Tipleri</option>
+                            </select>
+                            <select id="filter-nc-line" class="cms-input audit-multi-filter" multiple onchange="handleAuditMultiFilterChange(this); renderNCs()">
+                                <option value="all">Tüm Hatlar</option>
+                            </select>
+                            <select id="filter-nc-station" class="cms-input audit-multi-filter" multiple onchange="handleAuditMultiFilterChange(this); renderNCs()">
+                                <option value="all">Tüm İstasyonlar</option>
+                            </select>
+                            <select id="filter-nc-category" class="cms-input audit-multi-filter" multiple onchange="handleAuditMultiFilterChange(this); renderNCs()">
+                                <option value="all">Tüm Kategoriler</option>
+                            </select>
+                            <select id="filter-nc-year" class="cms-input audit-multi-filter" multiple onchange="handleAuditMultiFilterChange(this); renderNCs()">
+                                <option value="all">Tüm Yıllar</option>
+                            </select>
+                            <select id="filter-nc-month" class="cms-input audit-multi-filter" multiple onchange="handleAuditMultiFilterChange(this); renderNCs()">
+                                <option value="all">Tüm Aylar</option>
+                                <option value="1">Ocak</option>
+                                <option value="2">Şubat</option>
+                                <option value="3">Mart</option>
+                                <option value="4">Nisan</option>
+                                <option value="5">Mayıs</option>
+                                <option value="6">Haziran</option>
+                                <option value="7">Temmuz</option>
+                                <option value="8">Aralık</option>
+                                <option value="9">Eylül</option>
+                                <option value="10">Ekim</option>
+                                <option value="11">Kasım</option>
+                                <option value="12">Aralık</option>
+                            </select>
+                            <select id="filter-nc-status" class="cms-input audit-multi-filter" multiple onchange="handleAuditMultiFilterChange(this); renderNCs()">
+                                <option value="all">Tüm Durumlar</option>
+                                <option value="open">Açık</option>
+                                <option value="completed">Kapalı</option>
+                                <option value="waitingControl">Kontrol Bekliyor</option>
+                                <option value="overdue">Geciken</option>
+                            </select>
+                            <select id="filter-nc-responsible" class="cms-input audit-multi-filter" multiple onchange="handleAuditMultiFilterChange(this); renderNCs()">
+                                <option value="all">Tüm Kullanıcılar</option>
+                            </select>
+                        </div>
+
+                        <!-- Custom Dropdown Filters Row -->
+                        <div class="nc-filter-row" style="display: flex; gap: 0.4rem; align-items: center; width: 100%; flex-wrap: nowrap;">
+                            <div class="nc-filter-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.4rem; flex: 1;">
+                                <div class="custom-select-wrapper" id="custom-wrap-nc-type">
+                                    <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-nc-type')">
+                                        <span class="custom-select-label">Tüm Tipler</span>
+                                        <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                                    </div>
+                                    <div class="custom-select-options-card">
+                                        <div class="custom-options-list" id="custom-options-nc-type"></div>
+                                    </div>
+                                </div>
+                                <div class="custom-select-wrapper" id="custom-wrap-nc-line">
+                                    <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-nc-line')">
+                                        <span class="custom-select-label">Tüm Hatlar</span>
+                                        <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                                    </div>
+                                    <div class="custom-select-options-card">
+                                        <div class="custom-options-list" id="custom-options-nc-line"></div>
+                                    </div>
+                                </div>
+                                <div class="custom-select-wrapper" id="custom-wrap-nc-station">
+                                    <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-nc-station')">
+                                        <span class="custom-select-label">Tüm İstasyonlar</span>
+                                        <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                                    </div>
+                                    <div class="custom-select-options-card">
+                                        <div class="custom-options-list" id="custom-options-nc-station"></div>
+                                    </div>
+                                </div>
+                                <div class="custom-select-wrapper" id="custom-wrap-nc-category">
+                                    <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-nc-category')">
+                                        <span class="custom-select-label">Tüm Kategoriler</span>
+                                        <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                                    </div>
+                                    <div class="custom-select-options-card">
+                                        <div class="custom-options-list" id="custom-options-nc-category"></div>
+                                    </div>
+                                </div>
+                                <div class="custom-select-wrapper" id="custom-wrap-nc-year">
+                                    <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-nc-year')">
+                                        <span class="custom-select-label">Tüm Yıllar</span>
+                                        <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                                    </div>
+                                    <div class="custom-select-options-card">
+                                        <div class="custom-options-list" id="custom-options-nc-year"></div>
+                                    </div>
+                                </div>
+                                <div class="custom-select-wrapper" id="custom-wrap-nc-month">
+                                    <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-nc-month')">
+                                        <span class="custom-select-label">Tüm Aylar</span>
+                                        <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                                    </div>
+                                    <div class="custom-select-options-card">
+                                        <div class="custom-options-list" id="custom-options-nc-month"></div>
+                                    </div>
+                                </div>
+                                <div class="custom-select-wrapper" id="custom-wrap-nc-responsible">
+                                    <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-nc-responsible')">
+                                        <span class="custom-select-label">Tüm Kullanıcılar</span>
+                                        <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                                    </div>
+                                    <div class="custom-select-options-card">
+                                        <div class="custom-options-list" id="custom-options-nc-responsible"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="nc-filter-actions" style="display: flex; gap: 0.4rem; flex-shrink: 0; align-items: center;">
+                                <button class="btn-outline nc-clear-filter-button" onclick="clearFilters('nc')" style="background: transparent; border: 1px dashed rgba(249, 115, 22, 0.4); color: #f97316; height: 32px; padding: 0 0.8rem; border-radius: 8px; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 0.35rem; cursor: pointer; transition: all 0.2s;"><i class="fas fa-filter-circle-xmark"></i> Temizle</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive nc-table-shell">
+                        <table id="nc-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:30px;"><input type="checkbox" id="select-all-ncs" onclick="toggleSelectAllNCs(this)" title="Tümünü Seç"></th>
+                                    <th id="nc-date-sort-header" aria-sort="descending" style="width:85px;">
+                                        <button type="button" class="table-date-sort-button" onclick="toggleNcDateSort()" title="En yeni kayıtlar üstte. Eski kayıtları üste almak için tıklayın.">
+                                            Tarih <i id="nc-date-sort-icon" class="fas fa-arrow-down"></i>
+                                        </button>
+                                    </th>
+                                    <th style="width:50px;">Saat</th>
+                                    <th style="width:55px; text-align:center;">Görsel</th>
+                                    <th style="width:auto; min-width: 250px;">Bulgu Detayı</th>
+                                    <th style="width:40px; text-align:center;">Hat</th>
+                                    <th style="width:140px;">İstasyon</th>
+                                    <th style="width:100px;">Kullanıcı</th>
+                                    <th style="width:85px; text-align:center;">Durum</th>
+                                    <th style="width:70px; text-align:center;">İşlem</th>
+                                </tr>
+                            </thead>
+                            <tbody id="nc-table-body">
+                                <!-- Dynamic content -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+
+
+            <!-- Feedbacks Section -->
+            <div id="feedbacks-view" class="view-section" style="display: none;">
+                <section class="feedback-summary-grid" aria-label="Geri bildirim özeti">
+                    <article class="feedback-summary-card feedback-summary-card--total">
+                        <div class="feedback-summary-icon"><i class="fas fa-layer-group"></i></div>
+                        <div>
+                            <span>Toplam Kayıt</span>
+                            <strong id="feedback-total-count">0</strong>
+                        </div>
+                    </article>
+                    <article class="feedback-summary-card feedback-summary-card--error">
+                        <div class="feedback-summary-icon"><i class="fas fa-bug"></i></div>
+                        <div>
+                            <span>Hata Bildirimi</span>
+                            <strong id="feedback-error-count">0</strong>
+                        </div>
+                    </article>
+                    <article class="feedback-summary-card feedback-summary-card--suggestion">
+                        <div class="feedback-summary-icon"><i class="fas fa-lightbulb"></i></div>
+                        <div>
+                            <span>Öneri</span>
+                            <strong id="feedback-suggestion-count">0</strong>
+                        </div>
+                    </article>
+                    <article class="feedback-summary-card feedback-summary-card--media">
+                        <div class="feedback-summary-icon"><i class="fas fa-image"></i></div>
+                        <div>
+                            <span>Görselli Kayıt</span>
+                            <strong id="feedback-media-count">0</strong>
+                        </div>
+                    </article>
+                </section>
+
+                <section class="feedback-workspace">
+                    <div class="feedback-toolbar">
+                        <label class="feedback-search">
+                            <i class="fas fa-search" aria-hidden="true"></i>
+                            <input id="feedback-search-input" type="search"
+                                placeholder="Başlık, açıklama veya kullanıcı ara..."
+                                oninput="renderFeedbacks()" autocomplete="off">
+                        </label>
+                        <label class="feedback-category-filter">
+                            <i class="fas fa-filter" aria-hidden="true"></i>
+                            <select id="feedback-category-filter" onchange="renderFeedbacks()">
+                                <option value="all">Tüm Kategoriler</option>
+                                <option value="error">Hata Bildirimi</option>
+                                <option value="suggestion">Öneri</option>
+                                <option value="question">Soru</option>
+                                <option value="other">Diğer</option>
+                            </select>
+                        </label>
+                        <button type="button" class="feedback-reset-btn" onclick="resetFeedbackFilters()">
+                            <i class="fas fa-rotate-left"></i>
+                            Temizle
+                        </button>
+                        <div id="feedback-result-count" class="feedback-result-count">0 kayıt</div>
+                    </div>
+
+                    <div id="feedbacks-loading" class="feedback-loading-state">
+                        <span class="feedback-loading-spinner"><i class="fas fa-spinner fa-spin"></i></span>
+                        <div>
+                            <strong>Geri bildirimler hazırlanıyor</strong>
+                            <span>Canlı kayıtlar yükleniyor...</span>
+                        </div>
+                    </div>
+
+                    <div id="feedbacks-list" class="feedback-card-grid" aria-live="polite"></div>
+
+                    <div id="feedbacks-empty" class="feedback-empty-state" style="display: none;">
+                        <span class="feedback-empty-icon"><i class="fas fa-inbox"></i></span>
+                        <h3>Gösterilecek geri bildirim bulunamadı</h3>
+                        <p id="feedbacks-empty-text">Henüz sisteme iletilmiş bir geri bildirim yok.</p>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Permissions Section -->
+            <div id="permissions-view" class="view-section" style="display: none;">
+                <section class="permissions-summary-grid" aria-label="Yetki sistemi özeti">
+                    <article class="permissions-summary-card permissions-summary-card--roles">
+                        <div class="permissions-summary-icon"><i class="fas fa-users-gear"></i></div>
+                        <div>
+                            <span>Sistem Rolü</span>
+                            <strong id="permissions-role-count">0</strong>
+                        </div>
+                    </article>
+                    <article class="permissions-summary-card permissions-summary-card--modules">
+                        <div class="permissions-summary-icon"><i class="fas fa-border-all"></i></div>
+                        <div>
+                            <span>Yetki Tanımı</span>
+                            <strong id="permissions-module-count">0</strong>
+                        </div>
+                    </article>
+                    <article class="permissions-summary-card permissions-summary-card--active">
+                        <div class="permissions-summary-icon"><i class="fas fa-circle-check"></i></div>
+                        <div>
+                            <span>Aktif Rol Ataması</span>
+                            <strong id="permissions-active-count">0</strong>
+                        </div>
+                    </article>
+                    <article class="permissions-summary-card permissions-summary-card--scope">
+                        <div class="permissions-summary-icon"><i class="fas fa-earth-europe"></i></div>
+                        <div>
+                            <span>Küresel Rol</span>
+                            <strong id="permissions-global-count">0</strong>
+                        </div>
+                    </article>
+                </section>
+
+                <section class="permissions-panel permissions-matrix-panel">
+                    <div class="permissions-panel-header">
+                        <div class="permissions-panel-heading">
+                            <span class="permissions-panel-icon"><i class="fas fa-table-list"></i></span>
+                            <div>
+                                <h3>Yetki Erişim Matrisi</h3>
+                                <p>Bir hücreye tıklayarak ilgili rolün erişimini açın veya kapatın.</p>
+                            </div>
+                        </div>
+                        <label class="permissions-search">
+                            <i class="fas fa-magnifying-glass"></i>
+                            <input id="permissions-search-input" type="search"
+                                placeholder="Yetki veya modül ara..."
+                                oninput="filterPermissionMatrix()" autocomplete="off">
+                        </label>
+                    </div>
+
+                    <div id="permissions-role-legend" class="permissions-role-legend"></div>
+
+                    <div class="permissions-matrix-note">
+                        <span><i class="fas fa-lock"></i> Süper Admin erişimleri sistem tarafından sabitlenmiştir.</span>
+                        <span><i class="fas fa-hand-pointer"></i> Diğer rol hücreleri düzenlenebilir.</span>
+                    </div>
+
+                    <div class="permissions-table-shell">
+                        <table class="matrix-table permissions-matrix-table">
+                            <thead>
+                                <tr>
+                                    <th>Modül / Yetki Tanımı</th>
+                                    <!-- Header cells will be populated dynamically -->
+                                </tr>
+                            </thead>
+                            <tbody id="permissions-matrix-body">
+                                <!-- Dynamic checkboxes will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div id="permissions-no-results" class="permissions-no-results" style="display: none;">
+                        <i class="fas fa-magnifying-glass"></i>
+                        <strong>Eşleşen yetki bulunamadı</strong>
+                        <span>Arama ifadenizi değiştirerek tekrar deneyin.</span>
+                    </div>
+                </section>
+
+                <section class="permissions-panel permissions-roles-panel">
+                    <div class="permissions-panel-header">
+                        <div class="permissions-panel-heading">
+                            <span class="permissions-panel-icon permissions-panel-icon--roles"><i class="fas fa-id-badge"></i></span>
+                            <div>
+                                <h3>Rol Kapsamları</h3>
+                                <p>Her sistem rolünün erişim sınırları ve operasyonel sorumlulukları.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="permissions-descriptions-body" class="permissions-role-grid">
+                        <!-- Dynamic role cards will be populated here -->
+                    </div>
+                </section>
+
+                <div class="permissions-action-bar">
+                    <div>
+                        <strong>Yetki değişikliklerini yayınlayın</strong>
+                        <span>Kaydedilen ayarlar ilgili rollerin sonraki erişim kontrolünde uygulanır.</span>
+                    </div>
+                    <button class="btn-primary permissions-save-btn" onclick="savePermissions()">
+                        <i class="fas fa-save"></i>
+                        Tüm Değişiklikleri Kaydet
+                    </button>
+                </div>
+            </div>
+
+            <!-- Lines Section -->
+            <div id="lines-view" class="view-section" style="display: none;">
+                <div class="lines-network-action-bar">
+                    <div class="lines-network-actions">
+                        <input type="file" id="lines-excel-import" accept=".xlsx, .xls" style="display:none;" onchange="handleLinesStationsExcelImport(event)">
+                        <button class="btn-outline lines-network-btn lines-network-btn--template" onclick="downloadLinesStationsTemplate()">
+                            <i class="fas fa-download"></i> Şablon İndir
+                        </button>
+                        <button class="btn-outline lines-network-btn lines-network-btn--excel" onclick="document.getElementById('lines-excel-import').click()">
+                            <i class="fas fa-file-excel"></i> Excel'den Yükle
+                        </button>
+                        <button class="btn-primary lines-network-btn lines-network-btn--add" onclick="openAddLineModal()">
+                            <i class="fas fa-plus"></i> Yeni Hat Ekle
+                        </button>
+                    </div>
+                </div>
+
+                <section class="lines-network-summary-grid" aria-label="Hat ve istasyon özeti">
+                    <article class="lines-network-summary-card lines-network-summary-card--lines">
+                        <div class="lines-network-summary-icon"><i class="fas fa-route"></i></div>
+                        <div><span>Toplam Hat</span><strong id="lines-total-count">0</strong></div>
+                    </article>
+                    <article class="lines-network-summary-card lines-network-summary-card--stations">
+                        <div class="lines-network-summary-icon"><i class="fas fa-location-dot"></i></div>
+                        <div><span>Toplam İstasyon</span><strong id="stations-total-count">0</strong></div>
+                    </article>
+                </section>
+
+                <section class="lines-network-panel">
+                    <div class="lines-network-panel-header">
+                        <div class="lines-network-panel-heading">
+                            <span class="lines-network-panel-icon"><i class="fas fa-diagram-project"></i></span>
+                            <div>
+                                <h3>Hat Ağı</h3>
+                                <p>Hat kartlarından istasyonları görüntüleyebilir ve ağ tanımlarını düzenleyebilirsiniz.</p>
+                            </div>
+                        </div>
+                        <div class="lines-network-toolbar">
+                            <label class="lines-network-search">
+                                <i class="fas fa-magnifying-glass"></i>
+                                <input id="lines-search-input" type="search" placeholder="Hat veya istasyon ara..." oninput="renderLines()" autocomplete="off">
+                            </label>
+                            <div id="lines-summary-card" class="lines-network-result-count">0 hat</div>
+                        </div>
+                    </div>
+
+                    <div id="lines-table-body" class="lines-premium-grid lines-network-grid">
+                        <!-- Dynamic line cards from script.js -->
+                    </div>
+
+                    <div id="lines-empty-state" class="lines-network-empty-state" style="display: none;">
+                        <span><i class="fas fa-route"></i></span>
+                        <h3>Gösterilecek hat bulunamadı</h3>
+                        <p id="lines-empty-state-text">Henüz tanımlı bir hat bulunmuyor.</p>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Questions Section -->
+            <div id="questions-view" class="view-section" style="display: none;">
+                <div class="data-section">
+                    <!-- Grup Kartları -->
+                    <div id="question-groups-container" style="margin-bottom: 2rem;">
+                        <!-- JS will populate question group cards here -->
+                    </div>
+
+                    <!-- Seçili Grubun Soruları -->
+                    <div id="selected-group-questions" style="display: none;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding: 1rem; background: var(--bg-input); border-radius: 16px; border: 1px solid var(--border-main);">
+                            <div>
+                                <h3 id="selected-group-title" style="margin: 0; font-size: 1.1rem; font-weight: 800;"></h3>
+                                <p id="selected-group-stats" style="margin: 4px 0 0; font-size: 0.8rem; color: var(--text-dim);"></p>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="btn-primary" onclick="openAddQuestionModal()" style="padding: 0.5rem 1rem; font-size: 0.8rem;"><i class="fas fa-plus"></i> Soru Ekle</button>
+                                <button class="btn-outline" onclick="deleteCategory()" style="padding: 0.5rem 1rem; font-size: 0.8rem; border-color: #ef4444; color: #ef4444;"><i class="fas fa-trash-alt"></i> Kategori Sil</button>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Kategori</th>
+                                        <th>Soru Metni</th>
+                                        <th>Cevap Tipi</th>
+                                        <th>Durum</th>
+                                        <th>İşlem</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="questions-table-body">
+                                    <!-- Dynamic content -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Planning Section -->
+            <div id="planning-view" class="view-section" style="display: none;">
+                <div class="section-header planning-section-header">
+                    <div class="planning-toolbar">
+                        <div class="planning-tabs">
+                            <button class="tab-btn active" onclick="switchPlanTab('all', this)">Tümü</button>
+                            <button class="tab-btn" onclick="switchPlanTab('manual', this)">Manuel</button>
+                            <button class="tab-btn" onclick="switchPlanTab('monthly', this)">Aylık Plan</button>
+                            <button class="tab-btn" onclick="switchPlanTab('yearly', this)">Yıllık Plan</button>
+                        </div>
+                        <div class="planning-actions">
+                            <input type="file" id="planning-excel-import" accept=".xlsx, .xls" style="display:none;" onchange="handlePlanningExcelImport(event)">
+                            <button class="btn-outline planning-action-btn planning-action-btn--template" onclick="downloadPlanningTemplate()"><i class="fas fa-download"></i> Şablon İndir</button>
+                            <button class="btn-outline planning-action-btn planning-action-btn--excel" onclick="document.getElementById('planning-excel-import').click()"><i class="fas fa-file-excel"></i> Excel Yükle</button>
+                            <button class="btn-outline planning-action-btn planning-action-btn--danger" id="clear-all-plans-btn" onclick="deleteAllPlansInActiveTab()"><i class="fas fa-trash-alt"></i> Tümünü Sil</button>
+                            <button class="btn-primary planning-action-btn planning-action-btn--primary" onclick="openAddPlanModal()"><i class="fas fa-calendar-plus"></i> Yeni Görev Planla</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="data-section">
+
+                    <div id="planning-cards-container">
+                        <!-- Dynamic premium cards from script.js -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Announcements Section -->
+            <div id="announcements-view" class="view-section" style="display: none;">
+                <div class="announcement-action-bar">
+                    <button class="btn-primary announcement-new-btn" onclick="openAnnouncementModal()">
+                        <i class="fas fa-plus"></i> Yeni Duyuru
+                    </button>
+                </div>
+
+                <section class="announcement-summary-grid" aria-label="Duyuru özeti">
+                    <article class="announcement-summary-card announcement-summary-card--total">
+                        <span class="announcement-summary-icon"><i class="fas fa-bullhorn"></i></span>
+                        <div><small>Toplam Duyuru</small><strong id="announcement-total-count">0</strong></div>
+                    </article>
+                    <article class="announcement-summary-card announcement-summary-card--active">
+                        <span class="announcement-summary-icon"><i class="fas fa-circle-check"></i></span>
+                        <div><small>Aktif</small><strong id="announcement-active-count">0</strong></div>
+                    </article>
+                    <article class="announcement-summary-card announcement-summary-card--scheduled">
+                        <span class="announcement-summary-icon"><i class="fas fa-calendar-check"></i></span>
+                        <div><small>Planlandı</small><strong id="announcement-scheduled-count">0</strong></div>
+                    </article>
+                    <article class="announcement-summary-card announcement-summary-card--inactive">
+                        <span class="announcement-summary-icon"><i class="fas fa-pause"></i></span>
+                        <div><small>Pasif</small><strong id="announcement-inactive-count">0</strong></div>
+                    </article>
+                    <article class="announcement-summary-card announcement-summary-card--expired">
+                        <span class="announcement-summary-icon"><i class="fas fa-clock-rotate-left"></i></span>
+                        <div><small>Süresi Doldu</small><strong id="announcement-expired-count">0</strong></div>
+                    </article>
+                </section>
+
+                <section class="announcement-panel">
+                    <div class="announcement-panel-header">
+                        <div class="announcement-panel-heading">
+                            <span><i class="fas fa-rectangle-list"></i></span>
+                            <div>
+                                <h3>Duyuru Listesi</h3>
+                                <p>Yayın kapsamını, tarih aralığını ve durumunu tek ekrandan yönetin.</p>
+                            </div>
+                        </div>
+                        <div class="announcement-toolbar">
+                            <label class="announcement-search">
+                                <i class="fas fa-magnifying-glass"></i>
+                                <input id="announcement-search-input" type="search" placeholder="Başlık, metin veya hat ara..." oninput="renderAnnouncements()" autocomplete="off">
+                            </label>
+                            <label class="announcement-filter">
+                                <i class="fas fa-filter"></i>
+                                <select id="announcement-status-filter" onchange="renderAnnouncements()">
+                                    <option value="all">Tüm Durumlar</option>
+                                    <option value="active">Aktif</option>
+                                    <option value="scheduled">Planlandı</option>
+                                    <option value="inactive">Pasif</option>
+                                    <option value="expired">Süresi Doldu</option>
+                                </select>
+                            </label>
+                            <span id="announcement-result-count" class="announcement-result-count">0 kayıt</span>
+                        </div>
+                    </div>
+
+                    <div id="announcements-list" class="announcement-card-grid">
+                        <!-- Dynamic announcement cards -->
+                    </div>
+                </section>
+            </div>
+
+            <!-- Reports Section -->
+            <div id="reports-view" class="view-section" style="display: none;">
+                <div class="reports-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem; margin-top: 1rem;">
+                    <!-- Report 1: Single-Row Audit Details -->
+                    <div class="report-card" style="background: var(--bg-card); border: 1px solid var(--border-main); border-radius: 14px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; gap: 1rem; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 24px rgba(0, 0, 0, 0.08)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 4px 12px rgba(0, 0, 0, 0.05)';">
+                        <div style="display: flex; gap: 1rem; align-items: flex-start;">
+                            <div class="report-icon" style="width: 48px; height: 48px; border-radius: 12px; background: rgba(16, 185, 129, 0.12); color: #10b981; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;"><i class="fas fa-file-excel"></i></div>
+                            <div class="report-info" style="min-width: 0;">
+                                <h3 style="font-weight: 800; font-size: 1rem; color: var(--text-primary); margin-bottom: 0.25rem;">Tek Satır Denetim Raporu</h3>
+                                <p style="font-size: 0.78rem; color: var(--text-dim); line-height: 1.4;">Tüm denetim verilerini ve skorlarını tek satır satır listeleyen Excel (XLSX) formatında rapor indirin.</p>
+                            </div>
+                        </div>
+                        <button class="btn-primary" onclick="exportAuditsToExcel()" style="width: 100%; border-radius: 10px; padding: 10px; font-weight: 700; background: linear-gradient(135deg, #10b981, #059669); color: white; display: flex; align-items: center; justify-content: center; gap: 6px; border: none; cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'"><i class="fas fa-file-excel"></i> İndir (Excel)</button>
+                    </div>
+
+                    <!-- Report 1.5: Detailed Q&A Answers -->
+                    <div class="report-card" style="background: var(--bg-card); border: 1px solid var(--border-main); border-radius: 14px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; gap: 1rem; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 24px rgba(0, 0, 0, 0.08)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 4px 12px rgba(0, 0, 0, 0.05)';">
+                        <div style="display: flex; gap: 1rem; align-items: flex-start;">
+                            <div class="report-icon" style="width: 48px; height: 48px; border-radius: 12px; background: rgba(139, 92, 246, 0.12); color: #8b5cf6; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;"><i class="fas fa-list-ol"></i></div>
+                            <div class="report-info" style="min-width: 0;">
+                                <h3 style="font-weight: 800; font-size: 1rem; color: var(--text-primary); margin-bottom: 0.25rem;">Soru &amp; Cevap Detay Raporu</h3>
+                                <p style="font-size: 0.78rem; color: var(--text-dim); line-height: 1.4;">Tüm denetimlerdeki soruları, verilen cevap skorlarını ve denetçi notlarını tek satır satır listeleyen Excel indirin.</p>
+                            </div>
+                        </div>
+                        <button class="btn-primary" onclick="exportDetailedAnswersToExcel()" style="width: 100%; border-radius: 10px; padding: 10px; font-weight: 700; background: linear-gradient(135deg, var(--primary), #7c3aed); color: white; display: flex; align-items: center; justify-content: center; gap: 6px; border: none; cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'"><i class="fas fa-file-excel"></i> İndir (Excel)</button>
+                    </div>
+
+                    <!-- Report 2: Monthly Performance Summary -->
+                    <div class="report-card" style="background: var(--bg-card); border: 1px solid var(--border-main); border-radius: 14px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; gap: 1rem; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 24px rgba(0, 0, 0, 0.08)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 4px 12px rgba(0, 0, 0, 0.05)';">
+                        <div style="display: flex; gap: 1rem; align-items: flex-start;">
+                            <div class="report-icon" style="width: 48px; height: 48px; border-radius: 12px; background: rgba(59, 130, 246, 0.12); color: #3b82f6; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;"><i class="fas fa-chart-pie"></i></div>
+                            <div class="report-info" style="min-width: 0;">
+                                <h3 style="font-weight: 800; font-size: 1rem; color: var(--text-primary); margin-bottom: 0.25rem;">Aylık Performans Özeti</h3>
+                                <p style="font-size: 0.78rem; color: var(--text-dim); line-height: 1.4;">Hat bazlı skor dağılımlarını, denetçi performanslarını ve aylık istatistik özetlerini Excel formatında indirin.</p>
+                            </div>
+                        </div>
+                        <button class="btn-primary" onclick="generateMonthlyPerformanceReport()" style="width: 100%; border-radius: 10px; padding: 10px; font-weight: 700; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; display: flex; align-items: center; justify-content: center; gap: 6px; border: none; cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'"><i class="fas fa-file-excel"></i> İndir (Excel)</button>
+                    </div>
+
+                    <!-- Report 3: Critical NC Report -->
+                    <div class="report-card" style="background: var(--bg-card); border: 1px solid var(--border-main); border-radius: 14px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; gap: 1rem; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 24px rgba(0, 0, 0, 0.08)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 4px 12px rgba(0, 0, 0, 0.05)';">
+                        <div style="display: flex; gap: 1rem; align-items: flex-start;">
+                            <div class="report-icon" style="width: 48px; height: 48px; border-radius: 12px; background: rgba(239, 68, 68, 0.12); color: #ef4444; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;"><i class="fas fa-exclamation-triangle"></i></div>
+                            <div class="report-info" style="min-width: 0;">
+                                <h3 style="font-weight: 800; font-size: 1rem; color: var(--text-primary); margin-bottom: 0.25rem;">Kritik Uygunsuzluk Raporu</h3>
+                                <p style="font-size: 0.78rem; color: var(--text-dim); line-height: 1.4;">Sistemdeki henüz kapatılmamış tüm kritik uygunsuzluk ve yüksek öncelikli bulguların listesini yazdırın.</p>
+                            </div>
+                        </div>
+                        <button class="btn-primary" onclick="generateCriticalNCReport()" style="width: 100%; border-radius: 10px; padding: 10px; font-weight: 700; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; display: flex; align-items: center; justify-content: center; gap: 6px; border: none; cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'"><i class="fas fa-print"></i> Yazdır / PDF Al</button>
+                    </div>
+
+                    <!-- Report 4: Department Comparison -->
+                    <div class="report-card" style="background: var(--bg-card); border: 1px solid var(--border-main); border-radius: 14px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; gap: 1rem; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 24px rgba(0, 0, 0, 0.08)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 4px 12px rgba(0, 0, 0, 0.05)';">
+                        <div style="display: flex; gap: 1rem; align-items: flex-start;">
+                            <div class="report-icon" style="width: 48px; height: 48px; border-radius: 12px; background: rgba(6, 182, 212, 0.12); color: #06b6d4; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;"><i class="fas fa-chart-line"></i></div>
+                            <div class="report-info" style="min-width: 0;">
+                                <h3 style="font-weight: 800; font-size: 1rem; color: var(--text-primary); margin-bottom: 0.25rem;">Karşılaştırma Analizi</h3>
+                                <p style="font-size: 0.78rem; color: var(--text-dim); line-height: 1.4;">İstasyon ve hatların denetim standartlarına uyum grafiklerini interaktif olarak görüntüleyin.</p>
+                            </div>
+                        </div>
+                        <button class="btn-primary" onclick="redirectToComparisonAnalysis()" style="width: 100%; border-radius: 10px; padding: 10px; font-weight: 700; background: linear-gradient(135deg, #06b6d4, #0891b2); color: white; display: flex; align-items: center; justify-content: center; gap: 6px; border: none; cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'"><i class="fas fa-eye"></i> İstatistikleri Gör</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Section -->
+            <div id="settings-view" class="view-section" style="display: none;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem; margin-top: 0.5rem;">
+
+                    <!-- Görünüm -->
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-main); border-radius: 14px; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+                        <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.25rem;">
+                            <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(139,92,246,0.12); color: #8b5cf6; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;"><i class="fas fa-palette"></i></div>
+                            <h3 style="font-weight: 800; font-size: 1rem; color: var(--text-primary); margin: 0;">Görünüm</h3>
+                        </div>
+                        <label style="display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid var(--border-main);">
+                            <span style="font-size: 0.88rem; color: var(--text-primary);">Karanlık Mod</span>
+                            <div class="switch"><input type="checkbox" id="settings-dark-mode" onchange="handleSettingsDarkMode(this)"><span class="slider"></span></div>
+                        </label>
+                        <label style="display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid var(--border-main);">
+                            <span style="font-size: 0.88rem; color: var(--text-primary);">Kompakt Sidebar</span>
+                            <div class="switch"><input type="checkbox" id="settings-compact-sidebar" onchange="handleCompactSidebar(this)"><span class="slider"></span></div>
+                        </label>
+                        <label style="display: flex; flex-direction: column; gap: 0.35rem; padding: 0.6rem 0;">
+                            <span style="font-size: 0.88rem; color: var(--text-primary);">Varsayılan Açılış Sayfası</span>
+                            <select class="cms-input" id="settings-default-page" onchange="handleDefaultPage(this)" style="padding: 0.5rem; border-radius: 8px;">
+                                <option value="dashboard-view">Genel Bakış</option>
+                                <option value="audits-view">Denetimler</option>
+                                <option value="stats-view">İstatistikler</option>
+                                <option value="planning-view">Görev Planlama</option>
+                            </select>
+                        </label>
+                    </div>
+
+                    <!-- Denetim Ayarları -->
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-main); border-radius: 14px; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+                        <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.25rem;">
+                            <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(16,185,129,0.12); color: #10b981; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;"><i class="fas fa-clipboard-check"></i></div>
+                            <h3 style="font-weight: 800; font-size: 1rem; color: var(--text-primary); margin: 0;">Denetim Ayarları</h3>
+                        </div>
+                        <label style="display: flex; flex-direction: column; gap: 0.35rem; padding: 0.6rem 0; border-bottom: 1px solid var(--border-main);">
+                            <span style="font-size: 0.88rem; color: var(--text-primary);">Düşük Skor Eşiği (%)</span>
+                            <input class="cms-input" id="settings-low-score" type="number" min="0" max="100" value="60" onchange="handleLowScoreThreshold(this)" style="padding: 0.5rem; border-radius: 8px;">
+                        </label>
+                        <label style="display: flex; flex-direction: column; gap: 0.35rem; padding: 0.6rem 0;">
+                            <span style="font-size: 0.88rem; color: var(--text-primary);">Planlama Başlangıç Yılı</span>
+                            <input class="cms-input" id="settings-planning-year" type="number" min="2024" max="2030" value="2026" onchange="handlePlanningYear(this)" style="padding: 0.5rem; border-radius: 8px;">
+                        </label>
+                    </div>
+
+                    <!-- Veri Yönetimi -->
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-main); border-radius: 14px; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+                        <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.25rem;">
+                            <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(59,130,246,0.12); color: #3b82f6; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;"><i class="fas fa-database"></i></div>
+                            <h3 style="font-weight: 800; font-size: 1rem; color: var(--text-primary); margin: 0;">Veri Yönetimi</h3>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem; padding: 0.4rem 0; border-bottom: 1px solid var(--border-main); padding-bottom: 1rem;">
+                                <span style="font-size: 0.88rem; color: var(--text-primary); font-weight: 700;">Tüm Veriyi Dışa Aktar (JSON)</span>
+                                <span style="font-size: 0.75rem; color: var(--text-dim); line-height: 1.3;">Sistemdeki tüm denetimleri, personelleri ve ayarları yedekleyin.</span>
+                                <button onclick="exportAllDataJSON()" style="margin-top: 0.35rem; padding: 0.55rem 1rem; border-radius: 10px; font-weight: 700; font-size: 0.82rem; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; justify-content: center;"><i class="fas fa-download"></i> JSON İndir</button>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem; padding: 0.4rem 0;">
+                                <span style="font-size: 0.88rem; color: var(--text-primary); font-weight: 700;">Veri İçe Aktar (JSON)</span>
+                                <span style="font-size: 0.75rem; color: var(--text-dim); line-height: 1.3;">Daha önce yedeklediğiniz bir veriyi sisteme geri yükleyin.</span>
+                                <input type="file" id="settings-import-file" accept=".json" style="display:none" onchange="importAllDataJSON(this)">
+                                <button onclick="document.getElementById('settings-import-file').click()" style="margin-top: 0.35rem; padding: 0.55rem 1rem; border-radius: 10px; font-weight: 700; font-size: 0.82rem; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; justify-content: center;"><i class="fas fa-upload"></i> JSON Yükle</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hakkında (Corporate Footer Card) -->
+                    <div class="about-card">
+                        
+                        <!-- Decorative Subway Line Art Background -->
+                        <div style="position: absolute; top: -10%; right: -5%; width: 140px; height: 140px; opacity: 0.03; pointer-events: none; transform: rotate(-15deg); z-index: 0;">
+                            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: 100%;">
+                                <path d="M0 10 H80 Q90 10 90 20 V80 Q90 90 100 90" stroke="var(--text-primary)" stroke-width="4" stroke-linecap="round"/>
+                                <path d="M0 30 H70 Q80 30 80 40 V90 Q80 100 90 100" stroke="var(--accent)" stroke-width="4" stroke-linecap="round"/>
+                                <path d="M0 50 H60 Q70 50 70 60 V100" stroke="#10b981" stroke-width="4" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+
+                        <!-- Card Header -->
+                        <div class="about-header">
+                            <h3 class="about-header-title">Sistem Hakkında</h3>
+                        </div>
+
+                        <!-- Card Content Grid -->
+                        <div class="about-grid">
+                            
+                            <!-- Left: Brand and Info List -->
+                            <div class="about-brand-section">
+                                <div class="about-brand-header">
+                                    <div class="about-logo-wrapper">
+                                        <img src="assets/metro-istanbul-logo.svg" alt="Logo" class="about-logo-img" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%23e31e24%22><circle cx=%2212%22 cy=%2212%22 r=%2210%22/><path fill=%22white%22 d=%22M9 7h2v10H9zm4 0h2v10h-2z%22/></svg>';">
+                                    </div>
+                                    <div style="flex-grow: 1;">
+                                        <h4 class="about-brand-title">Metro İstanbul</h4>
+                                        <div class="about-brand-subtitle">Denetim Sistemi</div>
+                                    </div>
+                                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                                        <span class="about-version-badge">v2.0.0</span>
+                                        <div class="about-status-badge">
+                                            <span class="status-pulse-dot" style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background-color: #10b981; animation: status-pulse 1.8s infinite ease-in-out;"></span>
+                                            <span>SİSTEM AKTİF</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="about-info-list">
+                                    <div class="about-info-item">
+                                        <span class="about-info-label">Altyapı Veritabanı:</span>
+                                        <span class="about-info-value">HTML5 LocalStorage & Firebase Firestore</span>
+                                    </div>
+                                    <div class="about-info-item">
+                                        <span class="about-info-label">Platform Sürümü:</span>
+                                        <span class="about-info-value">Haziran 2026 (Enterprise v2.0)</span>
+                                    </div>
+                                    <div class="about-info-item">
+                                        <span class="about-info-label">Geliştirici & Lisans Sahibi:</span>
+                                        <span class="about-info-value">Metro İstanbul A.Ş. Bilgi İşlem Md.</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Right: System Statistics Info -->
+                            <div class="about-stats-section">
+                                <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.25rem;">Güncel Veri Metrikleri</div>
+                                <div class="about-stats-grid">
+                                    <!-- Stat 1 -->
+                                    <div class="about-stat-card">
+                                        <i class="fas fa-clipboard-check about-stat-icon audits"></i>
+                                        <span class="about-stat-label">Denetimler</span>
+                                        <span class="about-stat-value" id="settings-total-audits">0</span>
+                                    </div>
+                                    <!-- Stat 2 -->
+                                    <div class="about-stat-card">
+                                        <i class="fas fa-users about-stat-icon people"></i>
+                                        <span class="about-stat-label">Personel</span>
+                                        <span class="about-stat-value" id="settings-total-people">0</span>
+                                    </div>
+                                    <!-- Stat 3 -->
+                                    <div class="about-stat-card">
+                                        <i class="fas fa-database about-stat-icon size"></i>
+                                        <span class="about-stat-label">Veri Boyutu</span>
+                                        <span class="about-stat-value" id="settings-data-size">-</span>
+                                    </div>
+                                </div>
+
+                                <div style="font-size: 0.75rem; color: var(--text-dim); line-height: 1.4; padding: 0.75rem; background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.1); border-radius: 8px; display: flex; align-items: flex-start; gap: 8px; margin-top: 0.35rem;">
+                                    <i class="fas fa-shield-alt" style="color: #3b82f6; margin-top: 2px;"></i>
+                                    <span>Bu sistem, Metro İstanbul hat ve istasyonlarında yürütülen tüm operasyonel denetim süreçlerinin dijital takibi için kurumsal güvenlik politikalarıyla uyumlu olarak tasarlanmıştır.</span>
+                                </div>
+                            </div>
+                            
+                        </div>
+
+                        <!-- Copyright Bottom Notice -->
+                        <div class="about-copyright-notice">
+                            © 2026 Metro İstanbul A.Ş. Tüm hakları saklıdır. Bu yazılım Metro İstanbul A.Ş. mülkiyetindedir.
+                        </div>
+                        
+                    </div>
+
+                </div>
+            </div>
+
+        </main>
+    </div>
+    <!-- Audit Detail Modal -->
+    <div id="audit-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Denetim Detayı</h3>
+                <i class="fas fa-times close-modal" onclick="closeAuditModal()" style="cursor: pointer;"></i>
+            </div>
+            <div id="modal-body" class="modal-body" style="padding: 0; overflow-y: auto; max-height: 80vh;">
+                <!-- App-like detailed data will be injected here -->
+            </div>
+            <div class="modal-footer"
+                style="padding: 1rem; border-top: 1px solid var(--border-main); display: flex; justify-content: flex-end; gap: 1rem;">
+                <button class="btn-secondary" onclick="closeAuditModal()">Kapat</button>
+                <button class="btn-primary" id="modal-report-btn" onclick="downloadAuditReport(currentAuditId)">
+                    <i class="fas fa-file-pdf"></i> Rapor Al
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <!-- Personel Ekle / Düzenle (RBAC) -->
+    <div id="user-modal" class="modal-overlay personnel-modal-overlay" style="display: none;" role="dialog" aria-labelledby="user-modal-title">
+        <div class="personnel-form-card">
+            <div class="personnel-form-header">
+                <div>
+                    <h3 id="user-modal-title">Yeni Personel Ekle</h3>
+                    <p class="personnel-form-subtitle">Sistem mimarisine uygun rol ve alan kısıtlamalarını tanımlayın.</p>
+                </div>
+                <button type="button" class="personnel-close-btn" onclick="closeUserModal()" aria-label="Kapat">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <input type="hidden" id="edit-user-id">
+            <form id="personnel-form" class="personnel-form-body" onsubmit="processNewUser(event)">
+                <div class="personnel-grid-2">
+                    <div class="personnel-field">
+                        <label for="personnel-first-name">Ad</label>
+                        <input type="text" id="personnel-first-name" name="firstName" required placeholder="Ahmet" autocomplete="given-name">
+                    </div>
+                    <div class="personnel-field">
+                        <label for="personnel-last-name">Soyad</label>
+                        <input type="text" id="personnel-last-name" name="lastName" required placeholder="Yılmaz" autocomplete="family-name">
+                    </div>
+                </div>
+                <div class="personnel-grid-2">
+                    <div class="personnel-field">
+                        <label for="new-user-email">E-posta</label>
+                        <input type="email" id="new-user-email" name="email" required placeholder="ahmet@metro.istanbul" autocomplete="email">
+                    </div>
+                    <div class="personnel-field">
+                        <label for="personnel-role-id">Sistem Rolü</label>
+                        <select id="personnel-role-id" name="roleId" required onchange="onPersonnelRoleChange()">
+                            <option value="">Bir Rol Seçiniz...</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="personnel-grid-2">
+                    <div class="personnel-field" style="grid-column: span 2;">
+                        <label for="new-user-pass">Firebase Şifresi</label>
+                        <input type="password" id="new-user-pass" name="password" placeholder="••••••••" autocomplete="new-password" minlength="6">
+                        <p class="personnel-field-hint" id="new-user-pass-hint">Mobil uygulama ve panel girişi için bu şifreyle Firebase Authentication hesabı oluşturulur.</p>
+                    </div>
+                </div>
+                <div id="personnel-scope-section" class="personnel-scope-section" hidden>
+                    <div id="personnel-role-scope-banner" class="personnel-banner" hidden>
+                        <i id="personnel-role-scope-icon" class="fas fa-info-circle" aria-hidden="true"></i>
+                        <span id="personnel-role-scope-text"></span>
+                    </div>
+                    <div id="personnel-restricted-panel" class="personnel-restricted-panel" hidden>
+                        <div class="personnel-field">
+                            <label for="personnel-line-picker">Yetkili Olduğu Hatlar</label>
+                            <select id="personnel-line-picker" onchange="addPersonnelLineFromPicker(this)">
+                                <option value="">Hat seçip ekleyin...</option>
+                            </select>
+                            <div id="personnel-lines-tags" class="personnel-tags"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="personnel-form-footer">
+                    <button type="button" class="personnel-btn personnel-btn--ghost" onclick="closeUserModal()">Vazgeç</button>
+                    <button type="submit" class="personnel-btn personnel-btn--primary" id="personnel-submit-btn">
+                        Personeli Sisteme Kaydet
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Announcement Add/Edit Modal -->
+    <div id="announcement-modal" class="modal-overlay" style="display: none;" role="dialog" aria-labelledby="announcement-modal-title">
+        <div class="modal-content" style="max-width: 640px;">
+            <div class="modal-header">
+                <h3 id="announcement-modal-title">Yeni Duyuru</h3>
+                <i class="fas fa-times close-modal" onclick="closeAnnouncementModal()" style="cursor: pointer;"></i>
+            </div>
+            <form id="announcement-form" onsubmit="processAnnouncement(event)" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+                <input type="hidden" id="announcement-edit-id">
+                <div class="modal-body" style="padding: 2rem; overflow-y: auto; flex: 1; min-height: 0;">
+                    <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                        <div class="input-group">
+                            <label style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Duyuru Başlığı</label>
+                            <input type="text" id="announcement-title-input" class="cms-input" required placeholder="Örn: Bakım çalışması bilgilendirmesi">
+                        </div>
+                        <div class="input-group">
+                            <label style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Duyuru Metni</label>
+                            <textarea id="announcement-message-input" class="cms-input" required rows="4" placeholder="Mobil uygulamada görünecek duyuru metnini yazın." style="resize: vertical;"></textarea>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem;">
+                            <div class="input-group">
+                                <label style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Başlangıç Tarih/Saat</label>
+                                <input type="datetime-local" id="announcement-start-input" class="cms-input" required>
+                            </div>
+                            <div class="input-group">
+                                <label style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Bitiş Tarih/Saat</label>
+                                <input type="datetime-local" id="announcement-end-input" class="cms-input" required>
+                            </div>
+                        </div>
+                        <input type="hidden" id="announcement-active-input" value="true">
+                        <div style="padding: 0.9rem 1rem; border-radius: 12px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-secondary); font-size: 0.84rem; font-weight: 700; line-height: 1.5;">
+                            Duyuru durumu bu formdan seçilmez. Kaydettikten sonra liste ekranındaki durum alanından aktif veya pasif yapabilirsiniz.
+                        </div>
+                        <div class="input-group">
+                            <label style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Görüntülenecek Hatlar</label>
+                            <label style="display: flex; align-items: center; gap: 0.55rem; margin-bottom: 0.75rem; color: var(--text-primary); font-size: 0.84rem; font-weight: 700;">
+                                <input type="checkbox" id="announcement-all-lines-input" onchange="toggleAnnouncementLineScope()" style="width: 16px; height: 16px;">
+                                Tüm hatlarda göster
+                            </label>
+                            <select id="announcement-line-picker" class="cms-input" onchange="addAnnouncementLineFromPicker(this)">
+                                <option value="">Hat seçip ekleyin...</option>
+                            </select>
+                            <div id="announcement-lines-tags" class="personnel-tags" style="margin-top: 0.7rem;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="padding: 1.5rem; border-top: 1px solid var(--border-main); display: flex; justify-content: flex-end; gap: 1rem; flex-shrink: 0; flex-wrap: wrap; background: var(--bg-card);">
+                    <button type="button" class="btn-secondary" onclick="closeAnnouncementModal()">Vazgeç</button>
+                    <button type="submit" class="btn-primary" id="announcement-submit-btn">
+                        <i class="fas fa-save"></i> Duyuruyu Kaydet
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- NC Close Modal -->
+    <div id="nc-close-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>Uygunsuzluk Kapatma İşlemi</h3>
+                <i class="fas fa-times close-modal" onclick="closeNCModal()" style="cursor: pointer;"></i>
+            </div>
+            <div class="modal-body" style="padding: 2rem; overflow-y: auto; max-height: 65vh;">
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div
+                        style="background: rgba(239, 68, 68, 0.05); padding: 1rem; border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.1);">
+                        <p style="margin: 0; font-size: 0.8rem; color: #ef4444; font-weight: 700;">DİKKAT: Uygunsuzluğu
+                            kapatmak için yapılan işlemi ve çözüm kanıtlarını eklemelisiniz.</p>
+                    </div>
+                    <div class="input-group">
+                        <label
+                            style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Kayıt
+                            ID</label>
+                        <input type="text" id="nc-close-id" disabled
+                            style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-dim);">
+                    </div>
+                    <div class="input-group">
+                        <label
+                            style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Yapılan
+                            İşlem Açıklaması *</label>
+                        <textarea id="nc-close-comment" placeholder="Lütfen çözüm detaylarını giriniz..."
+                            style="width: 100%; height: 100px; padding: 12px; border-radius: 12px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-primary); resize: none;"></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label
+                            style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Çözüm
+                            Kanıt Fotoğrafları</label>
+                        <div id="nc-photo-btn" onclick="mockAddPhoto()"
+                            style="width: 100%; height: 120px; border: 2px dashed var(--border-main); border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-secondary); cursor: pointer; transition: 0.2s;"
+                            onmouseover="this.style.borderColor='var(--primary)'"
+                            onmouseout="this.style.borderColor='var(--border-main)'">
+                            <i class="fas fa-camera" style="font-size: 1.5rem; margin-bottom: 0.5rem;"></i>
+                            <span style="font-size: 0.8rem; font-weight: 600;">Kanıt Fotoğrafı Ekle</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer"
+                style="padding: 1.5rem; border-top: 1px solid var(--border-main); display: flex; justify-content: flex-end; gap: 1rem;">
+                <button class="btn-secondary" onclick="closeNCModal()">Vazgeç</button>
+                <button class="btn-primary" onclick="processNCClose()" style="background: #10b981;">
+                    <i class="fas fa-check-circle"></i> UYGUNSUZLUĞU KAPAT
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Question Group Modal -->
+    <div id="group-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3>Yeni Soru Grubu (Denetim Tipi) Kur</h3>
+                <i class="fas fa-times close-modal" onclick="closeGroupModal()" style="cursor: pointer;"></i>
+            </div>
+            <div class="modal-body" style="padding: 2rem;">
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div style="background: rgba(139, 92, 246, 0.05); padding: 1rem; border-radius: 12px; border: 1px solid rgba(139, 92, 246, 0.1);">
+                        <p style="margin: 0; font-size: 0.8rem; color: #8b5cf6; font-weight: 700;"><i class="fas fa-info-circle"></i> Oluşturduğunuz soru grubu, mobil uygulamada "Denetim Tipi" olarak görünecektir.</p>
+                    </div>
+                    <div class="input-group">
+                        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Grup Adı (Denetim Tipi)</label>
+                        <input type="text" id="new-group-name" placeholder="Örn: İş Güvenliği Denetimi, Yangın Güvenliği..."
+                            style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-primary);">
+                    </div>
+                    <div class="input-group">
+                        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">İkon Seçimi</label>
+                        <select id="new-group-icon" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-primary);">
+                            <option value="fa-folder-open">Klasör</option>
+                            <option value="fa-clipboard-check">Denetim</option>
+                            <option value="fa-hard-hat">⛑ İş Güvenliği</option>
+                            <option value="fa-fire-extinguisher">Yangın</option>
+                            <option value="fa-broom">Temizlik</option>
+                            <option value="fa-tools">Bakım</option>
+                            <option value="fa-shield-alt">Güvenlik</option>
+                            <option value="fa-leaf">Çevre</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding: 1.5rem; border-top: 1px solid var(--border-main); display: flex; justify-content: flex-end; gap: 1rem;">
+                <button class="btn-secondary" onclick="closeGroupModal()">Vazgeç</button>
+                <button class="btn-primary" onclick="processNewGroup()">
+                    <i class="fas fa-folder-plus"></i> Grubu Oluştur
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Question Add Modal -->
+    <div id="question-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 550px;">
+            <div class="modal-header">
+                <h3>Yeni Soru Ekle</h3>
+                <i class="fas fa-times close-modal" onclick="closeQuestionModal()" style="cursor: pointer;"></i>
+            </div>
+            <div class="modal-body" style="padding: 2rem;">
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div class="input-group">
+                        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Soru Bankası (Denetim Tipi)</label>
+                        <select id="new-q-group" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-primary);">
+                            <!-- JS will populate -->
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Kategori / Alt Başlık</label>
+                        <input type="text" id="new-q-category" placeholder="Örn: Temizlik, Düzen, Ayıklama..."
+                            style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-primary);">
+                    </div>
+                    <div class="input-group">
+                        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Soru Metni</label>
+                        <textarea id="new-q-text" placeholder="Denetim sorusunu detaylı şekilde yazınız..."
+                            style="width: 100%; height: 100px; padding: 12px; border-radius: 12px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-primary); resize: none;"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding: 1.5rem; border-top: 1px solid var(--border-main); display: flex; justify-content: flex-end; gap: 1rem;">
+                <button class="btn-secondary" onclick="closeQuestionModal()">Vazgeç</button>
+                <button class="btn-primary" onclick="processNewQuestion()">
+                    <i class="fas fa-plus"></i> Soruyu Ekle
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Plan Add Modal -->
+    <div id="plan-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 550px;">
+            <div class="modal-header">
+                <h3>Yeni Denetim Planı</h3>
+                <i class="fas fa-times close-modal" onclick="closePlanModal()" style="cursor: pointer;"></i>
+            </div>
+            <div class="modal-body" style="padding: 2rem;">
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                     <div class="input-group">
+                         <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Planlama Periyodu</label>
+                         <select id="plan-period-type" onchange="togglePlanPeriodFields()" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-primary);">
+                             <option value="manual">Tekil Denetim (Manuel)</option>
+                             <option value="monthly">Aylık Planlama</option>
+                             <option value="yearly">Yıllık Planlama</option>
+                         </select>
+                     </div>
+                     <div class="input-group">
+                         <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Denetim Tipi (Soru Grubu)</label>
+                         <select id="plan-audit-type" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-primary);">
+                             <!-- JS will populate from question groups -->
+                         </select>
+                     </div>
+                     <div class="input-group">
+                         <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Denetçi</label>
+                         <select id="plan-auditor" onchange="updatePlanLinesDropdown()" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-primary);">
+                             <!-- JS will populate -->
+                         </select>
+                     </div>
+                     <div class="input-group">
+                         <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Hat Seçimi</label>
+                         <select id="plan-line" onchange="updatePlanStations()" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-primary);">
+                             <!-- JS will populate -->
+                         </select>
+                     </div>
+                     
+                     <!-- Manual/Monthly Station Selection -->
+                     <div id="standard-station-selection" class="input-group">
+                         <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">İstasyon Seçimi</label>
+                         <div id="plan-stations-grid" style="display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 1rem; background: var(--bg-input); border-radius: 12px; border: 1px solid var(--border-main);">
+                             <!-- JS will populate -->
+                         </div>
+                     </div>
+
+                     <!-- Yearly Station Distribution -->
+                     <div id="yearly-station-distribution" class="input-group" style="display: none;">
+                         <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Aylık İstasyon Dağılımı</label>
+                         <div id="yearly-months-container" style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 300px; overflow-y: auto; padding-right: 10px;">
+                             <!-- JS will populate months -->
+                         </div>
+                     </div>
+
+                     <!-- Date Selectors -->
+                     <div id="manual-date-fields" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                         <div class="input-group">
+                             <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Başlangıç Tarihi</label>
+                             <input type="date" id="plan-start-date" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-primary);">
+                         </div>
+                         <div class="input-group">
+                             <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Bitiş Tarihi</label>
+                             <input type="date" id="plan-due-date" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-primary);">
+                         </div>
+                     </div>
+
+                     <!-- Monthly Selectors -->
+                     <div id="monthly-date-fields" style="display: none;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                            <div class="input-group">
+                                <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Yıl</label>
+                                <select id="plan-year" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-primary);">
+                                    <option value="2026" selected>2026</option>
+                                    <option value="2027">2027</option>
+                                    <option value="2028">2028</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Ay</label>
+                                <select id="plan-month" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-primary);">
+                                    <option value="1">Ocak</option>
+                                    <option value="2">Şubat</option>
+                                    <option value="3">Mart</option>
+                                    <option value="4">Nisan</option>
+                                    <option value="5">Mayıs</option>
+                                    <option value="6">Haziran</option>
+                                    <option value="7">Temmuz</option>
+                                    <option value="8">Ağustos</option>
+                                    <option value="9">Eylül</option>
+                                    <option value="10">Ekim</option>
+                                    <option value="11">Kasım</option>
+                                    <option value="12">Aralık</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Haftalık İstasyon Dağılımı</label>
+                            <div id="monthly-weeks-container" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                <!-- JS will populate 4 weeks -->
+                            </div>
+                        </div>
+                     </div>
+
+                     <!-- Yearly Selector -->
+                     <div id="yearly-date-fields" class="input-group" style="display: none;">
+                         <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Planlama Yılı</label>
+                         <select id="plan-year-only" onchange="renderYearlyMonths()" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-primary);">
+                             <option value="2026" selected>2026</option>
+                             <option value="2027">2027</option>
+                             <option value="2028">2028</option>
+                         </select>
+                     </div>
+                    <div class="input-group">
+                            <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Görev Türü</label>
+                            <select id="plan-task-type" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-primary);">
+                                <option>Planlı Denetim</option>
+                                <option>Plansız Denetim</option>
+                                <option>Takip Denetimi</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding: 1.5rem; border-top: 1px solid var(--border-main); display: flex; justify-content: flex-end; gap: 1rem;">
+                <button class="btn-secondary" onclick="closePlanModal()">Vazgeç</button>
+                <button class="btn-primary" onclick="processNewPlan()">
+                    <i class="fas fa-calendar-check"></i> Planı Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Line Add/Edit Modal -->
+    <div id="line-modal" class="modal-overlay line-management-modal" style="display: none;">
+        <div class="modal-content line-management-dialog">
+            <div class="modal-header">
+                <h3 id="line-modal-title">Yeni Hat Tanımla</h3>
+                <i class="fas fa-times close-modal" onclick="closeLineModal()" style="cursor: pointer;"></i>
+            </div>
+            <div class="modal-body" style="padding: 2rem;">
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <input type="hidden" id="line-edit-old-name" value="">
+                    <div class="input-group">
+                        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Hat Adı</label>
+                        <input type="text" id="line-name-input" placeholder="Örn: M10, T6..."
+                            style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-primary); font-size: 1rem; font-weight: 700;">
+                    </div>
+                    <div class="input-group">
+                        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Hat Rengi</label>
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <input type="color" id="line-color-input" value="#2196F3"
+                                style="width: 60px; height: 45px; border: 2px solid var(--border-main); border-radius: 12px; cursor: pointer; padding: 2px;">
+                            <input type="text" id="line-color-hex" value="#2196F3" placeholder="#HEX"
+                                style="flex: 1; padding: 12px; border-radius: 12px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-primary); font-family: monospace;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding: 1.5rem; border-top: 1px solid var(--border-main); display: flex; justify-content: flex-end; gap: 1rem;">
+                <button class="btn-secondary" onclick="closeLineModal()">Vazgeç</button>
+                <button class="btn-primary" onclick="processLineSave()">
+                    <i class="fas fa-save"></i> Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Station View Modal -->
+    <div id="station-modal" class="modal-overlay station-management-modal" style="display: none;">
+        <div class="modal-content station-management-dialog">
+            <div class="modal-header">
+                <h3 id="station-modal-title">İstasyonlar</h3>
+                <i class="fas fa-times close-modal" onclick="closeStationModal()" style="cursor: pointer;"></i>
+            </div>
+            <div class="modal-body" style="padding: 0;">
+                <div id="station-modal-body">
+                    <!-- JS will populate -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Preview Modal -->
+    <div id="image-preview-modal" class="modal-overlay feedback-image-modal" style="display: none;">
+        <div class="feedback-image-dialog">
+            <button type="button" class="feedback-image-close" onclick="closeImagePreview()" aria-label="Görseli kapat">
+                <i class="fas fa-times"></i>
+            </button>
+            <img id="image-preview-content" src="" alt="Geri bildirim görseli">
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js" crossorigin="anonymous"></script>
+    <script src="metro_data.js"></script>
+    <script src="script_v10.js?v=60"></script>
+</body>

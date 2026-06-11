@@ -1,0 +1,798 @@
+{
+  "audits": [
+    {
+      "id": "AUD-2018",
+      "line": "M1B",
+      "station": "Menderes",
+      "date": "2026-05-11T04:49:22.290",
+      "auditorName": "Caner Özcan",
+      "score": 100,
+      "isCompleted": true
+    },
+    {
+      "id": "AUD-2023",
+      "line": "M7",
+      "station": "Mahmutbey",
+      "date": "2026-05-10T12:49:22.290",
+      "auditorName": "Caner Özcan",
+      "score": 100,
+      "isCompleted": true
+    },
+    {
+      "id": "AUD-2000",
+      "line": "TF1",
+      "station": "Maçka",
+      "date": "2026-05-10T06:49:22.290",
+      "auditorName": "ramazan.tilki",
+      "score": 48.6,
+      "isCompleted": true
+    },
+    {
+      "id": "AUD-2001",
+      "line": "M7",
+      "station": "Çağlayan",
+      "date": "2026-05-09T06:49:22.290",
+      "auditorName": "Mehmet Yılmaz",
+      "score": 40,
+      "isCompleted": true
+    },
+    {
+      "id": "AUD-2002",
+      "line": "F1",
+      "station": "Kabataş",
+      "date": "2026-05-08T12:49:22.290",
+      "auditorName": "Ayşe Demir",
+      "score": 45.7,
+      "isCompleted": true
+    },
+    {
+      "id": "AUD-2003",
+      "line": "T1",
+      "station": "Sirkeci",
+      "date": "2026-05-07T06:49:22.290",
+      "auditorName": "Caner Özcan",
+      "score": 54.3,
+      "isCompleted": true
+    },
+    {
+      "id": "AUD-2016",
+      "line": "M5",
+      "station": "Yamanevler",
+      "date": "2026-05-07T06:49:22.290",
+      "auditorName": "Mehmet Yılmaz",
+      "score": 100,
+      "isCompleted": true
+    },
+    {
+      "id": "AUD-2004",
+      "line": "T4",
+      "station": "Topkapı",
+      "date": "2026-05-06T10:49:22.290",
+      "auditorName": "Fatma Kaya",
+      "score": 57.1,
+      "isCompleted": true
+    },
+    {
+      "id": "AUD-2005",
+      "line": "T5",
+      "station": "Cibali",
+      "date": "2026-05-05T11:49:22.290",
+      "auditorName": "ramazan.tilki",
+      "score": 48.6,
+      "isCompleted": true
+    },
+    {
+      "id": "AUD-2006",
+      "line": "T1",
+      "station": "Sirkeci",
+      "date": "2026-05-04T05:49:22.290",
+      "auditorName": "Mehmet Yılmaz",
+      "score": 57.1,
+      "isCompleted": true
+    },
+    {
+      "id": "AUD-2007",
+      "line": "M5",
+      "station": "Yamanevler",
+      "date": "2026-05-03T13:49:22.290",
+      "auditorName": "Ayşe Demir",
+      "score": 45.7,
+      "isCompleted": true
+    },
+    {
+      "id": "AUD-2008",
+      "line": "TF2",
+      "station": "Eyüp",
+      "date": "2026-05-02T04:49:22.290",
+      "auditorName": "Caner Özcan",
+      "score": 68.6,
+      "isCompleted": true
+    },
+    {
+      "id": "AUD-2015",
+      "line": "T4",
+      "station": "Demirkapı",
+      "date": "2026-05-01T13:49:22.290",
+      "auditorName": "ramazan.tilki",
+      "score": 100,
+      "isCompleted": true
+    },
+    {
+      "id": "AUD-2009",
+      "line": "TF2",
+      "station": "Eyüp",
+      "date": "2026-05-01T02:49:22.290",
+      "auditorName": "Fatma Kaya",
+      "score": 68.6,
+      "isCompleted": true
+    },
+    {
+      "id": "AUD-2017",
+      "line": "M3",
+      "station": "Turgut Özal",
+      "date": "2026-04-22T08:49:22.290",
+      "auditorName": "Ayşe Demir",
+      "score": 100,
+      "isCompleted": true
+    },
+    {
+      "id": "AUD-2019",
+      "line": "M9",
+      "station": "Yenibosna",
+      "date": "2026-04-16T10:49:22.290",
+      "auditorName": "Fatma Kaya",
+      "score": 100,
+      "isCompleted": true
+    },
+    {
+      "id": "AUD-2021",
+      "line": "M5",
+      "station": "Kısıklı",
+      "date": "2026-04-14T12:49:22.290",
+      "auditorName": "Mehmet Yılmaz",
+      "score": 100,
+      "isCompleted": true
+    },
+    {
+      "id": "AUD-2027",
+      "line": "M8",
+      "station": "Ayşekadın",
+      "date": "2026-04-13T05:49:22.290",
+      "auditorName": "Ayşe Demir",
+      "score": 100,
+      "isCompleted": true
+    },
+    {
+      "id": "AUD-2028",
+      "line": "M6",
+      "station": "Etiler",
+      "date": "2026-04-11T07:49:22.290",
+      "auditorName": "Caner Özcan",
+      "score": 100,
+      "isCompleted": true
+    },
+    {
+      "id": "AUD-2014",
+      "line": "T4",
+      "station": "Bosna-Çukurçeşme",
+      "date": "2026-04-05T09:49:22.290",
+      "auditorName": "Fatma Kaya",
+      "score": 94.3,
+      "isCompleted": true
+    },
+    {
+      "id": "AUD-2029",
+      "line": "M2",
+      "station": "Sanayi Mahallesi",
+      "date": "2026-04-04T06:49:22.290",
+      "auditorName": "Fatma Kaya",
+      "score": 100,
+      "isCompleted": true
+    },
+    {
+      "id": "AUD-2010",
+      "line": "M2",
+      "station": "Atatürk Oto Sanayi",
+      "date": "2026-03-31T09:49:22.290",
+      "auditorName": "ramazan.tilki",
+      "score": 80,
+      "isCompleted": true
+    },
+    {
+      "id": "AUD-2024",
+      "line": "M6",
+      "station": "Etiler",
+      "date": "2026-03-30T02:49:22.290",
+      "auditorName": "Fatma Kaya",
+      "score": 100,
+      "isCompleted": true
+    },
+    {
+      "id": "AUD-2012",
+      "line": "T5",
+      "station": "Eminönü",
+      "date": "2026-03-28T02:49:22.290",
+      "auditorName": "Ayşe Demir",
+      "score": 80,
+      "isCompleted": true
+    },
+    {
+      "id": "AUD-2011",
+      "line": "F1",
+      "station": "Taksim",
+      "date": "2026-03-22T03:49:22.290",
+      "auditorName": "Mehmet Yılmaz",
+      "score": 65.7,
+      "isCompleted": true
+    },
+    {
+      "id": "AUD-2026",
+      "line": "M1B",
+      "station": "Menderes",
+      "date": "2026-03-19T13:49:22.290",
+      "auditorName": "Mehmet Yılmaz",
+      "score": 100,
+      "isCompleted": true
+    },
+    {
+      "id": "AUD-2025",
+      "line": "TF1",
+      "station": "Taşkışla",
+      "date": "2026-03-16T02:49:22.290",
+      "auditorName": "ramazan.tilki",
+      "score": 100,
+      "isCompleted": true
+    },
+    {
+      "id": "AUD-2020",
+      "line": "T1",
+      "station": "Merter Tekstil",
+      "date": "2026-03-15T06:49:22.290",
+      "auditorName": "ramazan.tilki",
+      "score": 100,
+      "isCompleted": true
+    },
+    {
+      "id": "AUD-2022",
+      "line": "T4",
+      "station": "Edirnekapı",
+      "date": "2026-03-14T06:49:22.290",
+      "auditorName": "Ayşe Demir",
+      "score": 100,
+      "isCompleted": true
+    },
+    {
+      "id": "AUD-2013",
+      "line": "M3",
+      "station": "Başak Konutları",
+      "date": "2026-03-13T06:49:22.290",
+      "auditorName": "Caner Özcan",
+      "score": 82.9,
+      "isCompleted": true
+    },
+    {
+      "id": "A-8854",
+      "line": "M2",
+      "station": "Şişhane",
+      "date": "2026-05-11T14:46:51.216",
+      "auditorName": "deneme kullanıcı",
+      "score": 82.57142857142857,
+      "isCompleted": true
+    }
+  ],
+  "nonconformities": [
+    {
+      "id": "NC-AUD-2000-1",
+      "auditId": "AUD-2000",
+      "questionText": "Çalışma alanında gereksiz malzeme, ekipman veya araç gereç var mı?",
+      "category": "Ayıklama (Seiri)",
+      "status": "completed",
+      "detectionDate": "2026-05-10T06:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2000-2",
+      "auditId": "AUD-2000",
+      "questionText": "Kullanılmayan veya bozuk ekipmanlar alandan uzaklaştırılmış mı?",
+      "category": "Ayıklama (Seiri)",
+      "status": "overdue",
+      "detectionDate": "2026-05-10T06:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2000-3",
+      "auditId": "AUD-2000",
+      "questionText": "Tüm malzemelerin tanımlanmış bir yeri var mı ve etiketli mi?",
+      "category": "Düzen (Seiton)",
+      "status": "open",
+      "detectionDate": "2026-05-10T06:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2000-5",
+      "auditId": "AUD-2000",
+      "questionText": "Zemin, duvarlar, panolar ve ekipmanlar temiz mi?",
+      "category": "Temizlik (Seiso)",
+      "status": "completed",
+      "detectionDate": "2026-05-10T06:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2000-7",
+      "auditId": "AUD-2000",
+      "questionText": "Personel 5S standartlarını uyguluyor mu ve formlar güncel mi?",
+      "category": "Disiplin (Shitsuke)",
+      "status": "overdue",
+      "detectionDate": "2026-05-10T06:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2001-1",
+      "auditId": "AUD-2001",
+      "questionText": "Çalışma alanında gereksiz malzeme, ekipman veya araç gereç var mı?",
+      "category": "Ayıklama (Seiri)",
+      "status": "open",
+      "detectionDate": "2026-05-09T06:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2001-2",
+      "auditId": "AUD-2001",
+      "questionText": "Kullanılmayan veya bozuk ekipmanlar alandan uzaklaştırılmış mı?",
+      "category": "Ayıklama (Seiri)",
+      "status": "completed",
+      "detectionDate": "2026-05-09T06:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2001-4",
+      "auditId": "AUD-2001",
+      "questionText": "Acil durum ekipmanlarına erişim engellenmiş mi?",
+      "category": "Düzen (Seiton)",
+      "status": "overdue",
+      "detectionDate": "2026-05-09T06:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2001-5",
+      "auditId": "AUD-2001",
+      "questionText": "Zemin, duvarlar, panolar ve ekipmanlar temiz mi?",
+      "category": "Temizlik (Seiso)",
+      "status": "open",
+      "detectionDate": "2026-05-09T06:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2001-6",
+      "auditId": "AUD-2001",
+      "questionText": "Görsel yönetim işaretleri ve uyarı levhaları güncel mi?",
+      "category": "Standartlaştırma (Seiketsu)",
+      "status": "completed",
+      "detectionDate": "2026-05-09T06:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2001-7",
+      "auditId": "AUD-2001",
+      "questionText": "Personel 5S standartlarını uyguluyor mu ve formlar güncel mi?",
+      "category": "Disiplin (Shitsuke)",
+      "status": "overdue",
+      "detectionDate": "2026-05-09T06:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2002-1",
+      "auditId": "AUD-2002",
+      "questionText": "Çalışma alanında gereksiz malzeme, ekipman veya araç gereç var mı?",
+      "category": "Ayıklama (Seiri)",
+      "status": "open",
+      "detectionDate": "2026-05-08T12:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2002-3",
+      "auditId": "AUD-2002",
+      "questionText": "Tüm malzemelerin tanımlanmış bir yeri var mı ve etiketli mi?",
+      "category": "Düzen (Seiton)",
+      "status": "completed",
+      "detectionDate": "2026-05-08T12:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2002-5",
+      "auditId": "AUD-2002",
+      "questionText": "Zemin, duvarlar, panolar ve ekipmanlar temiz mi?",
+      "category": "Temizlik (Seiso)",
+      "status": "overdue",
+      "detectionDate": "2026-05-08T12:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2002-6",
+      "auditId": "AUD-2002",
+      "questionText": "Görsel yönetim işaretleri ve uyarı levhaları güncel mi?",
+      "category": "Standartlaştırma (Seiketsu)",
+      "status": "open",
+      "detectionDate": "2026-05-08T12:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2002-7",
+      "auditId": "AUD-2002",
+      "questionText": "Personel 5S standartlarını uyguluyor mu ve formlar güncel mi?",
+      "category": "Disiplin (Shitsuke)",
+      "status": "completed",
+      "detectionDate": "2026-05-08T12:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2003-6",
+      "auditId": "AUD-2003",
+      "questionText": "Görsel yönetim işaretleri ve uyarı levhaları güncel mi?",
+      "category": "Standartlaştırma (Seiketsu)",
+      "status": "open",
+      "detectionDate": "2026-05-07T06:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2003-2",
+      "auditId": "AUD-2003",
+      "questionText": "Kullanılmayan veya bozuk ekipmanlar alandan uzaklaştırılmış mı?",
+      "category": "Ayıklama (Seiri)",
+      "status": "open",
+      "detectionDate": "2026-05-07T06:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2003-3",
+      "auditId": "AUD-2003",
+      "questionText": "Tüm malzemelerin tanımlanmış bir yeri var mı ve etiketli mi?",
+      "category": "Düzen (Seiton)",
+      "status": "completed",
+      "detectionDate": "2026-05-07T06:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2003-5",
+      "auditId": "AUD-2003",
+      "questionText": "Zemin, duvarlar, panolar ve ekipmanlar temiz mi?",
+      "category": "Temizlik (Seiso)",
+      "status": "overdue",
+      "detectionDate": "2026-05-07T06:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2003-1",
+      "auditId": "AUD-2003",
+      "questionText": "Çalışma alanında gereksiz malzeme, ekipman veya araç gereç var mı?",
+      "category": "Ayıklama (Seiri)",
+      "status": "overdue",
+      "detectionDate": "2026-05-07T06:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2004-1",
+      "auditId": "AUD-2004",
+      "questionText": "Çalışma alanında gereksiz malzeme, ekipman veya araç gereç var mı?",
+      "category": "Ayıklama (Seiri)",
+      "status": "completed",
+      "detectionDate": "2026-05-06T10:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2004-2",
+      "auditId": "AUD-2004",
+      "questionText": "Kullanılmayan veya bozuk ekipmanlar alandan uzaklaştırılmış mı?",
+      "category": "Ayıklama (Seiri)",
+      "status": "overdue",
+      "detectionDate": "2026-05-06T10:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2004-5",
+      "auditId": "AUD-2004",
+      "questionText": "Zemin, duvarlar, panolar ve ekipmanlar temiz mi?",
+      "category": "Temizlik (Seiso)",
+      "status": "open",
+      "detectionDate": "2026-05-06T10:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2004-6",
+      "auditId": "AUD-2004",
+      "questionText": "Görsel yönetim işaretleri ve uyarı levhaları güncel mi?",
+      "category": "Standartlaştırma (Seiketsu)",
+      "status": "completed",
+      "detectionDate": "2026-05-06T10:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2004-7",
+      "auditId": "AUD-2004",
+      "questionText": "Personel 5S standartlarını uyguluyor mu ve formlar güncel mi?",
+      "category": "Disiplin (Shitsuke)",
+      "status": "overdue",
+      "detectionDate": "2026-05-06T10:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2005-1",
+      "auditId": "AUD-2005",
+      "questionText": "Çalışma alanında gereksiz malzeme, ekipman veya araç gereç var mı?",
+      "category": "Ayıklama (Seiri)",
+      "status": "open",
+      "detectionDate": "2026-05-05T11:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2005-2",
+      "auditId": "AUD-2005",
+      "questionText": "Kullanılmayan veya bozuk ekipmanlar alandan uzaklaştırılmış mı?",
+      "category": "Ayıklama (Seiri)",
+      "status": "completed",
+      "detectionDate": "2026-05-05T11:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2005-5",
+      "auditId": "AUD-2005",
+      "questionText": "Zemin, duvarlar, panolar ve ekipmanlar temiz mi?",
+      "category": "Temizlik (Seiso)",
+      "status": "overdue",
+      "detectionDate": "2026-05-05T11:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2005-7",
+      "auditId": "AUD-2005",
+      "questionText": "Personel 5S standartlarını uyguluyor mu ve formlar güncel mi?",
+      "category": "Disiplin (Shitsuke)",
+      "status": "open",
+      "detectionDate": "2026-05-05T11:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2006-1",
+      "auditId": "AUD-2006",
+      "questionText": "Çalışma alanında gereksiz malzeme, ekipman veya araç gereç var mı?",
+      "category": "Ayıklama (Seiri)",
+      "status": "completed",
+      "detectionDate": "2026-05-04T05:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2006-3",
+      "auditId": "AUD-2006",
+      "questionText": "Tüm malzemelerin tanımlanmış bir yeri var mı ve etiketli mi?",
+      "category": "Düzen (Seiton)",
+      "status": "overdue",
+      "detectionDate": "2026-05-04T05:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2006-5",
+      "auditId": "AUD-2006",
+      "questionText": "Zemin, duvarlar, panolar ve ekipmanlar temiz mi?",
+      "category": "Temizlik (Seiso)",
+      "status": "open",
+      "detectionDate": "2026-05-04T05:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2006-6",
+      "auditId": "AUD-2006",
+      "questionText": "Görsel yönetim işaretleri ve uyarı levhaları güncel mi?",
+      "category": "Standartlaştırma (Seiketsu)",
+      "status": "completed",
+      "detectionDate": "2026-05-04T05:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2007-1",
+      "auditId": "AUD-2007",
+      "questionText": "Çalışma alanında gereksiz malzeme, ekipman veya araç gereç var mı?",
+      "category": "Ayıklama (Seiri)",
+      "status": "overdue",
+      "detectionDate": "2026-05-03T13:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2007-2",
+      "auditId": "AUD-2007",
+      "questionText": "Kullanılmayan veya bozuk ekipmanlar alandan uzaklaştırılmış mı?",
+      "category": "Ayıklama (Seiri)",
+      "status": "open",
+      "detectionDate": "2026-05-03T13:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2007-4",
+      "auditId": "AUD-2007",
+      "questionText": "Acil durum ekipmanlarına erişim engellenmiş mi?",
+      "category": "Düzen (Seiton)",
+      "status": "completed",
+      "detectionDate": "2026-05-03T13:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2007-5",
+      "auditId": "AUD-2007",
+      "questionText": "Zemin, duvarlar, panolar ve ekipmanlar temiz mi?",
+      "category": "Temizlik (Seiso)",
+      "status": "overdue",
+      "detectionDate": "2026-05-03T13:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2007-6",
+      "auditId": "AUD-2007",
+      "questionText": "Görsel yönetim işaretleri ve uyarı levhaları güncel mi?",
+      "category": "Standartlaştırma (Seiketsu)",
+      "status": "open",
+      "detectionDate": "2026-05-03T13:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2007-7",
+      "auditId": "AUD-2007",
+      "questionText": "Personel 5S standartlarını uyguluyor mu ve formlar güncel mi?",
+      "category": "Disiplin (Shitsuke)",
+      "status": "completed",
+      "detectionDate": "2026-05-03T13:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2008-5",
+      "auditId": "AUD-2008",
+      "questionText": "Zemin, duvarlar, panolar ve ekipmanlar temiz mi?",
+      "category": "Temizlik (Seiso)",
+      "status": "completed",
+      "detectionDate": "2026-05-02T04:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2008-3",
+      "auditId": "AUD-2008",
+      "questionText": "Tüm malzemelerin tanımlanmış bir yeri var mı ve etiketli mi?",
+      "category": "Düzen (Seiton)",
+      "status": "open",
+      "detectionDate": "2026-05-02T04:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2008-1",
+      "auditId": "AUD-2008",
+      "questionText": "Çalışma alanında gereksiz malzeme, ekipman veya araç gereç var mı?",
+      "category": "Ayıklama (Seiri)",
+      "status": "overdue",
+      "detectionDate": "2026-05-02T04:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2009-1",
+      "auditId": "AUD-2009",
+      "questionText": "Çalışma alanında gereksiz malzeme, ekipman veya araç gereç var mı?",
+      "category": "Ayıklama (Seiri)",
+      "status": "overdue",
+      "detectionDate": "2026-05-01T02:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2009-2",
+      "auditId": "AUD-2009",
+      "questionText": "Kullanılmayan veya bozuk ekipmanlar alandan uzaklaştırılmış mı?",
+      "category": "Ayıklama (Seiri)",
+      "status": "open",
+      "detectionDate": "2026-05-01T02:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2009-4",
+      "auditId": "AUD-2009",
+      "questionText": "Acil durum ekipmanlarına erişim engellenmiş mi?",
+      "category": "Düzen (Seiton)",
+      "status": "completed",
+      "detectionDate": "2026-05-01T02:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2009-5",
+      "auditId": "AUD-2009",
+      "questionText": "Zemin, duvarlar, panolar ve ekipmanlar temiz mi?",
+      "category": "Temizlik (Seiso)",
+      "status": "overdue",
+      "detectionDate": "2026-05-01T02:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2014-3",
+      "auditId": "AUD-2014",
+      "questionText": "Tüm malzemelerin tanımlanmış bir yeri var mı ve etiketli mi?",
+      "category": "Düzen (Seiton)",
+      "status": "open",
+      "detectionDate": "2026-04-05T09:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2010-2",
+      "auditId": "AUD-2010",
+      "questionText": "Kullanılmayan veya bozuk ekipmanlar alandan uzaklaştırılmış mı?",
+      "category": "Ayıklama (Seiri)",
+      "status": "completed",
+      "detectionDate": "2026-03-31T09:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2010-3",
+      "auditId": "AUD-2010",
+      "questionText": "Tüm malzemelerin tanımlanmış bir yeri var mı ve etiketli mi?",
+      "category": "Düzen (Seiton)",
+      "status": "overdue",
+      "detectionDate": "2026-03-31T09:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2010-6",
+      "auditId": "AUD-2010",
+      "questionText": "Görsel yönetim işaretleri ve uyarı levhaları güncel mi?",
+      "category": "Standartlaştırma (Seiketsu)",
+      "status": "open",
+      "detectionDate": "2026-03-31T09:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2012-1",
+      "auditId": "AUD-2012",
+      "questionText": "Çalışma alanında gereksiz malzeme, ekipman veya araç gereç var mı?",
+      "category": "Ayıklama (Seiri)",
+      "status": "completed",
+      "detectionDate": "2026-03-28T02:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2012-3",
+      "auditId": "AUD-2012",
+      "questionText": "Tüm malzemelerin tanımlanmış bir yeri var mı ve etiketli mi?",
+      "category": "Düzen (Seiton)",
+      "status": "overdue",
+      "detectionDate": "2026-03-28T02:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2012-6",
+      "auditId": "AUD-2012",
+      "questionText": "Görsel yönetim işaretleri ve uyarı levhaları güncel mi?",
+      "category": "Standartlaştırma (Seiketsu)",
+      "status": "open",
+      "detectionDate": "2026-03-28T02:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2011-1",
+      "auditId": "AUD-2011",
+      "questionText": "Çalışma alanında gereksiz malzeme, ekipman veya araç gereç var mı?",
+      "category": "Ayıklama (Seiri)",
+      "status": "completed",
+      "detectionDate": "2026-03-22T03:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2011-2",
+      "auditId": "AUD-2011",
+      "questionText": "Kullanılmayan veya bozuk ekipmanlar alandan uzaklaştırılmış mı?",
+      "category": "Ayıklama (Seiri)",
+      "status": "overdue",
+      "detectionDate": "2026-03-22T03:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2011-3",
+      "auditId": "AUD-2011",
+      "questionText": "Tüm malzemelerin tanımlanmış bir yeri var mı ve etiketli mi?",
+      "category": "Düzen (Seiton)",
+      "status": "open",
+      "detectionDate": "2026-03-22T03:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2011-4",
+      "auditId": "AUD-2011",
+      "questionText": "Acil durum ekipmanlarına erişim engellenmiş mi?",
+      "category": "Düzen (Seiton)",
+      "status": "completed",
+      "detectionDate": "2026-03-22T03:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2011-5",
+      "auditId": "AUD-2011",
+      "questionText": "Zemin, duvarlar, panolar ve ekipmanlar temiz mi?",
+      "category": "Temizlik (Seiso)",
+      "status": "overdue",
+      "detectionDate": "2026-03-22T03:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2013-3",
+      "auditId": "AUD-2013",
+      "questionText": "Tüm malzemelerin tanımlanmış bir yeri var mı ve etiketli mi?",
+      "category": "Düzen (Seiton)",
+      "status": "open",
+      "detectionDate": "2026-03-13T06:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2013-6",
+      "auditId": "AUD-2013",
+      "questionText": "Görsel yönetim işaretleri ve uyarı levhaları güncel mi?",
+      "category": "Standartlaştırma (Seiketsu)",
+      "status": "completed",
+      "detectionDate": "2026-03-13T06:49:22.290"
+    },
+    {
+      "id": "NC-AUD-2013-7",
+      "auditId": "AUD-2013",
+      "questionText": "Personel 5S standartlarını uyguluyor mu ve formlar güncel mi?",
+      "category": "Disiplin (Shitsuke)",
+      "status": "overdue",
+      "detectionDate": "2026-03-13T06:49:22.290"
+    },
+    {
+      "id": "NC-A-8854-3",
+      "auditId": "A-8854",
+      "questionText": "Tüm malzemelerin tanımlanmış bir yeri var mı ve etiketli mi?",
+      "category": "Düzen (Seiton)",
+      "status": "open",
+      "detectionDate": "2026-05-11T14:46:51.216"
+    },
+    {
+      "id": "NC-A-8854-5",
+      "auditId": "A-8854",
+      "questionText": "Zemin, duvarlar, panolar ve ekipmanlar temiz mi?",
+      "category": "Temizlik (Seiso)",
+      "status": "open",
+      "detectionDate": "2026-05-11T14:46:51.216"
+    }
+  ],
+  "tasks": []
+}
