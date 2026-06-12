@@ -86,6 +86,7 @@ let ncCurrentFilter = 'Açık';
 let auditsCurrentPage = 1;
 let ncDateSortDirection = 'desc';
 let auditDateSortDirection = 'desc';
+let auditScoreSortDirection = null;
 const ITEMS_PER_PAGE = 10;
 let parentAuditIdForNC = null;
 let currentAuditId = null;
@@ -2101,7 +2102,10 @@ function updateDateSortHeader(headerId, iconId, direction) {
     const icon = document.getElementById(iconId);
     const isDescending = direction === 'desc';
     if (header) header.setAttribute('aria-sort', isDescending ? 'descending' : 'ascending');
-    if (icon) icon.className = `fas ${isDescending ? 'fa-arrow-down' : 'fa-arrow-up'}`;
+    if (icon) {
+        icon.className = `fas ${isDescending ? 'fa-arrow-down' : 'fa-arrow-up'}`;
+        icon.style.opacity = '1';
+    }
     const button = header?.querySelector('button');
     if (button) {
         button.title = isDescending
@@ -2110,10 +2114,41 @@ function updateDateSortHeader(headerId, iconId, direction) {
     }
 }
 
+function resetSortHeader(headerId, iconId) {
+    const header = document.getElementById(headerId);
+    const icon = document.getElementById(iconId);
+    if (header) header.removeAttribute('aria-sort');
+    if (icon) {
+        icon.className = 'fas fa-sort';
+        icon.style.opacity = '0.4';
+    }
+}
+
 window.toggleAuditDateSort = function() {
     auditDateSortDirection = auditDateSortDirection === 'desc' ? 'asc' : 'desc';
+    auditScoreSortDirection = null;
     auditsCurrentPage = 1;
     updateDateSortHeader('audit-date-sort-header', 'audit-date-sort-icon', auditDateSortDirection);
+    resetSortHeader('audit-score-sort-header', 'audit-score-sort-icon');
+    renderAllAuditsTable();
+};
+
+window.toggleAuditScoreSort = function() {
+    if (auditScoreSortDirection === null) {
+        auditScoreSortDirection = 'desc';
+    } else {
+        auditScoreSortDirection = auditScoreSortDirection === 'desc' ? 'asc' : 'desc';
+    }
+    auditDateSortDirection = null;
+    auditsCurrentPage = 1;
+    updateDateSortHeader('audit-score-sort-header', 'audit-score-sort-icon', auditScoreSortDirection);
+    const scoreBtn = document.querySelector('#audit-score-sort-header button');
+    if (scoreBtn) {
+        scoreBtn.title = auditScoreSortDirection === 'desc'
+            ? 'En yüksek puanlar üstte. Düşük puanları üste almak için tıklayın.'
+            : 'En düşük puanlar üstte. Yüksek puanları üste almak için tıklayın.';
+    }
+    resetSortHeader('audit-date-sort-header', 'audit-date-sort-icon');
     renderAllAuditsTable();
 };
 
@@ -5629,52 +5664,51 @@ function renderProfessionalNcStatus(ncs) {
         ncs.filter(isNcClosed).length
     ];
     const theme = statsChartTheme();
+    const options = statsBaseOptions();
+    
+    // Hide the legend because category labels are displayed on the X axis
+    options.plugins.legend.display = false;
+    
+    // Configure datalabels to show counts cleanly on top of the bars
+    options.plugins.datalabels.color = theme.text;
+    options.plugins.datalabels.backgroundColor = 'transparent';
+    options.plugins.datalabels.borderColor = 'transparent';
+    options.plugins.datalabels.borderWidth = 0;
+    options.plugins.datalabels.font = { weight: '900', size: 10 };
+    options.plugins.datalabels.formatter = (value) => value > 0 ? `${value.toLocaleString('tr-TR')} adet` : '';
+    options.plugins.datalabels.anchor = 'end';
+    options.plugins.datalabels.align = 'top';
+    options.plugins.datalabels.offset = 2;
+    
+    // Configure tooltip to match standard formats and include percentages
+    options.plugins.tooltip.callbacks.label = (context) => {
+        const total = context.dataset.data.reduce((sum, item) => sum + Number(item || 0), 0);
+        const percentage = total ? (Number(context.raw) / total) * 100 : 0;
+        return ` ${context.label}: ${statsFormatChartValue(percentage, 'percentage')} (${statsFormatChartValue(context.raw, 'count')} adet)`;
+    };
+    
+    // Standard scales for the vertical bar chart
+    options.scales.x.grid = { display: false };
+    options.scales.x.ticks = { color: theme.text, font: { weight: '800', size: 10 } };
+    
+    options.scales.y.beginAtZero = true;
+    options.scales.y.ticks = { color: theme.dim, precision: 0, font: { weight: '800', size: 10 } };
+    options.scales.y.grid = { color: theme.grid };
+
     statsCreateChart('stats-nc-status-chart', {
-        type: 'doughnut',
+        type: 'bar',
         data: {
             labels: ['Açık', 'Geciken', 'Kontrol', 'Kapalı'],
-            datasets: [{ data: values, backgroundColor: ['#3b82f6', '#e11d48', '#f59e0b', '#10b981'], borderColor: 'transparent', hoverOffset: 7 }]
+            datasets: [{
+                data: values,
+                backgroundColor: ['#3b82f6', '#e11d48', '#f59e0b', '#10b981'],
+                borderRadius: 6,
+                barThickness: 28,
+                statsValueType: 'count',
+                statsShowZero: false
+            }]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '67%',
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    align: 'center',
-                    labels: { color: theme.text, usePointStyle: true, boxWidth: 9, padding: 16, font: { size: 11, weight: '800' } }
-                },
-                datalabels: {
-                    color: '#fff',
-                    backgroundColor: theme.labelBg,
-                    borderColor: theme.labelBorder,
-                    borderWidth: 1,
-                    borderRadius: 6,
-                    padding: 5,
-                    font: { weight: '900', size: 11 },
-                    formatter(value, context) {
-                        const total = context.dataset.data.reduce((sum, item) => sum + Number(item || 0), 0);
-                        return value && total ? statsFormatChartValue((value / total) * 100, 'percentage') : '';
-                    }
-                },
-                tooltip: {
-                    padding: 10,
-                    backgroundColor: theme.tooltipBg,
-                    titleColor: '#ffffff',
-                    bodyColor: '#f8fafc',
-                    borderColor: theme.labelBorder,
-                    borderWidth: 1,
-                    callbacks: {
-                        label(context) {
-                            const total = context.dataset.data.reduce((sum, item) => sum + Number(item || 0), 0);
-                            const percentage = total ? (Number(context.raw) / total) * 100 : 0;
-                            return `${context.label}: ${statsFormatChartValue(percentage, 'percentage')} (${statsFormatChartValue(context.raw, 'count')} adet)`;
-                        }
-                    }
-                }
-            }
-        }
+        options
     });
 }
 
@@ -5772,6 +5806,103 @@ function renderProfessionalCategoryChart(audits) {
     }
 }
 
+function closeScoreDistributionModal() {
+    const modal = document.getElementById('score-distribution-modal');
+    if (modal) modal.remove();
+}
+
+function openScoreDistributionModal(binLabel, audits) {
+    closeScoreDistributionModal();
+
+    const modalDiv = document.createElement('div');
+    modalDiv.id = 'score-distribution-modal';
+    modalDiv.className = 'modal-overlay';
+    modalDiv.style.display = 'flex';
+    modalDiv.style.position = 'fixed';
+    modalDiv.style.top = '0';
+    modalDiv.style.left = '0';
+    modalDiv.style.width = '100vw';
+    modalDiv.style.height = '100vh';
+    modalDiv.style.backgroundColor = 'rgba(15, 23, 42, 0.6)';
+    modalDiv.style.backdropFilter = 'blur(4px)';
+    modalDiv.style.zIndex = '9999';
+    modalDiv.style.alignItems = 'center';
+    modalDiv.style.justifyContent = 'center';
+
+    const sortedAudits = [...audits].sort((a, b) => {
+        const scoreA = getAuditDisplayScore(a);
+        const scoreB = getAuditDisplayScore(b);
+        if (scoreB !== scoreA) return scoreB - scoreA;
+        const dateA = statsAuditDate(a) || new Date(0);
+        const dateB = statsAuditDate(b) || new Date(0);
+        return dateB.getTime() - dateA.getTime();
+    });
+
+    let listHtml = '';
+    if (sortedAudits.length === 0) {
+        listHtml = '<div style="text-align: center; color: var(--text-secondary); padding: 2rem; font-weight: 700;">Bu puan aralığında herhangi bir denetim kaydı bulunmuyor.</div>';
+    } else {
+        listHtml = `
+            <div style="max-height: 400px; overflow-y: auto; padding-right: 4px;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--border-main); font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">
+                            <th style="padding: 0.5rem 0.5rem 0.5rem 0;">İstasyon</th>
+                            <th style="padding: 0.5rem;">Hat</th>
+                            <th style="padding: 0.5rem;">Denetçi</th>
+                            <th style="padding: 0.5rem;">Tarih</th>
+                            <th style="padding: 0.5rem 0 0.5rem 0.5rem; text-align: right;">Puan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${sortedAudits.map(audit => {
+                            const score = getAuditDisplayScore(audit);
+                            const date = statsAuditDate(audit);
+                            const dateStr = date ? date.toLocaleDateString('tr-TR') : '-';
+                            const color = appData.lineColors?.[audit.line] || '#64748b';
+                            const scoreColor = getHeatmapColor(score);
+                            return `
+                                <tr style="border-bottom: 1px solid var(--border-main); font-size: 0.85rem; color: var(--text-primary); cursor: pointer;" onclick="closeScoreDistributionModal(); openAuditModal('${jsArg(audit.id)}')">
+                                    <td style="padding: 0.75rem 0.5rem 0.75rem 0; font-weight: 700; color: var(--primary);">${escapeAttr(audit.station || 'Belirtilmedi')}</td>
+                                    <td style="padding: 0.75rem 0.5rem;">
+                                        <span class="people-line-logo" style="background:${escapeAttr(color)};">${escapeAttr(audit.line || '-')}</span>
+                                    </td>
+                                    <td style="padding: 0.75rem 0.5rem; color: var(--text-secondary);">${escapeAttr(audit.auditorName || '-')}</td>
+                                    <td style="padding: 0.75rem 0.5rem; color: var(--text-secondary);">${escapeAttr(dateStr)}</td>
+                                    <td style="padding: 0.75rem 0 0.75rem 0.5rem; text-align: right; font-weight: 800; color: ${scoreColor};">%${score.toFixed(0)}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    modalDiv.innerHTML = `
+        <div class="modal-content" style="max-width: 650px; width: 90%; padding: 1.5rem; border-radius: 20px; background: var(--bg-card); border: 1px solid var(--border-main); box-shadow: 0 20px 40px rgba(0,0,0,0.3); display: flex; flex-direction: column; gap: 1rem;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-main); padding-bottom: 0.75rem;">
+                <div>
+                    <h3 style="margin: 0; font-size: 1.2rem; font-weight: 800; color: var(--text-primary);">${binLabel} Başarı Bandındaki İstasyonlar</h3>
+                    <p style="margin: 0.2rem 0 0 0; font-size: 0.75rem; color: var(--text-secondary);">Detaylar için istasyon satırına tıklayabilirsiniz.</p>
+                </div>
+                <i class="fas fa-times close-modal" onclick="closeScoreDistributionModal()" style="cursor: pointer; color: var(--text-secondary); font-size: 1.2rem;"></i>
+            </div>
+            <div class="modal-body" style="overflow-y: visible;">
+                ${listHtml}
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modalDiv);
+
+    modalDiv.addEventListener('click', (e) => {
+        if (e.target === modalDiv) {
+            closeScoreDistributionModal();
+        }
+    });
+}
+
 function renderProfessionalScoreDistribution(audits) {
     const bins = [
         { label: '0-49', min: 0, max: 49.999, color: '#e11d48' },
@@ -5789,6 +5920,27 @@ function renderProfessionalScoreDistribution(audits) {
     options.scales.x.title = { display: true, text: 'Puan Aralığı', color: statsChartTheme().dim, font: { size: 10, weight: '800' } };
     options.scales.y.ticks.precision = 0;
     options.scales.y.title = { display: true, text: 'Denetim Adedi', color: statsChartTheme().dim, font: { size: 10, weight: '800' } };
+    
+    // Add click handler to open the modal with station details
+    options.onClick = (event, elements) => {
+        if (elements && elements.length > 0) {
+            const index = elements[0].index;
+            const bin = bins[index];
+            const matchingAudits = audits.filter(audit => {
+                const score = getAuditDisplayScore(audit);
+                return score >= bin.min && score <= bin.max;
+            });
+            openScoreDistributionModal(bin.label, matchingAudits);
+        }
+    };
+
+    // Change cursor style to pointer on hover over bars
+    options.onHover = (event, elements) => {
+        if (event && event.native && event.native.target) {
+            event.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+        }
+    };
+
     statsCreateChart('stats-score-distribution-chart', {
         type: 'bar',
         data: {
@@ -6074,12 +6226,84 @@ function renderProfessionalInsights(audits, ncs, auditLookup, comparison) {
     });
     const lines = [...lineGroups.entries()].map(([line, scores]) => ({ line, average: statsMean(scores), count: scores.length })).filter(row => row.count >= 2);
     const bestLine = [...lines].sort((a, b) => b.average - a.average)[0];
+    
+    // Calculate most improved station
+    let mostImprovedStation = null;
+    const stationDeltas = [];
+    if (comparison && comparison.currentAudits && comparison.previousAudits) {
+        const stationCurrentScores = new Map();
+        comparison.currentAudits.forEach(audit => {
+            const station = audit.station;
+            if (!station) return;
+            if (!stationCurrentScores.has(station)) stationCurrentScores.set(station, []);
+            stationCurrentScores.get(station).push(getAuditDisplayScore(audit));
+        });
+
+        const stationPreviousScores = new Map();
+        comparison.previousAudits.forEach(audit => {
+            const station = audit.station;
+            if (!station) return;
+            if (!stationPreviousScores.has(station)) stationPreviousScores.set(station, []);
+            stationPreviousScores.get(station).push(getAuditDisplayScore(audit));
+        });
+
+        stationCurrentScores.forEach((currScores, station) => {
+            if (stationPreviousScores.has(station)) {
+                const prevScores = stationPreviousScores.get(station);
+                const currAvg = statsMean(currScores);
+                const prevAvg = statsMean(prevScores);
+                const delta = currAvg - prevAvg;
+                if (delta > 0) {
+                    stationDeltas.push({ station, currAvg, prevAvg, delta });
+                }
+            }
+        });
+    }
+
+    // Fallback: If no delta found using 30-day periods, use chronological split of all audits per station
+    if (stationDeltas.length === 0 && audits.length) {
+        const stationAllAudits = new Map();
+        audits.forEach(audit => {
+            const station = audit.station;
+            if (!station) return;
+            if (!stationAllAudits.has(station)) stationAllAudits.set(station, []);
+            stationAllAudits.get(station).push(audit);
+        });
+
+        stationAllAudits.forEach((stationAudits, station) => {
+            if (stationAudits.length >= 2) {
+                const sortedAudits = [...stationAudits].sort((a, b) => {
+                    const dateA = statsAuditDate(a) || new Date(0);
+                    const dateB = statsAuditDate(b) || new Date(0);
+                    return dateA.getTime() - dateB.getTime();
+                });
+                const half = Math.ceil(sortedAudits.length / 2);
+                const olderAudits = sortedAudits.slice(0, half);
+                const newerAudits = sortedAudits.slice(half);
+                if (olderAudits.length && newerAudits.length) {
+                    const prevAvg = statsMean(olderAudits.map(getAuditDisplayScore));
+                    const currAvg = statsMean(newerAudits.map(getAuditDisplayScore));
+                    const delta = currAvg - prevAvg;
+                    if (delta > 0) {
+                        stationDeltas.push({ station, currAvg, prevAvg, delta });
+                    }
+                }
+            }
+        });
+    }
+
+    if (stationDeltas.length) {
+        stationDeltas.sort((a, b) => b.delta - a.delta);
+        mostImprovedStation = stationDeltas[0];
+    }
+
     const categories = getProfessionalCategoryRows(audits);
     const weakestCategory = categories[0];
     const overdue = ncs.filter(isNcOverdue).length;
     const scoreDelta = comparison.currentScore - comparison.previousScore;
     const items = [
         bestLine && { icon: 'fa-trophy', color: '#10b981', title: 'En güçlü hat', text: `${bestLine.line}, ${bestLine.count} denetimde ${statsFormatChartValue(bestLine.average, 'percentage')} ortalama puana sahip.` },
+        mostImprovedStation && { icon: 'fa-circle-arrow-up', color: '#10b981', title: 'En çok yükselen istasyon', text: `${mostImprovedStation.station} istasyonu, ortalama performansını önceki döneme göre ${mostImprovedStation.delta.toFixed(1)} puan artırarak %${mostImprovedStation.currAvg.toFixed(0)} seviyesine ulaştırdı.` },
         weakestCategory && { icon: 'fa-magnifying-glass-chart', color: '#f97316', title: 'Gelişim önceliği', text: `${weakestCategory.category} kategorisi ${statsFormatChartValue(weakestCategory.average, 'percentage')} ile en düşük cevap bazlı ortalamaya sahip.` },
         { icon: 'fa-arrow-trend-up', color: scoreDelta >= 0 ? '#10b981' : '#e11d48', title: 'Dönemsel yön', text: `Son 30 günlük ortalama önceki döneme göre ${scoreDelta >= 0 ? 'yükseldi' : 'geriledi'} (${Math.abs(scoreDelta).toFixed(1)} puan).` },
         { icon: 'fa-clock-rotate-left', color: overdue ? '#e11d48' : '#10b981', title: 'Gecikme sinyali', text: overdue ? `${overdue} aksiyon gecikmiş durumda; öncelikli takip gerektiriyor.` : 'Seçili kapsamda gecikmiş aksiyon bulunmuyor.' }
@@ -6808,8 +7032,20 @@ function renderAllAuditsTable() {
         audits = audits.filter(a => filterStatuses.includes(getAuditStatusKey(a)));
     }
 
-    sortRecordsByDate(audits, auditDateSortDirection, getAuditListDate);
-    updateDateSortHeader('audit-date-sort-header', 'audit-date-sort-icon', auditDateSortDirection);
+    if (auditScoreSortDirection) {
+        audits.sort((a, b) => {
+            const scoreA = getAuditDisplayScore(a);
+            const scoreB = getAuditDisplayScore(b);
+            return auditScoreSortDirection === 'desc' ? scoreB - scoreA : scoreA - scoreB;
+        });
+        updateDateSortHeader('audit-score-sort-header', 'audit-score-sort-icon', auditScoreSortDirection);
+        resetSortHeader('audit-date-sort-header', 'audit-date-sort-icon');
+    } else {
+        if (!auditDateSortDirection) auditDateSortDirection = 'desc';
+        sortRecordsByDate(audits, auditDateSortDirection, getAuditListDate);
+        updateDateSortHeader('audit-date-sort-header', 'audit-date-sort-icon', auditDateSortDirection);
+        resetSortHeader('audit-score-sort-header', 'audit-score-sort-icon');
+    }
 
     const totalPages = Math.ceil(audits.length / ITEMS_PER_PAGE);
     if (auditsCurrentPage > totalPages) {
@@ -11316,11 +11552,8 @@ function renderPeople() {
         return `
             <div class="user-card">
                 <div class="people-main">
-                    <div class="people-identity-row">
-                        <h3>${escapeAttr(username)}</h3>
-                        <div class="role">${escapeAttr(authorityLabel)}</div>
-                    </div>
-                    <p>${escapeAttr(name)}${user.email ? ` · ${escapeAttr(user.email)}` : ''}</p>
+                    <h3>${escapeAttr(name || username)}</h3>
+                    <div class="role">${escapeAttr(authorityLabel)}</div>
                 </div>
                 <div class="people-lines">${lineLogos}</div>
                 <div class="people-actions">

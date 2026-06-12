@@ -854,9 +854,9 @@ td {
 }
 
 .people-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 0.24rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
     margin-top: 0.72rem;
 }
 
@@ -919,40 +919,36 @@ td {
         linear-gradient(135deg, color-mix(in srgb, var(--bg-card) 92%, white 8%), var(--bg-card));
     border: 1px solid color-mix(in srgb, var(--border-main) 86%, transparent 14%);
     border-radius: 12px;
-    padding: 0.34rem 0.46rem;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(105px, 190px) auto;
-    align-items: center;
+    padding: 0.75rem 0.85rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
     text-align: left;
-    gap: 0.45rem;
+    gap: 0.6rem;
     transition: var(--transition);
-    min-height: 48px;
+    min-height: 85px;
     position: relative;
     overflow: visible;
 }
 
 .user-card:hover {
-    border-color: color-mix(in srgb, var(--primary) 38%, var(--border-main));
-    transform: translateY(-1px);
+    border-color: var(--primary);
+    transform: translateY(-2px);
     box-shadow: 0 10px 22px rgba(15, 23, 42, 0.09);
 }
 
 .user-card h3 {
     font-size: 0.82rem;
     margin: 0;
-    line-height: 1.15;
+    line-height: 1.25;
     color: var(--text-primary);
+    white-space: normal;
+    word-break: break-word;
 }
 
 .people-main {
     min-width: 0;
-}
-
-.people-identity-row {
-    display: flex;
-    align-items: center;
-    gap: 0.34rem;
-    min-width: 0;
+    padding-right: 35px; /* Spacing for vertical absolute action buttons */
 }
 
 .people-main p {
@@ -974,10 +970,9 @@ td {
     color: var(--primary);
     font-size: 0.58rem;
     font-weight: 900;
-    margin-top: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    margin-top: 0.3rem;
+    white-space: normal;
+    word-break: break-word;
 }
 
 .user-stats {
@@ -1019,7 +1014,7 @@ td {
     gap: 0.22rem;
     align-items: center;
     min-height: 20px;
-    justify-content: flex-end;
+    justify-content: flex-start;
 }
 
 .people-line-logo {
@@ -1069,6 +1064,20 @@ td {
     justify-content: flex-end;
     gap: 0.24rem;
     flex: 0 0 auto;
+}
+
+.user-card .people-actions {
+    position: absolute;
+    top: 0.65rem;
+    right: 0.65rem;
+    opacity: 0.4;
+    transition: opacity 0.2s ease;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.user-card:hover .people-actions {
+    opacity: 1;
 }
 
 .people-actions .btn-outline {
@@ -1126,24 +1135,6 @@ td {
 
     .people-filter-panel .btn-secondary {
         grid-column: 1 / -1;
-    }
-
-    .user-card {
-        flex-wrap: wrap;
-        align-items: flex-start;
-    }
-
-    .people-main,
-    .people-lines {
-        flex-basis: 100%;
-    }
-
-    .user-stats {
-        flex: 1 1 170px;
-    }
-
-    .people-actions {
-        margin-left: auto;
     }
 }
 
@@ -4407,6 +4398,7 @@ body:not(.light-mode) #audits-view {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
 }
 
 #all-audits-table .audit-user-cell {
@@ -10345,6 +10337,7 @@ body.light-mode .nc-detail-section-heading p {
     line-height: 1.5;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
+    line-clamp: 3;
 }
 
 .announcement-scope {

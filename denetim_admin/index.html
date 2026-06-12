@@ -818,8 +818,8 @@
                     </article>
                     <article class="stats-kpi-card" style="--kpi-color:#f59e0b;--kpi-rgb:245,158,11;">
                         <span class="stats-kpi-icon"><i class="fas fa-wave-square"></i></span>
-                        <div><span class="stats-kpi-label">Puan Oynaklığı</span><strong id="stats-kpi-volatility">0</strong></div>
-                        <small>Standart sapma</small>
+                        <div><span class="stats-kpi-label">Puan Değişkenliği</span><strong id="stats-kpi-volatility">0</strong></div>
+                        <small>Düşük sapma istikrarlı performansı gösterir</small>
                     </article>
                 </section>
 
@@ -1072,7 +1072,7 @@
                                 <tr>
                                     <th style="width:30px;"><input type="checkbox" id="select-all-audits" onclick="toggleSelectAllAudits(this)" title="Tümünü Seç"></th>
                                     <th style="width:52px;">ID</th>
-                                    <th id="audit-date-sort-header" aria-sort="descending" style="width:72px;">
+                                    <th id="audit-date-sort-header" aria-sort="descending" style="width:95px;">
                                         <button type="button" class="table-date-sort-button" onclick="toggleAuditDateSort()" title="En yeni kayıtlar üstte. Eski kayıtları üste almak için tıklayın.">
                                             Tarih <i id="audit-date-sort-icon" class="fas fa-arrow-down"></i>
                                         </button>
@@ -1082,7 +1082,11 @@
                                     <th style="width:42px; text-align:center;">Hat</th>
                                     <th style="width:auto;">İstasyon</th>
                                     <th style="width:100px;">Kullanıcı</th>
-                                    <th style="width:54px;">Puan</th>
+                                    <th id="audit-score-sort-header" style="width:54px;">
+                                        <button type="button" class="table-date-sort-button" onclick="toggleAuditScoreSort()" title="Puana göre sıralamak için tıklayın.">
+                                            Puan <i id="audit-score-sort-icon" class="fas fa-sort" style="opacity:0.4;"></i>
+                                        </button>
+                                    </th>
                                     <th style="width:82px;">Durum</th>
                                     <th style="width:64px; text-align:center;">İşlem</th>
                                 </tr>
