@@ -1557,7 +1557,7 @@ function renderNfcList() {
                 html += `
                     <tr style="border-bottom: 1px solid var(--border-main); transition: background 0.2s;">
                         <td style="padding: 12px 16px;">
-                            <span class="profile-line-logo" style="background-color: ${color}; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 0.8rem;">${escapeAttr(line)}</span>
+                            <span class="profile-line-logo" style="background-color: ${color}; color: white; font-weight: bold; font-size: 0.65rem; width: 22px; height: 22px; border-radius: 50%;">${escapeAttr(line)}</span>
                         </td>
                         <td style="padding: 12px 16px; font-weight: 600; color: var(--text-primary);">${escapeAttr(station)}</td>
                         <td style="padding: 12px 16px; font-family: monospace; font-size: 0.9rem; color: var(--text-primary); font-weight: 700;">${nfcUid ? escapeAttr(nfcUid) : '<span style="color: var(--text-dim); font-weight: normal; font-style: italic;">Atanmamış</span>'}</td>
