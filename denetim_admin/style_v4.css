@@ -2213,6 +2213,7 @@ input:checked + .slider:before {
 }
 
 .audit-types-panel .section-header {
+    position: static !important;
     background: transparent;
     padding-top: 0;
     padding-bottom: 0.35rem;
@@ -5004,6 +5005,7 @@ body:not(.light-mode) .panel-page-description {
 }
 
 .audit-types-panel .section-header {
+    position: static !important;
     align-items: flex-end;
     gap: 1rem;
     margin-bottom: 0.9rem;

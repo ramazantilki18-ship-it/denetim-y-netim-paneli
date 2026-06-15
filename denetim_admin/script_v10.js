@@ -1829,29 +1829,59 @@ function userMatchesLineScope(user, line) {
     return lines.includes(line);
 }
 
+function isAuditTypeActive(typeId, typeName) {
+    if (!appData.auditTypes) return true;
+    const type = appData.auditTypes.find(t => 
+        (typeId && String(t.id) === String(typeId)) || 
+        (!typeId && typeName && (String(t.title) === String(typeName) || String(t.name) === String(typeName)))
+    );
+    if (!type) return true;
+    return type.isActive !== false;
+}
+
 function getFilteredAudits() {
     if (!currentUser) return [];
-    if (hasGlobalScope(currentUser)) return appData.audits;
+
+    let audits = (appData.audits || []).filter(audit => {
+        const typeId = audit.auditTypeId;
+        const typeName = audit.auditType || audit.type;
+        return isAuditTypeActive(typeId, typeName);
+    });
+
+    if (hasGlobalScope(currentUser)) return audits;
 
     const roleId = inferRbacRoleId(currentUser);
     if (roleId === 'Field_Auditor') {
         const auditorKey = currentUser.username || currentUser.name;
-        return appData.audits.filter(audit =>
+        return audits.filter(audit =>
             audit.auditorName === auditorKey &&
             userMatchesLineScope(currentUser, audit.line)
         );
     }
 
-    return appData.audits.filter(audit => userMatchesLineScope(currentUser, audit.line));
+    return audits.filter(audit => userMatchesLineScope(currentUser, audit.line));
 }
 
 function getFilteredNCs() {
     if (!currentUser) return [];
 
-    return getActiveNonconformities().filter(nc => {
+    let ncs = getActiveNonconformities().filter(nc => {
+        const audit = (appData.audits || []).find(a => String(a.id) === String(nc.auditId));
+        if (audit) {
+            const typeId = audit.auditTypeId;
+            const typeName = audit.auditType || audit.type;
+            if (!isAuditTypeActive(typeId, typeName)) return false;
+        } else {
+            const typeId = nc.auditTypeId;
+            const typeName = nc.auditType || nc.type;
+            if ((typeId || typeName) && !isAuditTypeActive(typeId, typeName)) return false;
+        }
+        return true;
+    });
+
+    return ncs.filter(nc => {
         const audit = getAccessibleAuditById(nc.auditId) || {};
         const ncLine = audit.line || nc.line || 'N/A';
-        const ncStation = audit.station || nc.station || 'N/A';
 
         if (hasGlobalScope(currentUser)) return true;
 
@@ -5199,6 +5229,7 @@ function statsChartTheme() {
         blue: light ? '#1d4ed8' : '#60a5fa',
         cyan: light ? '#0e7490' : '#22d3ee',
         orange: light ? '#c2410c' : '#fb923c',
+        red: light ? '#dc2626' : '#f87171',
         labelBg: light ? 'rgba(15,23,42,0.96)' : 'rgba(2,6,23,0.94)',
         labelBorder: light ? '#475569' : '#64748b',
         tooltipBg: light ? 'rgba(15,23,42,0.97)' : 'rgba(2,6,23,0.97)'
@@ -5633,8 +5664,8 @@ function renderProfessionalLinePerformance(audits, ncs, auditLookup) {
         position: 'top',
         beginAtZero: true,
         grid: { display: false },
-        title: { display: true, text: 'Uygunsuzluk / Denetim', color: statsChartTheme().orange, font: { size: 10, weight: '800' } },
-        ticks: { color: statsChartTheme().orange, font: { size: 10, weight: '800' } }
+        title: { display: true, text: 'Uygunsuzluk / Denetim', color: statsChartTheme().red, font: { size: 10, weight: '800' } },
+        ticks: { color: statsChartTheme().red, font: { size: 10, weight: '800' } }
     };
     options.scales.y.grid.display = false;
     options.scales.y.ticks = { display: false };
@@ -5649,7 +5680,7 @@ function renderProfessionalLinePerformance(audits, ncs, auditLookup) {
             labels: rows.map(row => row.line),
             datasets: [
                 { label: 'Ortalama Puan', data: rows.map(row => row.average), xAxisID: 'x', statsValueType: 'percentage', statsLabelInside: true, statsLabelAnchor: 'end', statsLabelAlign: 'start', backgroundColor: rows.map(row => appData.lineColors[row.line] || '#64748b'), borderRadius: 7, barThickness: 15 },
-                { type: 'line', label: 'Uygunsuzluk / Denetim', data: rows.map(row => row.density), xAxisID: 'x1', statsValueType: 'decimal', statsShowZero: true, statsLabelAlign: 'top', statsLabelOffset: 5, borderColor: statsChartTheme().orange, backgroundColor: statsChartTheme().orange, pointRadius: 4, pointHoverRadius: 5, borderWidth: 2, tension: 0.25 }
+                { type: 'line', label: 'Uygunsuzluk / Denetim', data: rows.map(row => row.density), xAxisID: 'x1', statsValueType: 'decimal', statsShowZero: true, statsLabelAlign: 'top', statsLabelOffset: 5, borderColor: statsChartTheme().red, backgroundColor: statsChartTheme().red, pointRadius: 4, pointHoverRadius: 5, borderWidth: 2, tension: 0.25 }
             ]
         },
         options
@@ -12026,6 +12057,13 @@ function ensureAuditTypeModal() {
                     </div>
                     <label class="settings-toggle-row" style="margin:0 0 1rem 0;padding:0.85rem 1rem;border:1px solid var(--border-main);border-radius:12px;background:var(--bg-input);display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
                         <div style="flex:1;margin:0;user-select:none;">
+                            <strong style="display:block;color:var(--text-primary);font-size:.9rem;">Aktif</strong>
+                            <small style="display:block;color:var(--text-secondary);font-weight:700;margin-top:.25rem;">Bu denetim tipini aktif veya pasif duruma getirir.</small>
+                        </div>
+                        <div class="switch"><input type="checkbox" id="audit-type-is-active"><span class="slider"></span></div>
+                    </label>
+                    <label class="settings-toggle-row" style="margin:0 0 1rem 0;padding:0.85rem 1rem;border:1px solid var(--border-main);border-radius:12px;background:var(--bg-input);display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
+                        <div style="flex:1;margin:0;user-select:none;">
                             <strong style="display:block;color:var(--text-primary);font-size:.9rem;">Kanıt Fotoğrafı Zorunlu</strong>
                             <small style="display:block;color:var(--text-secondary);font-weight:700;margin-top:.25rem;">Aktifse seçtiğiniz cevaplarda fotoğraf istenir.</small>
                         </div>
@@ -12057,6 +12095,9 @@ function openAuditTypeModal() {
     document.getElementById('audit-type-edit-id').value = '';
     document.getElementById('audit-type-title-input').value = '';
     document.getElementById('audit-type-scale-select').value = 'scaleAverage';
+    if (document.getElementById('audit-type-is-active')) {
+        document.getElementById('audit-type-is-active').checked = true;
+    }
     document.getElementById('audit-type-evidence-required').checked = true;
     document.getElementById('audit-type-evidence-required').disabled = false;
     document.getElementById('audit-type-comment-required').checked = true;
@@ -12073,6 +12114,9 @@ function openEditAuditTypeModal(id) {
     document.getElementById('audit-type-edit-id').value = type.id;
     document.getElementById('audit-type-title-input').value = type.title || '';
     document.getElementById('audit-type-scale-select').value = type.scoringStrategy || 'scaleAverage';
+    if (document.getElementById('audit-type-is-active')) {
+        document.getElementById('audit-type-is-active').checked = type.isActive !== false;
+    }
     document.getElementById('audit-type-evidence-required').checked = Boolean(type.evidenceRequired);
     document.getElementById('audit-type-evidence-required').disabled = false;
     document.getElementById('audit-type-comment-required').checked = Boolean(type.commentRequired);
@@ -12154,6 +12198,9 @@ async function saveAuditTypeFromModal() {
         showToast('Kanıt fotoğrafı için en az bir cevap seçiniz.');
         return;
     }
+    const isActiveInput = document.getElementById('audit-type-is-active');
+    const isActive = isActiveInput ? Boolean(isActiveInput.checked) : true;
+
     const payload = normalizeQuestionBankType({
         id,
         title,
@@ -12166,7 +12213,7 @@ async function saveAuditTypeFromModal() {
         evidenceRequired,
         evidenceRule: evidenceRequired ? 'selectedAnswers' : 'none',
         evidenceRequiredValues,
-        isActive: true,
+        isActive,
         isDeleted: false,
         orderIndex: editId ? (getQuestionBankAuditType(id).orderIndex || 0) : appData.auditTypes.length,
         updatedAt: new Date().toISOString()
@@ -12205,6 +12252,20 @@ async function deleteAuditType(id) {
     appData.selectedAuditTypeId = appData.auditTypes[0]?.id || QUESTION_BANK_DEFAULT_AUDIT_TYPE_ID;
     renderQuestionGroups();
     showToast('Denetim tipi silindi.');
+}
+
+async function toggleAuditTypeStatus(typeId, currentActive) {
+    try {
+        const nextActive = !currentActive;
+        await db.collection('auditTypes').doc(typeId).set({
+            isActive: nextActive,
+            updatedAt: new Date().toISOString()
+        }, { merge: true });
+        showToast(`Denetim tipi durumu ${nextActive ? 'Aktif' : 'Pasif'} olarak güncellendi.`);
+    } catch (err) {
+        console.error('Toggle audit type status error:', err);
+        showToast('Hata oluştu!');
+    }
 }
 
 function renderQuestions(groupId) {
@@ -13162,7 +13223,7 @@ function renderAuditTypes() {
     wrap.className = 'audit-types-panel';
     wrap.style.marginBottom = '1.5rem';
     wrap.innerHTML = `
-        <div class="section-header" style="margin-bottom: 0.65rem; background: transparent !important; border: none; box-shadow: none; padding: 0;">
+        <div class="section-header" style="position: static !important; margin-bottom: 0.65rem; background: transparent !important; border: none; box-shadow: none; padding: 0;">
             <div>
                 <h2 style="margin:0; font-size:1.4rem; font-weight:900;">Denetim Tipleri</h2>
                 <p class="audit-types-subtitle" style="margin: 0.2rem 0 0 0; font-size:0.78rem; color:var(--text-secondary);">Kategori ve sorular seçili denetim tipine göre listelenir.</p>
@@ -13187,15 +13248,18 @@ function renderAuditTypes() {
                 const titleColor = isSelected ? '#ffffff !important' : 'var(--text-primary)';
                 const subColor = isSelected ? 'rgba(255, 255, 255, 0.7) !important' : 'var(--text-secondary)';
                 const countColor = isSelected ? '#ffffff !important' : typeColor;
+                const isActive = type.isActive !== false;
+                const opacityStyle = isActive ? '' : 'opacity: 0.65;';
 
                 return `
-                    <div class="audit-type-chip ${isSelected ? 'active' : ''}" onclick="selectAuditType('${jsArg(type.id)}')" style="--audit-type-color:${typeColor}; width:240px; height:88px; padding:0.75rem 0.9rem; border-radius:14px; display:inline-flex; align-items:center; justify-content:space-between; border:1px solid ${isSelected ? typeColor : 'var(--border-main)'}; border-left:4px solid ${typeColor} !important; ${bgStyle} box-shadow:${isSelected ? '0 12px 28px ' + typeColor + '22' : 'none'}; transition:all 0.22s cubic-bezier(0.4, 0, 0.2, 1); cursor:pointer; flex:0 0 auto; box-sizing:border-box;">
+                    <div class="audit-type-chip ${isSelected ? 'active' : ''}" onclick="selectAuditType('${jsArg(type.id)}')" style="--audit-type-color:${typeColor}; width:240px; height:88px; padding:0.75rem 0.9rem; border-radius:14px; display:inline-flex; align-items:center; justify-content:space-between; border:1px solid ${isSelected ? typeColor : 'var(--border-main)'}; border-left:4px solid ${typeColor} !important; ${bgStyle} box-shadow:${isSelected ? '0 12px 28px ' + typeColor + '22' : 'none'}; transition:all 0.22s cubic-bezier(0.4, 0, 0.2, 1); cursor:pointer; flex:0 0 auto; box-sizing:border-box; ${opacityStyle}">
                         <div style="display:flex; flex-direction:column; gap:3px; min-width:0; flex:1; text-align:left;">
-                            <span class="audit-type-chip-title" style="font-size:0.88rem; font-weight:900; color:${titleColor}; word-wrap:break-word; white-space:normal; margin:0; line-height:1.25;">${escapeAttr(type.title)} ${type.isActive === false ? '(Pasif)' : ''}</span>
+                            <span class="audit-type-chip-title" style="font-size:0.88rem; font-weight:900; color:${titleColor}; word-wrap:break-word; white-space:normal; margin:0; line-height:1.25;">${escapeAttr(type.title)} ${isActive ? '' : '(Pasif)'}</span>
                             <span style="font-size:0.7rem; font-weight:700; color:${subColor}; word-wrap:break-word; white-space:normal; line-height:1.2;">${escapeAttr(getAuditScaleLabel(type.scoringStrategy))}</span>
                             <span style="font-size:0.68rem; font-weight:800; color:${countColor}; line-height:1.2;">${questionCount} Soru</span>
                         </div>
                         <div style="display:flex; gap:6px; flex-shrink:0; align-items:center; margin-left:0.5rem;">
+                            <button class="audit-type-chip-toggle" style="width:24px; height:24px; border-radius:6px; background:${isSelected ? 'rgba(255,255,255,0.15)' : (isActive ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)')}; color:${isSelected ? '#ffffff' : (isActive ? '#10b981' : '#ef4444')}; border:none; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; transition:0.2s; padding:0;" onclick="event.stopPropagation(); toggleAuditTypeStatus('${jsArg(type.id)}', ${isActive})" title="${isActive ? 'Pasif Yap' : 'Aktif Yap'}"><i class="${isActive ? 'fas fa-eye' : 'fas fa-eye-slash'}" style="font-size:0.72rem;"></i></button>
                             <button class="audit-type-chip-edit" style="width:24px; height:24px; border-radius:6px; background:${isSelected ? 'rgba(255,255,255,0.15)' : 'color-mix(in srgb, ' + typeColor + ' 12%, transparent)'}; color:${isSelected ? '#ffffff' : typeColor}; border:none; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; transition:0.2s; padding:0;" onclick="event.stopPropagation(); openEditAuditTypeModal('${jsArg(type.id)}')" title="Düzenle"><i class="fas fa-pen" style="font-size:0.72rem;"></i></button>
                             <button class="audit-type-chip-delete" style="width:24px; height:24px; border-radius:6px; background:${isSelected ? 'rgba(255,255,255,0.15)' : 'rgba(239,68,68,0.1)'}; color:${isSelected ? '#ffffff' : '#ef4444'}; border:none; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; transition:0.2s; padding:0;" onclick="event.stopPropagation(); deleteAuditType('${jsArg(type.id)}')" title="Sil"><i class="fas fa-trash-alt" style="font-size:0.72rem;"></i></button>
                         </div>
