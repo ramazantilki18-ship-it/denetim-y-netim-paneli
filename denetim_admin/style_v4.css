@@ -1924,6 +1924,17 @@ input:checked + .slider:before {
     opacity: 1;
 }
 
+.toast.warning {
+    background: #ea580c;
+    box-shadow: 0 10px 30px rgba(234, 88, 12, 0.3);
+}
+
+.toast.error {
+    background: #dc2626;
+    box-shadow: 0 10px 30px rgba(220, 38, 38, 0.3);
+}
+
+
 .line-logo {
     display: inline-flex;
     align-items: center;
@@ -11795,3 +11806,12 @@ body.light-mode .station-network-name small {
     }
 }
 
+.people-table tr {
+    transition: background-color 0.15s ease;
+}
+.people-table tr:hover {
+    background: rgba(255, 255, 255, 0.02) !important;
+}
+body.light-mode .people-table tr:hover {
+    background: rgba(15, 23, 42, 0.02) !important;
+}

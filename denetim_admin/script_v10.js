@@ -158,7 +158,8 @@ const RBAC_PERMISSION_MODULES = [
     { id: 'stats_view', label: 'İstatistiksel Analiz' },
     { id: 'export_data', label: 'Excel / PDF Dışa Aktar' },
     { id: 'backup_data', label: 'Veri Yedeği (JSON)' },
-    { id: 'settings', label: 'Sistem Ayarları' }
+    { id: 'settings', label: 'Sistem Ayarları' },
+    { id: 'view_logs', label: 'Sistem Loglarını Görüntüleme' }
 ];
 
 const LEGACY_ROLE_KEY_TO_RBAC = {
@@ -198,27 +199,27 @@ const DEFAULT_RBAC_PERMISSIONS = {
     Executive_Viewer_Global: {
         user_add_edit: false, user_delete: false, perm_mgmt: false, question_mgmt: false, line_mgmt: false,
         planning: false, announcement_mgmt: false, audit_start: false, nc_close: false, nc_approve: false, nc_share: true,
-        dashboard_view: true, stats_view: true, export_data: true, backup_data: false, settings: false
+        dashboard_view: true, stats_view: true, export_data: true, backup_data: false, settings: false, view_logs: true
     },
     Executive_Viewer_Restricted: {
         user_add_edit: false, user_delete: false, perm_mgmt: false, question_mgmt: false, line_mgmt: false,
         planning: false, announcement_mgmt: false, audit_start: false, nc_close: false, nc_approve: false, nc_share: false,
-        dashboard_view: true, stats_view: true, export_data: true, backup_data: false, settings: false
+        dashboard_view: true, stats_view: true, export_data: true, backup_data: false, settings: false, view_logs: false
     },
     Approver: {
         user_add_edit: false, user_delete: false, perm_mgmt: false, question_mgmt: false, line_mgmt: false,
         planning: true, announcement_mgmt: false, audit_start: true, nc_close: true, nc_approve: true, nc_share: true,
-        dashboard_view: true, stats_view: true, export_data: true, backup_data: false, settings: false
+        dashboard_view: true, stats_view: true, export_data: true, backup_data: false, settings: false, view_logs: false
     },
     Field_Auditor_Action_Owner: {
         user_add_edit: false, user_delete: false, perm_mgmt: false, question_mgmt: false, line_mgmt: false,
         planning: true, announcement_mgmt: false, audit_start: true, nc_close: true, nc_approve: false, nc_share: true,
-        dashboard_view: true, stats_view: true, export_data: true, backup_data: false, settings: false
+        dashboard_view: true, stats_view: true, export_data: true, backup_data: false, settings: false, view_logs: false
     },
     Field_Auditor: {
         user_add_edit: false, user_delete: false, perm_mgmt: false, question_mgmt: false, line_mgmt: false,
         planning: false, announcement_mgmt: false, audit_start: true, nc_close: false, nc_approve: false, nc_share: true,
-        dashboard_view: true, stats_view: false, export_data: false, backup_data: false, settings: false
+        dashboard_view: true, stats_view: false, export_data: false, backup_data: false, settings: false, view_logs: false
     }
 };
 
@@ -325,6 +326,7 @@ let appData = {
     questions: [],
     announcements: [],
     plans: [],
+    systemLogs: [],
     selectedGroupId: null,
     currentPlanTab: 'all',
     collapsedUsers: {},
@@ -802,6 +804,11 @@ function initRealtimeSync() {
     pushDebug('Inside initRealtimeSync');
     console.log('Real-time sync başlatıldı...');
 
+    // Automatically clean up old duplicate 'audit-type-5s' document if it exists in Firestore
+    db.collection('auditTypes').doc('audit-type-5s').delete()
+      .then(() => console.log('Successfully deleted old duplicate audit-type-5s document'))
+      .catch(err => console.warn('Failed to delete old duplicate audit-type-5s document:', err));
+
     // Audits Listener
     db.collection('audits').orderBy('date', 'desc').onSnapshot(snapshot => {
         appData.audits = snapshot.docs.map(doc => normalizeAuditScore({ id: doc.id, ...doc.data() }));
@@ -840,6 +847,8 @@ function initRealtimeSync() {
         renderSettings();
     });
 
+
+
     // Listen for Lines/Stations (Firebase Sync)
     db.collection('system_config').doc('lines_stations').onSnapshot(doc => {
         if (doc.exists) {
@@ -849,6 +858,7 @@ function initRealtimeSync() {
             if (data.stations) appData.stations = data.stations;
             if (data.stationNumbers) appData.stationNumbers = data.stationNumbers;
             if (data.stationNfcs) appData.stationNfcs = data.stationNfcs;
+            if (data.stationLocations) appData.stationLocations = data.stationLocations;
             
             runM1Migration();
         } else {
@@ -862,6 +872,8 @@ function initRealtimeSync() {
         populateStatsFilters();
         populateNfcLineFilter();
         renderNfcList();
+        populateLocationLineFilter();
+        renderLocationList();
         if (document.getElementById('user-modal')?.style.display === 'flex') {
             populatePersonnelPickers();
         }
@@ -915,25 +927,33 @@ function initRealtimeSync() {
     }, err => console.error('Announcements Sync Error:', err));
 }
 
+function mapScore6ToPercent(score) {
+    const s = Number(score);
+    if (s === 0) return 0;
+    if (s === 1) return 25;
+    if (s === 2) return 50;
+    if (s === 3) return 80;
+    if (s === 4) return 99;
+    if (s === 5) return 100;
+    return 0;
+}
+
+function findCategoryByNameOrId(audit, categoryName) {
+    const typeId = audit.auditTypeId || appData.selectedAuditTypeId;
+    const type = (appData.auditTypes || []).find(t => String(t.id) === String(typeId));
+    if (!type || !type.categories) return null;
+    return type.categories.find(c => String(c.id) === String(categoryName) || String(c.name).toUpperCase() === String(categoryName).toUpperCase());
+}
+
 function normalizeAuditScore(audit) {
     const answers = Array.isArray(audit.answers) ? audit.answers : [];
     if (answers.length === 0) return audit;
 
-    let totalScore = 0;
-    let maxPossibleScore = 0;
-
-    answers.forEach(ans => {
-        const isBool = isBooleanAuditAnswer(audit, ans);
-        const scored = scoreAuditAnswer(audit, ans);
-        totalScore += scored.rawScore;
-        maxPossibleScore += isBool ? 1 : 5;
-    });
-
-    if (maxPossibleScore === 0) return audit;
+    const metrics = buildAuditDetailMetrics(audit);
 
     return {
         ...audit,
-        score: (totalScore / maxPossibleScore) * 100
+        score: metrics.categoryAveragePercent
     };
 }
 
@@ -1325,12 +1345,14 @@ const VIEW_TITLES = {
     'permissions-view': 'Yetki Yönetimi',
     'lines-view': 'Hat ve İstasyon Yönetimi',
     'nfc-view': 'NFC Tanımları',
+    'location-view': 'Konum Tanımları',
     'questions-view': 'Soru Bankası Yönetimi',
     'planning-view': 'Görev Atama ve Planlama',
     'announcements-view': 'Duyuru Yönetimi',
     'feedbacks-view': 'Geri Bildirimler',
     'reports-view': 'Raporlar & Analizler',
     'settings-view': 'Sistem Ayarları',
+    'logs-view': 'Sistem Logları',
 };
 
 const VIEW_DESCRIPTIONS = {
@@ -1342,12 +1364,14 @@ const VIEW_DESCRIPTIONS = {
     'permissions-view': 'Altı sistem rolü için modül erişim matrisini yönetin (RBAC).',
     'lines-view': 'Hat ve istasyon tanımlarını kurumsal ağ yapısında yönetin.',
     'nfc-view': 'İstasyonların NFC kart UID tanımlarını listeleyin ve dışa aktarın.',
+    'location-view': 'İstasyonların coğrafi koordinat ve doğrulama yarıçap tanımlarını listeleyin ve düzenleyin.',
     'questions-view': 'Denetim tipleri, kategoriler ve soru setlerini yönetin.',
     'planning-view': 'Planlı görevleri ve denetim atamalarını oluşturun.',
     'announcements-view': 'Mobil uygulamada hat bazlı görünecek duyuruları planlayın.',
     'feedbacks-view': 'Uygulamadan iletilen geri bildirimleri ve hata kayıtlarını inceleyin.',
     'reports-view': 'Kurumsal rapor çıktıları ve dışa aktarma işlemleri.',
     'settings-view': 'Sistem davranışı, rapor ve bildirim ayarları.',
+    'logs-view': 'Sistem genelinde yapılan işlemlerin geçmiş kayıtları ve denetim logları.',
 };
 
 function updateActivePageTitle(viewId) {
@@ -1364,8 +1388,10 @@ const NAV_VIEW_PERMISSIONS = {
     'questions-view': 'question_mgmt',
     'lines-view': 'line_mgmt',
     'nfc-view': 'line_mgmt',
+    'location-view': 'line_mgmt',
     'planning-view': 'planning',
     'announcements-view': 'announcement_mgmt',
+    'logs-view': 'view_logs',
     'settings-view': 'settings'
 };
 
@@ -1382,8 +1408,10 @@ function updatePermissionGatedUI() {
     const fieldAuditorOnly = isFieldAuditor();
     const feedbackNavItem = document.getElementById('feedbacks-nav-item');
     const refreshNavItem = document.getElementById('refresh-nav-item');
+    const logsNavItem = document.getElementById('logs-nav-item');
     if (feedbackNavItem) feedbackNavItem.style.display = superAdminOnlyVisible ? '' : 'none';
     if (refreshNavItem) refreshNavItem.style.display = superAdminOnlyVisible ? '' : 'none';
+    if (logsNavItem) logsNavItem.style.display = hasPermission('view_logs') ? '' : 'none';
     const clearAllPlansBtn = document.getElementById('clear-all-plans-btn');
     if (clearAllPlansBtn) {
         clearAllPlansBtn.innerHTML = superAdminOnlyVisible
@@ -1405,7 +1433,7 @@ function updatePermissionGatedUI() {
     });
 
     // YÖNETİM başlığı ve ayırıcı çizginin durumunu güncelle
-    const mgmtViews = ['people-view', 'questions-view', 'lines-view', 'nfc-view', 'planning-view', 'announcements-view', 'permissions-view'];
+    const mgmtViews = ['people-view', 'questions-view', 'lines-view', 'nfc-view', 'location-view', 'planning-view', 'announcements-view', 'logs-view', 'permissions-view'];
     const hasAnyMgmtPermission = !fieldAuditorOnly && mgmtViews.some(viewId => {
         const perm = NAV_VIEW_PERMISSIONS[viewId];
         return perm ? hasPermission(perm) : false;
@@ -1468,6 +1496,9 @@ function switchView(viewId) {
         if (viewId === 'feedbacks-view') {
             loadFeedbacks();
         }
+        if (viewId === 'logs-view') {
+            renderLogsList();
+        }
     } else {
         console.warn('View not found:', viewId);
     }
@@ -1500,6 +1531,10 @@ function switchView(viewId) {
     if (viewId === 'nfc-view') {
         populateNfcLineFilter();
         renderNfcList();
+    }
+    if (viewId === 'location-view') {
+        populateLocationLineFilter();
+        renderLocationList();
     }
     if (viewId === 'nc-management-view') {
         initNCFilters();
@@ -1577,6 +1612,65 @@ function renderNfcList() {
     tableBody.innerHTML = html;
     if (emptyState) {
         emptyState.style.display = matchCount === 0 ? 'flex' : 'none';
+    }
+}
+
+function downloadNfcTemplate() {
+    try {
+        if (typeof XLSX === 'undefined') {
+            showToast('Excel kütüphanesi yüklenemedi. Lütfen sayfayı yenileyip tekrar deneyin.');
+            return;
+        }
+
+        const lineFilter = document.getElementById('nfc-filter-line')?.value || 'all';
+        const lines = lineFilter === 'all' ? (appData.lines || []) : [lineFilter];
+        
+        // Excel Başlıkları
+        const header = [
+            "Hat",
+            "İstasyon",
+            "NFC Kart Uid (Kart ID)"
+        ];
+
+        const data = [header];
+        
+        lines.forEach(line => {
+            const stations = [...(appData.stations?.[line] || [])];
+            // İstasyonları durak sıralarına göre dizelim
+            const stationNums = appData.stationNumbers?.[line] || {};
+            stations.sort((a, b) => {
+                const numA = stationNums[a] !== undefined ? stationNums[a] : 999;
+                const numB = stationNums[b] !== undefined ? stationNums[b] : 999;
+                if (numA !== numB) return numA - numB;
+                return a.localeCompare(b, 'tr');
+            });
+
+            stations.forEach(station => {
+                data.push([
+                    line,
+                    station,
+                    "" // Kullanıcı burayı dolduracak
+                ]);
+            });
+        });
+
+        const worksheet = XLSX.utils.aoa_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "NFC Şablonu");
+        
+        // Kolon genişlikleri ayarla
+        worksheet['!cols'] = [
+            { wch: 10 }, // Hat
+            { wch: 20 }, // İstasyon
+            { wch: 30 }  // NFC Kart Uid (Kart ID)
+        ];
+
+        const fileName = lineFilter === 'all' ? 'istasyon_nfc_sablonu_hepsi.xlsx' : `istasyon_nfc_sablonu_${lineFilter}.xlsx`;
+        XLSX.writeFile(workbook, fileName);
+        showToast('NFC şablonu başarıyla indirildi.');
+    } catch (error) {
+        console.error("NFC Şablon indirme hatası:", error);
+        showToast("Şablon indirilirken bir hata oluştu: " + error.message, "error");
     }
 }
 
@@ -1729,6 +1823,439 @@ async function importNfcsFromExcel(event) {
                 showToast(`${updatedCount} adet istasyonun NFC kodu başarıyla yüklendi.`);
             } else {
                 showToast('Yüklenecek uygun hat ve istasyon eşleşmesi bulunamadı. Lütfen Excel formatını kontrol edin.', 'warning');
+            }
+        } catch (err) {
+            console.error('Excel içe aktarım hatası:', err);
+            showToast('Excel dosyası işlenirken bir hata oluştu.', 'error');
+        } finally {
+            event.target.value = '';
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function populateLocationLineFilter() {
+    const select = document.getElementById('location-filter-line');
+    if (!select) return;
+    const current = select.value || 'all';
+    select.innerHTML = '<option value="all">Tüm Hatlar</option>';
+    (appData.lines || []).forEach(line => {
+        select.add(new Option(line, line));
+    });
+    select.value = current;
+}
+
+function renderLocationList() {
+    const tableBody = document.getElementById('location-table-body');
+    const emptyState = document.getElementById('location-empty-state');
+    if (!tableBody) return;
+
+    const lineFilter = document.getElementById('location-filter-line')?.value || 'all';
+    const searchInput = document.getElementById('location-search-input');
+    const query = (searchInput?.value || '').toLowerCase().trim();
+
+    let html = '';
+    let matchCount = 0;
+
+    const lines = lineFilter === 'all' ? (appData.lines || []) : [lineFilter];
+    
+    lines.forEach(line => {
+        const stations = [...(appData.stations?.[line] || [])];
+        const stationNums = appData.stationNumbers?.[line] || {};
+        stations.sort((a, b) => {
+            const numA = stationNums[a] !== undefined ? stationNums[a] : 999;
+            const numB = stationNums[b] !== undefined ? stationNums[b] : 999;
+            if (numA !== numB) {
+                return numA - numB;
+            }
+            return a.localeCompare(b, 'tr');
+        });
+
+        stations.forEach(station => {
+            const locKey = `${line}_${station}`;
+            const locData = appData.stationLocations?.[locKey];
+            const lat = (locData && locData.latitude) ? locData.latitude : '';
+            const lng = (locData && locData.longitude) ? locData.longitude : '';
+            const radius = (locData && locData.radius) ? locData.radius : '';
+            
+            const matchesSearch = !query || 
+                station.toLowerCase().includes(query) || 
+                line.toLowerCase().includes(query) ||
+                lat.toString().includes(query) ||
+                lng.toString().includes(query);
+
+            if (matchesSearch) {
+                matchCount++;
+                const color = appData.lineColors?.[line] || '#64748b';
+                const hasLoc = lat && lng;
+                const badgeHtml = hasLoc 
+                    ? `<span style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-size: 0.75rem; padding: 4px 8px; border-radius: 6px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-check-circle"></i> Tanımlı</span>`
+                    : `<span style="background: rgba(239, 68, 68, 0.15); color: #ef4444; font-size: 0.75rem; padding: 4px 8px; border-radius: 6px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-exclamation-triangle"></i> Tanımsız</span>`;
+                
+                const escapedLine = escapeAttr(line).replace(/'/g, "\\'");
+                const escapedStation = escapeAttr(station).replace(/'/g, "\\'");
+
+                html += `
+                    <tr style="border-bottom: 1px solid var(--border-main); transition: background 0.2s;">
+                        <td style="padding: 12px 16px;">
+                            <span class="profile-line-logo" style="background-color: ${color}; color: white; font-weight: bold; font-size: 0.65rem; width: 22px; height: 22px; border-radius: 50%;">${escapeAttr(line)}</span>
+                        </td>
+                        <td style="padding: 12px 16px; font-weight: 600; color: var(--text-primary);">${escapeAttr(station)}</td>
+                        <td style="padding: 12px 16px; font-family: monospace; font-size: 0.9rem; color: var(--text-primary); font-weight: 700;">
+                            ${hasLoc ? `${lat}, ${lng}` : '<span style="color: var(--text-dim); font-weight: normal; font-style: italic;">Tanımlanmamış</span>'}
+                        </td>
+                        <td style="padding: 12px 16px; font-weight: 600; color: var(--text-primary);">${radius ? `${radius} m` : '-'}</td>
+                        <td style="padding: 12px 16px; text-align: center;">${badgeHtml}</td>
+                        <td style="padding: 12px 16px; text-align: center;">
+                            <button class="btn-outline" onclick="openLocationEditModal('${escapedLine}', '${escapedStation}', '${lat}', '${lng}', '${radius}')" style="padding: 4px 8px; font-size: 0.75rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                                <i class="fas fa-edit"></i> Düzenle
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }
+        });
+    });
+
+    tableBody.innerHTML = html;
+    if (emptyState) {
+        emptyState.style.display = matchCount === 0 ? 'flex' : 'none';
+    }
+}
+
+function openLocationEditModal(line, station, currentLat, currentLng, currentRadius) {
+    document.getElementById('location-edit-line').value = line;
+    document.getElementById('location-edit-station').value = station;
+    document.getElementById('location-modal-line-display').textContent = line;
+    document.getElementById('location-modal-station-display').textContent = station;
+    document.getElementById('location-lat-input').value = currentLat || '';
+    document.getElementById('location-lng-input').value = currentLng || '';
+    document.getElementById('location-radius-input').value = currentRadius || '50';
+    document.getElementById('location-quick-paste').value = '';
+    document.getElementById('location-modal').style.display = 'flex';
+}
+
+function closeLocationModal() {
+    document.getElementById('location-modal').style.display = 'none';
+    document.getElementById('location-edit-line').value = '';
+    document.getElementById('location-edit-station').value = '';
+    document.getElementById('location-lat-input').value = '';
+    document.getElementById('location-lng-input').value = '';
+    document.getElementById('location-radius-input').value = '';
+    document.getElementById('location-quick-paste').value = '';
+}
+
+async function saveLocationCoords() {
+    const line = document.getElementById('location-edit-line').value;
+    const station = document.getElementById('location-edit-station').value;
+    const latVal = document.getElementById('location-lat-input').value.trim();
+    const lngVal = document.getElementById('location-lng-input').value.trim();
+    const radiusVal = document.getElementById('location-radius-input').value.trim();
+
+    if (!line || !station) {
+        showToast('Hata: Hat ve istasyon bilgileri eksik.');
+        return;
+    }
+
+    const saveBtn = document.querySelector('#location-modal .btn-primary');
+    if (saveBtn) saveBtn.disabled = true;
+
+    try {
+        const locKey = `${line}_${station}`;
+        const updatedLocations = { ...appData.stationLocations };
+        if (latVal && lngVal) {
+            updatedLocations[locKey] = {
+                latitude: parseFloat(latVal),
+                longitude: parseFloat(lngVal),
+                radius: radiusVal ? parseFloat(radiusVal) : 50
+            };
+        } else {
+            delete updatedLocations[locKey];
+        }
+
+        await db.collection('system_config').doc('lines_stations').update({
+            stationLocations: updatedLocations
+        });
+        showToast('Konum koordinatları başarıyla güncellendi.');
+        closeLocationModal();
+    } catch (err) {
+        console.error('Konum kaydetme hatası:', err);
+        showToast('Hata: ' + (err.message || 'Kayıt başarısız oldu.'));
+    } finally {
+        if (saveBtn) saveBtn.disabled = false;
+    }
+}
+
+function dmsToDecimal(dmsStr) {
+    if (!dmsStr) return NaN;
+    dmsStr = dmsStr.trim();
+    // 41°01'11.25"N veya 41° 01' 11.25" N formatı
+    const regex = /(\d+)\s*°\s*(\d+)\s*'\s*([\d.]+)\s*"\s*([NSEWnsew])/;
+    const match = dmsStr.match(regex);
+    if (match) {
+        const degrees = parseFloat(match[1]);
+        const minutes = parseFloat(match[2]);
+        const seconds = parseFloat(match[3]);
+        const direction = match[4].toUpperCase();
+        
+        let decimal = degrees + (minutes / 60) + (seconds / 3600);
+        if (direction === 'S' || direction === 'W') {
+            decimal = -decimal;
+        }
+        return parseFloat(decimal.toFixed(6));
+    }
+    
+    // Eğer sadece decimal ise
+    const cleanStr = dmsStr.replace(',', '.');
+    const decVal = parseFloat(cleanStr);
+    if (!isNaN(decVal) && /^[-+]?\d*\.?\d+$/.test(cleanStr)) return decVal;
+    return NaN;
+}
+
+function handleQuickPaste(event) {
+    const val = event.target.value.trim();
+    if (!val) return;
+    
+    // Komple yapıştırma durumlarını yakalayalım:
+    // Örnek 1: 41°01'11.25"N 28°55'15.08"E (DMS)
+    // Örnek 2: 41.012345, 28.956789 (Ondalık Virgüllü)
+    // Örnek 3: 41.012345 28.956789 (Ondalık Boşluklu)
+    
+    const doubleDmsRegex = /(\d+°\s*\d+'\s*[\d.]+"\s*[NSns])\s+[,;\s]*\s*(\d+°\s*\d+'\s*[\d.]+"\s*[EWew])/i;
+    const doubleDecRegex = /^(-?\d+\.?\d*)\s*[,;\s]\s*(-?\d+\.?\d*)$/;
+
+    let matchDms = val.match(doubleDmsRegex);
+    let matchDec = val.match(doubleDecRegex);
+
+    if (matchDms) {
+        const latDec = dmsToDecimal(matchDms[1]);
+        const lngDec = dmsToDecimal(matchDms[2]);
+        if (!isNaN(latDec) && !isNaN(lngDec)) {
+            document.getElementById('location-lat-input').value = latDec;
+            document.getElementById('location-lng-input').value = lngDec;
+            showToast('Konum (DMS) başarıyla desimale dönüştürüldü.', 'info');
+        }
+    } else if (matchDec) {
+        const latDec = parseFloat(matchDec[1]);
+        const lngDec = parseFloat(matchDec[2]);
+        if (!isNaN(latDec) && !isNaN(lngDec)) {
+            document.getElementById('location-lat-input').value = latDec;
+            document.getElementById('location-lng-input').value = lngDec;
+            showToast('Koordinatlar başarıyla ayrıştırıldı.', 'info');
+        }
+    }
+}
+
+function parseLocationInput(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const val = input.value.trim();
+    if (!val) return;
+    
+    const dec = dmsToDecimal(val);
+    if (!isNaN(dec)) {
+        input.value = dec;
+    }
+}
+
+function downloadLocationTemplate() {
+    try {
+        if (typeof XLSX === 'undefined') {
+            showToast('Excel kütüphanesi yüklenemedi. Lütfen sayfayı yenileyip tekrar deneyin.');
+            return;
+        }
+
+        const lineFilter = document.getElementById('location-filter-line')?.value || 'all';
+        const lines = lineFilter === 'all' ? (appData.lines || []) : [lineFilter];
+        
+        // Excel Başlıkları (Enlem ve Boylam formülleri tamamen kaldırıldı, sistem arka planda parse edecek)
+        const header = [
+            "Hat",
+            "İstasyon",
+            "Google Earth Koordinatı (DMS)",
+            "Yarıçap (Radius)"
+        ];
+
+        const data = [header];
+        
+        lines.forEach(line => {
+            const stations = [...(appData.stations?.[line] || [])];
+            // İstasyonları sıralayalım
+            const stationNums = appData.stationNumbers?.[line] || {};
+            stations.sort((a, b) => {
+                const numA = stationNums[a] !== undefined ? stationNums[a] : 999;
+                const numB = stationNums[b] !== undefined ? stationNums[b] : 999;
+                if (numA !== numB) return numA - numB;
+                return a.localeCompare(b, 'tr');
+            });
+
+            stations.forEach(station => {
+                data.push([
+                    line,
+                    station,
+                    "", // Google Earth Koordinatı (DMS) - Kullanıcı doğrudan dizeyi yapıştıracak
+                    50  // Varsayılan yarıçap
+                ]);
+            });
+        });
+
+        const worksheet = XLSX.utils.aoa_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Konum Şablonu");
+        
+        // Kolon genişlikleri ayarla
+        worksheet['!cols'] = [
+            { wch: 10 }, // Hat
+            { wch: 20 }, // İstasyon
+            { wch: 35 }, // Google Earth Koordinatı (DMS)
+            { wch: 15 }  // Yarıçap
+        ];
+
+        const fileName = lineFilter === 'all' ? 'istasyon_konum_sablonu_hepsi.xlsx' : `istasyon_konum_sablonu_${lineFilter}.xlsx`;
+        XLSX.writeFile(workbook, fileName);
+        showToast('Örnek konum şablonu başarıyla indirildi.');
+    } catch (error) {
+        console.error("Şablon indirme hatası:", error);
+        showToast("Şablon indirilirken bir hata oluştu: " + error.message, "error");
+    }
+}
+
+function exportLocationsToExcel() {
+    if (typeof XLSX === 'undefined') {
+        showToast('Excel kütüphanesi yüklenemedi. Lütfen sayfayı yenileyip tekrar deneyin.');
+        return;
+    }
+
+    const lineFilter = document.getElementById('location-filter-line')?.value || 'all';
+    const lines = lineFilter === 'all' ? (appData.lines || []) : [lineFilter];
+    
+    const excelData = [];
+    
+    lines.forEach(line => {
+        const stations = appData.stations?.[line] || [];
+        stations.forEach(station => {
+            const locKey = `${line}_${station}`;
+            const locData = appData.stationLocations?.[locKey];
+            const lat = (locData && locData.latitude) ? locData.latitude : '';
+            const lng = (locData && locData.longitude) ? locData.longitude : '';
+            const radius = (locData && locData.radius) ? locData.radius : '';
+            
+            excelData.push({
+                'Hat': line,
+                'İstasyon': station,
+                'Enlem (Latitude)': lat || '',
+                'Boylam (Longitude)': lng || '',
+                'Yarıçap (Radius)': radius || '',
+                'Durum': (lat && lng) ? 'Tanımlı' : 'Tanımsız'
+            });
+        });
+    });
+
+    if (excelData.length === 0) {
+        showToast('Aktarılacak veri bulunamadı.');
+        return;
+    }
+
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Konum Listesi');
+
+    const max_widths = [
+        { wch: 10 },
+        { wch: 25 },
+        { wch: 20 },
+        { wch: 20 },
+        { wch: 15 },
+        { wch: 15 }
+    ];
+    worksheet['!cols'] = max_widths;
+
+    XLSX.writeFile(workbook, `Metro_Istanbul_Konum_Listesi_${new Date().toISOString().slice(0,10)}.xlsx`);
+    showToast('Excel raporu başarıyla indirildi.');
+}
+
+async function importLocationsFromExcel(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (typeof XLSX === 'undefined') {
+        showToast('Excel kütüphanesi yüklenemedi. Lütfen sayfayı yenileyip tekrar deneyin.');
+        event.target.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+            if (jsonData.length === 0) {
+                showToast('Dosya boş veya veri bulunamadı.');
+                return;
+            }
+
+            let updatedCount = 0;
+            const updatedLocations = { ...appData.stationLocations };
+
+            jsonData.forEach(row => {
+                const line = (row['Hat'] || row['line'] || '').toString().trim();
+                const station = (row['İstasyon'] || row['istasyon'] || row['station'] || '').toString().trim();
+                
+                const rawLat = row['Enlem (Latitude)'] || row['Enlem'] || row['Latitude'] || row['lat'] || row['latitude'] || '';
+                const rawLng = row['Boylam (Longitude)'] || row['Boylam'] || row['Longitude'] || row['lng'] || row['longitude'] || row['lon'] || '';
+                const rawRadius = row['Yarıçap (Radius)'] || row['Yarıçap'] || row['Radius'] || row['radius'] || row['range'] || '';
+                const rawCoord = row['Google Earth Koordinatı (DMS)'] || row['Google Earth Koordinati'] || row['Koordinat'] || row['coordinate'] || '';
+
+                let lat = dmsToDecimal(rawLat.toString().trim());
+                let lng = dmsToDecimal(rawLng.toString().trim());
+
+                if ((Number.isNaN(lat) || Number.isNaN(lng)) && rawCoord) {
+                    const coordStr = rawCoord.toString().trim();
+                    const doubleDmsRegex = /(\d+°\s*\d+'\s*[\d.]+"\s*[NSns])\s+[,;\s]*\s*(\d+°\s*\d+'\s*[\d.]+"\s*[EWew])/i;
+                    const doubleDecRegex = /^(-?\d+\.?\d*)\s*[,;\s]\s*(-?\d+\.?\d*)$/;
+
+                    let matchDms = coordStr.match(doubleDmsRegex);
+                    let matchDec = coordStr.match(doubleDecRegex);
+
+                    if (matchDms) {
+                        lat = dmsToDecimal(matchDms[1]);
+                        lng = dmsToDecimal(matchDms[2]);
+                    } else if (matchDec) {
+                        lat = parseFloat(matchDec[1]);
+                        lng = parseFloat(matchDec[2]);
+                    }
+                }
+
+                let radius = parseFloat(rawRadius.toString().trim());
+                if (Number.isNaN(radius) || radius <= 0) {
+                    radius = 50; // default to 50
+                }
+
+                if (line && station && !Number.isNaN(lat) && !Number.isNaN(lng)) {
+                    const exists = appData.lines?.includes(line) && appData.stations?.[line]?.includes(station);
+                    if (exists) {
+                        const locKey = `${line}_${station}`;
+                        updatedLocations[locKey] = {
+                            latitude: lat,
+                            longitude: lng,
+                            radius: radius
+                        };
+                        updatedCount++;
+                    }
+                }
+            });
+
+            if (updatedCount > 0) {
+                await db.collection('system_config').doc('lines_stations').update({
+                    stationLocations: updatedLocations
+                });
+                showToast(`${updatedCount} adet istasyonun konum bilgisi başarıyla yüklendi.`);
+            } else {
+                showToast('Yüklenecek uygun hat, istasyon ve koordinat eşleşmesi bulunamadı. Lütfen Excel formatını kontrol edin.', 'warning');
             }
         } catch (err) {
             console.error('Excel içe aktarım hatası:', err);
@@ -3148,6 +3675,8 @@ function approveNC(id) {
         approvedByName: approverName
     }).then(() => {
         showToast(`${id} onaylandı ve kapatıldı.`);
+        const nc = appData.nonconformities.find(n => n.id === id);
+        logActivity('Uygunsuzluk Onaylandı', `${nc ? nc.line : ''} hattı, ${nc ? nc.station : ''} istasyonundaki uygunsuzluk çözümü web panelinden onaylandı ve kapatıldı. (ID: ${id})`);
     }).catch(err => console.error('Approve Error:', err));
 }
 
@@ -3156,6 +3685,8 @@ function rejectNC(id) {
         status: 'open'
     }).then(() => {
         showToast(`${id} reddedildi, tekrar açıldı.`);
+        const nc = appData.nonconformities.find(n => n.id === id);
+        logActivity('Uygunsuzluk Reddedildi', `${nc ? nc.line : ''} hattı, ${nc ? nc.station : ''} istasyonundaki uygunsuzluk çözümü web panelinden reddedildi. (ID: ${id})`);
     }).catch(err => console.error('Reject Error:', err));
 }
 
@@ -7200,6 +7731,16 @@ function openAuditModal(id) {
         const auditDate = audit.date ? new Date(audit.date) : new Date(NaN);
         const dateOnly = isNaN(auditDate.getTime()) ? '-' : auditDate.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
         const timeOnly = isNaN(auditDate.getTime()) ? '-' : auditDate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+
+        const startedDate = audit.startedAt ? new Date(audit.startedAt) : null;
+        const completedDate = audit.completedAt ? new Date(audit.completedAt) : null;
+        const startedTimeStr = startedDate && !isNaN(startedDate.getTime()) ? startedDate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : null;
+        const completedTimeStr = completedDate && !isNaN(completedDate.getTime()) ? completedDate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : null;
+        let durationMinutes = null;
+        if (startedDate && completedDate && !isNaN(startedDate.getTime()) && !isNaN(completedDate.getTime())) {
+            durationMinutes = Math.round((completedDate - startedDate) / 1000 / 60);
+        }
+
         const metrics = buildAuditDetailMetrics(audit);
         const overallScore = clampAuditPercent(metrics.overallPercent);
         const categoryAverageScore = clampAuditPercent(metrics.categoryAveragePercent);
@@ -7273,9 +7814,17 @@ function openAuditModal(id) {
                                 <div style="padding: 6px 12px; background: rgba(255,255,255,0.1); border-radius: 8px; font-size: 0.7rem; font-weight: 800; display: flex; align-items: center; gap: 6px;" title="Tarih">
                                     <i class="far fa-calendar-alt" style="opacity: 0.7;"></i> ${dateOnly}
                                 </div>
+                                ${startedTimeStr ? `
+                                <div style="padding: 6px 12px; background: rgba(255,255,255,0.1); border-radius: 8px; font-size: 0.7rem; font-weight: 800; display: flex; align-items: center; gap: 6px;" title="Başlangıç Saati">
+                                    <i class="fas fa-play" style="opacity: 0.7; font-size: 0.6rem;"></i> Başlangıç: ${startedTimeStr}
+                                </div>` : ''}
+                                ${completedTimeStr ? `
+                                <div style="padding: 6px 12px; background: rgba(255,255,255,0.1); border-radius: 8px; font-size: 0.7rem; font-weight: 800; display: flex; align-items: center; gap: 6px;" title="Bitiş Saati">
+                                    <i class="fas fa-stop" style="opacity: 0.7; font-size: 0.6rem;"></i> Bitiş: ${completedTimeStr} ${durationMinutes !== null ? `(${durationMinutes} dk)` : ''}
+                                </div>` : `
                                 <div style="padding: 6px 12px; background: rgba(255,255,255,0.1); border-radius: 8px; font-size: 0.7rem; font-weight: 800; display: flex; align-items: center; gap: 6px;" title="Saat">
                                     <i class="far fa-clock" style="opacity: 0.7;"></i> ${timeOnly}
-                                </div>
+                                </div>`}
                             </div>
                         </div>
 
@@ -7480,11 +8029,14 @@ function openAuditModal(id) {
                                 }
                             }
 
+                            const typeObj = getAuditTypeForAudit(audit) || {};
+                            const catObj = (typeObj.categories || []).find(c => String(c.id) === String(catName) || String(c.name).toUpperCase() === String(catName).toUpperCase());
+                            const weightStr = catObj && catObj.weight !== undefined ? ` (Ağırlık: ${catObj.weight})` : '';
                             return `
                                 <div class="audit-question-category-group" style="margin-bottom: 10px;">
                                     <div style="background: linear-gradient(90deg, ${config.bg}, transparent); border-left: 4px solid ${config.color}; padding: 6px 12px; font-size: 0.72rem; font-weight: 900; color: ${config.color}; letter-spacing: 0.8px; border-radius: 0 8px 8px 0; margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
                                         <i class="fas ${config.icon}" style="font-size: 0.8rem; color: ${config.color};"></i>
-                                        <span>${catName}</span>
+                                        <span>${catName}${weightStr}</span>
                                     </div>
                                     <div class="audit-question-card">
                                         ${listItems}
@@ -7837,6 +8389,16 @@ function isBooleanAuditAnswer(audit = {}, ans = {}) {
 }
 
 function scoreAuditAnswer(audit = {}, ans = {}) {
+    if (ans.isOutOfScope === true) {
+        return {
+            rawScore: -1,
+            percent: 100,
+            displayScore: 'K.D.',
+            isNonconformity: false,
+            isOutOfScope: true
+        };
+    }
+
     if (isBooleanAuditAnswer(audit, ans)) {
         const primary = getAuditAnswerPrimaryValue(ans);
         let token = auditAnswerValueToken(primary);
@@ -7854,12 +8416,14 @@ function scoreAuditAnswer(audit = {}, ans = {}) {
     const primary = getAuditAnswerPrimaryValue(ans);
     const raw = Number(ans.score ?? primary ?? 0);
     const score = Number.isFinite(raw) ? Math.max(0, Math.min(5, raw)) : 0;
-    const percent = clampAuditPercent((score / 5) * 100);
+    
+    const percent = clampAuditPercent(mapScore6ToPercent(score));
+    
     return {
         rawScore: score,
         percent,
         displayScore: Number.isInteger(score) ? String(score) : score.toFixed(1),
-        isNonconformity: ans.isNonconformity === true || score <= 3
+        isNonconformity: ans.isNonconformity === true || (score >= 0 && score <= 3)
     };
 }
 
@@ -7885,27 +8449,42 @@ function buildAuditDetailMetrics(audit = {}) {
 
     const categoryMap = new Map();
     rows.forEach(row => {
+        if (row.isOutOfScope) return; // Exclude KD from average calculation!
         if (!categoryMap.has(row.categoryName)) categoryMap.set(row.categoryName, []);
         categoryMap.get(row.categoryName).push(row.percent);
     });
 
-    const categoryAverages = Array.from(categoryMap.entries()).map(([categoryName, values]) => ({
-        categoryName,
-        category: categoryName,
-        count: values.length,
-        avgPercent: values.reduce((sum, value) => sum + value, 0) / values.length
-    }));
+    const categoryAverages = Array.from(categoryMap.entries()).map(([categoryName, values]) => {
+        const category = findCategoryByNameOrId(audit, categoryName);
+        const weight = category && category.weight !== undefined ? Number(category.weight) : 1.0;
+        return {
+            categoryName,
+            category: categoryName,
+            count: values.length,
+            weight,
+            avgPercent: values.reduce((sum, value) => sum + value, 0) / values.length
+        };
+    });
 
-    const overallPercent = rows.reduce((sum, row) => sum + row.percent, 0) / rows.length;
-    const categoryAveragePercent = categoryAverages.length
-        ? categoryAverages.reduce((sum, item) => sum + item.avgPercent, 0) / categoryAverages.length
-        : overallPercent;
+    const activeRows = rows.filter(r => !r.isOutOfScope);
+    const overallPercent = activeRows.length
+        ? activeRows.reduce((sum, row) => sum + row.percent, 0) / activeRows.length
+        : 100.0;
+
+    let weightedTotal = 0;
+    let totalWeight = 0;
+    categoryAverages.forEach(cat => {
+        weightedTotal += cat.avgPercent * cat.weight;
+        totalWeight += cat.weight;
+    });
+
+    const categoryAveragePercent = totalWeight > 0 ? weightedTotal / totalWeight : overallPercent;
 
     return { rows, categoryAverages, overallPercent, categoryAveragePercent };
 }
 
 function getAuditDisplayScore(audit = {}) {
-    return clampAuditPercent(buildAuditDetailMetrics(audit).overallPercent);
+    return clampAuditPercent(buildAuditDetailMetrics(audit).categoryAveragePercent);
 }
 
 function groupAuditAnswersByCategory(audit, answers) {
@@ -8504,7 +9083,8 @@ function drawAuditPdfHero(doc, audit, y) {
     const margin = 15;
     const pageW = 210;
     const heroRight = pageW - margin - 4; // Fix overflow, added 4mm right padding
-    const heroH = 38;
+    const hasTimestamps = audit.startedAt && audit.completedAt;
+    const heroH = hasTimestamps ? 46 : 38;
     const score = getAuditDisplayScore(audit);
     const badgeColor = getAuditScoreBadgeColor(score);
     const lineLabel = (audit.line && audit.line.length > 3) ? audit.line.substring(0, 3) : (audit.line || '');
@@ -8547,8 +9127,19 @@ function drawAuditPdfHero(doc, audit, y) {
     infoY += 5;
     auditPdfText(doc, `Denetim ID: ${String(audit.id).replace(/AUD/g, 'DNT')}`, infoX, infoY);
     infoY += 4;
-    auditPdfText(doc, `Tarih: ${formatAuditPdfDateTime(audit.date)}`, infoX, infoY);
-    infoY += 4;
+    if (audit.startedAt && audit.completedAt) {
+        const startStr = formatAuditPdfDateTime(audit.startedAt);
+        const endStr = formatAuditPdfDateTime(audit.completedAt);
+        const diffMs = new Date(audit.completedAt) - new Date(audit.startedAt);
+        const diffMin = Math.round(diffMs / 1000 / 60);
+        auditPdfText(doc, `Başlangıç: ${startStr}`, infoX, infoY);
+        infoY += 4;
+        auditPdfText(doc, `Bitiş: ${endStr} (${diffMin} dk)`, infoX, infoY);
+        infoY += 4;
+    } else {
+        auditPdfText(doc, `Tarih: ${formatAuditPdfDateTime(audit.date)}`, infoX, infoY);
+        infoY += 4;
+    }
     auditPdfText(doc, `Denetçi: ${audit.auditorName || '-'}`, infoX, infoY);
 
     const badgeH = 20;
@@ -10262,20 +10853,34 @@ function updateThemeIcon() {
     }
 }
 
-function showToast(message) {
+function showToast(message, type = 'success') {
     const toast = document.createElement('div');
     toast.className = 'toast';
-    toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+    if (type && type !== 'success') {
+        toast.classList.add(type);
+    }
+
+    let iconClass = 'fa-check-circle';
+    if (type === 'warning') {
+        iconClass = 'fa-exclamation-triangle';
+    } else if (type === 'error') {
+        iconClass = 'fa-times-circle';
+    } else if (type === 'info') {
+        iconClass = 'fa-info-circle';
+    }
+
+    toast.innerHTML = `<i class="fas ${iconClass}"></i> ${message}`;
     document.body.appendChild(toast);
 
     setTimeout(() => {
         toast.classList.add('show');
     }, 100);
 
+    const duration = type === 'success' ? 3000 : 4500;
     setTimeout(() => {
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 300);
-    }, 3000);
+    }, duration);
 }
 
 // Ensure reports are only generated when requested
@@ -10487,7 +11092,8 @@ function deriveCompatibilityCollectionsFromAuditTypes() {
                 orderIndex: category.orderIndex ?? categoryIndex,
                 isActive: category.isActive !== false,
                 isDeleted: category.isDeleted === true,
-                isCompatibilityCategory: true
+                isCompatibilityCategory: true,
+                weight: category.weight !== undefined ? Number(category.weight) : 1.0
             });
             (category.questions || []).forEach((question, questionIndex) => {
                 questions.push(normalizeQuestionBankQuestion({
@@ -10775,11 +11381,17 @@ async function editStationInLine(lineName, stationName) {
             if (!appData.stationNumbers[lineName]) appData.stationNumbers[lineName] = {};
         }
 
-        // Remove old NFC data
+        // Remove old NFC & Location data
+        const oldLocation = appData.stationLocations?.[`${lineName}_${stationName}`];
         if (appData.stationNfcs) {
             delete appData.stationNfcs[`${lineName}_${stationName}`];
         } else {
             appData.stationNfcs = {};
+        }
+        if (appData.stationLocations) {
+            delete appData.stationLocations[`${lineName}_${stationName}`];
+        } else {
+            appData.stationLocations = {};
         }
 
         // Add new name
@@ -10788,8 +11400,11 @@ async function editStationInLine(lineName, stationName) {
         }
         appData.stationNumbers[lineName][name] = no;
 
-        // Add new NFC data
+        // Add new NFC & Location data
         appData.stationNfcs[`${lineName}_${name}`] = { uid: nfcUid };
+        if (oldLocation) {
+            appData.stationLocations[`${lineName}_${name}`] = oldLocation;
+        }
 
         await saveLinesStationsToFirebase();
         showToast(`"${stationName}" istasyonu güncellendi.`);
@@ -10802,7 +11417,7 @@ async function editStationInLine(lineName, stationName) {
             for (const colName of collectionsToMigrate) {
                 try {
                     const snapshot = await db.collection(colName)
-                        .where('line', '==', lineName)
+                         .where('line', '==', lineName)
                         .where('station', '==', stationName)
                         .get();
                     for (const doc of snapshot.docs) {
@@ -10830,6 +11445,9 @@ async function removeStationFromFirebase(lineName, stationName) {
         }
         if (appData.stationNfcs) {
             delete appData.stationNfcs[`${lineName}_${stationName}`];
+        }
+        if (appData.stationLocations) {
+            delete appData.stationLocations[`${lineName}_${stationName}`];
         }
         await saveLinesStationsToFirebase();
         showToast(`"${stationName}" istasyonu silindi.`);
@@ -10972,13 +11590,18 @@ async function deleteQuestionGroup(id) {
     if(!confirm('Bu soru grubunu silmek istediğinize emin misiniz? (İçindeki tüm sorular da silinecektir)')) return;
     
     try {
-        // Delete group
+        // Soft delete embedded category in auditTypes
+        const auditTypeId = await deleteEmbeddedAuditTypeCategory(id);
+        
+        // Delete group from compatibility collections
         await db.collection('question_groups').doc(id).delete();
+        await db.collection('auditQuestionGroups').doc(id).delete();
         
         // Delete nested questions
         const nested = (appData.questions || []).filter(q => q.groupId === id);
         for(let q of nested) {
             await db.collection('questions').doc(q.id).delete();
+            await db.collection('auditQuestions').doc(q.id).delete();
         }
         
         if (appData.selectedGroupId === id) {
@@ -10986,7 +11609,15 @@ async function deleteQuestionGroup(id) {
             document.getElementById('selected-group-questions').style.display = 'none';
         }
         
+        // Refresh local data & render
+        deriveCompatibilityCollectionsFromAuditTypes();
+        renderQuestionGroups();
+        
         showToast('Grup silindi.');
+
+        if (auditTypeId) {
+            checkAndWarnCategoryWeights(auditTypeId);
+        }
     } catch (err) {
         console.error('Delete group error:', err);
         showToast('Hata oluştu!');
@@ -11564,11 +12195,30 @@ function renderPeople() {
         .sort((a, b) => getUserUsername(a).localeCompare(getUserUsername(b), 'tr'));
 
     if (!users.length) {
-        container.innerHTML = '<div class="people-empty">Filtrelere uygun personel kaydı bulunmuyor.</div>';
+        container.innerHTML = `
+            <div class="table-responsive">
+                <table class="cms-table people-table" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th style="font-weight: 850; font-size: 0.72rem; text-transform: uppercase; padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-main);">Kullanıcı Adı</th>
+                            <th style="font-weight: 850; font-size: 0.72rem; text-transform: uppercase; padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-main);">Ad Soyad</th>
+                            <th style="font-weight: 850; font-size: 0.72rem; text-transform: uppercase; padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-main);">Rol / Yetki</th>
+                            <th style="font-weight: 850; font-size: 0.72rem; text-transform: uppercase; padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-main);">E-Posta / Ünvan</th>
+                            <th style="font-weight: 850; font-size: 0.72rem; text-transform: uppercase; padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-main);">Yetkili Hatlar</th>
+                            <th style="font-weight: 850; font-size: 0.72rem; text-transform: uppercase; padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-main); text-align: center; width: 100px;">İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="6" style="text-align:center; padding:2.5rem; color:var(--text-dim); font-weight:700; font-size:0.8rem;">Filtrelere uygun personel kaydı bulunmuyor.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>`;
         return;
     }
 
-    container.innerHTML = users.map(user => {
+    const rowsHtml = users.map(user => {
         const name = getUserDisplayName(user);
         const username = getUserUsername(user);
         const authorityLabel = getRbacRoleDisplayName(user);
@@ -11580,19 +12230,45 @@ function renderPeople() {
             : lines.length
             ? `${shownLines.map(line => `<span class="people-line-logo" style="background:${escapeAttr(appData.lineColors?.[line] || '#64748b')};">${escapeAttr(line)}</span>`).join('')}${lines.length > shownLines.length ? `<span class="people-more-lines">+${lines.length - shownLines.length}</span>` : ''}`
             : '<span class="people-all-lines"><i class="fas fa-route"></i> Alan tanımlı değil</span>';
+
         return `
-            <div class="user-card">
-                <div class="people-main">
-                    <h3>${escapeAttr(name || username)}</h3>
-                    <div class="role">${escapeAttr(authorityLabel)}</div>
-                </div>
-                <div class="people-lines">${lineLogos}</div>
-                <div class="people-actions">
-                    ${hasPermission('user_add_edit') ? `<button class="btn-outline" onclick="openAddUserModal('${jsArg(user.id)}')" title="Düzenle"><i class="fas fa-pen"></i></button>` : ''}
-                    ${hasPermission('user_delete') ? `<button class="btn-outline" onclick="deleteUser('${jsArg(user.id)}')" title="Sil"><i class="fas fa-trash"></i></button>` : ''}
-                </div>
-            </div>`;
+            <tr class="people-row">
+                <td style="font-weight:700; font-size:0.8rem; color:var(--text-primary); padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border-main);">${escapeAttr(username)}</td>
+                <td style="font-weight:700; font-size:0.8rem; color:var(--text-secondary); padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border-main);">${escapeAttr(name || '-')}</td>
+                <td style="padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border-main);"><span class="role" style="font-size:0.65rem; font-weight:800; padding:0.12rem 0.45rem; border-radius:999px; background:rgba(139, 92, 246, 0.08); color:var(--primary);">${escapeAttr(authorityLabel)}</span></td>
+                <td style="font-size:0.75rem; color:var(--text-dim); padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border-main);">
+                    <div style="font-weight:700; color: var(--text-secondary);">${escapeAttr(user.email || '-')}</div>
+                    ${user.title ? `<div style="font-size:0.65rem; opacity:0.8; margin-top:2px; font-weight:500;">${escapeAttr(user.title)}</div>` : ''}
+                </td>
+                <td style="padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border-main);">${lineLogos}</td>
+                <td style="padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border-main); text-align:center;">
+                    <div style="display:flex; gap:0.4rem; justify-content:center; align-items:center;">
+                        ${hasPermission('user_add_edit') ? `<button class="btn-outline" onclick="openAddUserModal('${jsArg(user.id)}')" title="Düzenle" style="width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; background:none; border:1px solid var(--border-main); color:var(--text-secondary); cursor:pointer; transition: all 0.2s;"><i class="fas fa-pen" style="font-size:0.7rem;"></i></button>` : ''}
+                        ${hasPermission('user_delete') ? `<button class="btn-outline" onclick="deleteUser('${jsArg(user.id)}')" title="Sil" style="width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; background:none; border:1px solid rgba(239,68,68,0.2); color:#ef4444; cursor:pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.05)'" onmouseout="this.style.background='none'"><i class="fas fa-trash" style="font-size:0.7rem;"></i></button>` : ''}
+                    </div>
+                </td>
+            </tr>`;
     }).join('');
+
+    container.innerHTML = `
+        <div class="table-responsive">
+            <table class="cms-table people-table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        <th style="font-weight: 850; font-size: 0.72rem; text-transform: uppercase; padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-main); text-align: left;">Kullanıcı Adı</th>
+                        <th style="font-weight: 850; font-size: 0.72rem; text-transform: uppercase; padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-main); text-align: left;">Ad Soyad</th>
+                        <th style="font-weight: 850; font-size: 0.72rem; text-transform: uppercase; padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-main); text-align: left;">Rol / Yetki</th>
+                        <th style="font-weight: 850; font-size: 0.72rem; text-transform: uppercase; padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-main); text-align: left;">E-Posta / Ünvan</th>
+                        <th style="font-weight: 850; font-size: 0.72rem; text-transform: uppercase; padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-main); text-align: left;">Yetkili Hatlar</th>
+                        <th style="font-weight: 850; font-size: 0.72rem; text-transform: uppercase; padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-main); text-align: center; width: 100px;">İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml}
+                </tbody>
+            </table>
+        </div>
+    `;
 }
 
 function ensurePeopleFilters() {
@@ -11674,10 +12350,16 @@ const QUESTION_BANK_SCALE_OPTIONS = {
         allowedAnswerTypes: ['scale'],
         config: { scaleMin: 1, scaleMax: 5, nonconformityThreshold: 3 }
     },
+    scale6Average: {
+        label: '6\'lı Sistem Skalası (0-5 Puan)',
+        summary: 'Her soru 0 ile 5 arasında puanlanır (%0, %25, %50, %80, %99, %100). Genel skor soru ortalamalarından hesaplanır.',
+        allowedAnswerTypes: ['scale6'],
+        config: { scaleMin: 0, scaleMax: 5, nonconformityThreshold: 3 }
+    },
     mixedWeighted: {
         label: 'Karma Ağırlıklı Skala',
         summary: 'Farklı cevap tipleri ve ağırlıklarla skor hesaplar.',
-        allowedAnswerTypes: ['scale', 'boolean', 'multiChoice', 'text'],
+        allowedAnswerTypes: ['scale', 'boolean', 'multiChoice', 'text', 'scale6'],
         config: { scaleMin: 1, scaleMax: 5, nonconformityThreshold: 3 }
     },
     none: {
@@ -11687,6 +12369,9 @@ const QUESTION_BANK_SCALE_OPTIONS = {
         config: {}
     }
 };
+
+
+
 
 function normalizeEvidenceAnswerValue(value) {
     if (value === true) return 'true';
@@ -11705,7 +12390,7 @@ function getAuditEvidenceOptionDefinitions(strategy, config = {}) {
     const allowedTypes = option.allowedAnswerTypes || [];
     const definitions = [];
 
-    if (allowedTypes.includes('scale')) {
+    if (allowedTypes.includes('scale') || allowedTypes.includes('scale6')) {
         const min = Number(config.scaleMin ?? option.config?.scaleMin ?? 1);
         const max = Number(config.scaleMax ?? option.config?.scaleMax ?? 5);
         for (let value = min; value <= max; value++) {
@@ -11726,7 +12411,7 @@ function getDefaultEvidenceRequiredValues(strategy, config = {}) {
     const allowedTypes = option.allowedAnswerTypes || [];
     const defaults = [];
 
-    if (allowedTypes.includes('scale')) {
+    if (allowedTypes.includes('scale') || allowedTypes.includes('scale6')) {
         const min = Number(config.scaleMin ?? option.config?.scaleMin ?? 1);
         const max = Number(config.scaleMax ?? option.config?.scaleMax ?? 5);
         const threshold = Number(config.nonconformityThreshold ?? option.config?.nonconformityThreshold ?? 3);
@@ -11891,7 +12576,9 @@ function normalizeQuestionBankGroup(group) {
 
 function normalizeQuestionBankQuestion(question) {
     const type = getQuestionBankAuditType(question.auditTypeId);
-    const isBoolean = (type.allowedAnswerTypes || []).includes('boolean') && !(type.allowedAnswerTypes || []).includes('scale');
+    const isBoolean = (type.allowedAnswerTypes || []).includes('boolean') && !(type.allowedAnswerTypes || []).includes('scale') && !(type.allowedAnswerTypes || []).includes('scale6');
+    const qAnswerType = question.answerType || (isBoolean ? 'boolean' : 'scale');
+    const isQBoolean = qAnswerType === 'boolean';
     return {
         ...question,
         id: question.id || `Q-${Date.now()}`,
@@ -11900,13 +12587,13 @@ function normalizeQuestionBankQuestion(question) {
         categoryName: question.categoryName || 'Genel',
         title: question.title || question.questionText || '',
         questionText: question.questionText || question.title || '',
-        answerType: isBoolean ? 'boolean' : (question.answerType || 'scale'),
-        maxScore: isBoolean ? 1 : (Number(question.maxScore) || 5),
-        options: isBoolean ? [
+        answerType: qAnswerType,
+        maxScore: isQBoolean ? 1 : (Number(question.maxScore) || 5),
+        options: isQBoolean ? [
             { label: 'Evet', value: true, score: 1 },
             { label: 'Hayır', value: false, score: 0, isNonconformity: true }
         ] : (question.options || []),
-        scoringRule: isBoolean ? { yesScore: 1, noScore: 0, nonconformityValue: false } : question.scoringRule,
+        scoringRule: isQBoolean ? { yesScore: 1, noScore: 0, nonconformityValue: false } : question.scoringRule,
         weight: Number(question.weight) || 1,
         isActive: question.isActive !== false,
         isDeleted: question.isDeleted === true,
@@ -12017,9 +12704,10 @@ function renderQuestionGroups() {
                 </div>
             </div>
             <div style="display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap;">
-                <span style="font-size:0.7rem;color:${typeColor};background:${typeColor}12;padding:0.18rem 0.5rem;border-radius:999px;font-weight:800;letter-spacing:0.3px;">${questionsInGroup.length} Soru</span>
-                <span style="font-size:0.7rem;color:var(--text-secondary);background:rgba(255,255,255,0.03);border:1px solid var(--border-main);padding:0.18rem 0.45rem;border-radius:999px;font-weight:700;">${escapeAttr(groupScale)}</span>
-            </div>
+                                <span style="font-size:0.7rem;color:${typeColor};background:${typeColor}12;padding:0.18rem 0.5rem;border-radius:999px;font-weight:800;letter-spacing:0.3px;">${questionsInGroup.length} Soru</span>
+                                <span style="font-size:0.7rem;color:var(--text-secondary);background:rgba(255,255,255,0.03);border:1px solid var(--border-main);padding:0.18rem 0.45rem;border-radius:999px;font-weight:700;">${escapeAttr(groupScale)}</span>
+                                <span style="font-size:0.7rem;color:#10b981;background:rgba(16,185,129,0.08);padding:0.18rem 0.5rem;border-radius:999px;font-weight:800;letter-spacing:0.3px;">Ağırlık: ${g.weight !== undefined ? g.weight : '1.0'}</span>
+                            </div>
         `;
         container.appendChild(card);
     });
@@ -12291,10 +12979,14 @@ function renderQuestions(groupId) {
     tbody.innerHTML = categories.map(categoryName => {
         const categoryQuestions = questions.filter(q => (q.categoryName || 'Genel') === categoryName);
         const rows = categoryQuestions.map((q, index) => {
-            const answerLabel = q.answerType === 'boolean' ? 'Evet / Hayır' : (q.answerType || q.maxScore || 'Skala');
-            const answerPreview = q.answerType === 'boolean'
-                ? '<div style="display:flex;gap:0.3rem;margin-top:0.25rem;"><span style="font-size:0.6rem;color:#10b981;background:rgba(16,185,129,0.08);padding:0.1rem 0.35rem;border-radius:4px;font-weight:800;">EVET = 1</span><span style="font-size:0.6rem;color:#ef4444;background:rgba(239,68,68,0.08);padding:0.1rem 0.35rem;border-radius:4px;font-weight:800;">HAYIR = 0</span></div>'
-                : '';
+            const isScale6 = q.answerType === 'scale6' || q.type === 'scale6';
+            const answerLabel = q.answerType === 'boolean' ? 'Evet / Hayır' : (isScale6 ? "6'lı Sistem (0-5 Puan)" : (q.answerType || q.maxScore || 'Skala'));
+            let answerPreview = '';
+            if (q.answerType === 'boolean') {
+                answerPreview = '<div style="display:flex;gap:0.3rem;margin-top:0.25rem;"><span style="font-size:0.6rem;color:#10b981;background:rgba(16,185,129,0.08);padding:0.1rem 0.35rem;border-radius:4px;font-weight:800;">EVET = 1</span><span style="font-size:0.6rem;color:#ef4444;background:rgba(239,68,68,0.08);padding:0.1rem 0.35rem;border-radius:4px;font-weight:800;">HAYIR = 0</span></div>';
+            } else if (isScale6) {
+                answerPreview = '<div style="display:flex;flex-wrap:wrap;gap:0.2rem;margin-top:0.25rem;"><span style="font-size:0.55rem;color:var(--text-secondary);background:rgba(255,255,255,0.05);padding:0.05rem 0.25rem;border-radius:3px;font-weight:700;">0 = %0</span><span style="font-size:0.55rem;color:var(--text-secondary);background:rgba(255,255,255,0.05);padding:0.05rem 0.25rem;border-radius:3px;font-weight:700;">1 = %25</span><span style="font-size:0.55rem;color:var(--text-secondary);background:rgba(255,255,255,0.05);padding:0.05rem 0.25rem;border-radius:3px;font-weight:700;">2 = %50</span><span style="font-size:0.55rem;color:var(--text-secondary);background:rgba(255,255,255,0.05);padding:0.05rem 0.25rem;border-radius:3px;font-weight:700;">3 = %80</span><span style="font-size:0.55rem;color:var(--text-secondary);background:rgba(255,255,255,0.05);padding:0.05rem 0.25rem;border-radius:3px;font-weight:700;">4 = %99</span><span style="font-size:0.55rem;color:var(--text-secondary);background:rgba(255,255,255,0.05);padding:0.05rem 0.25rem;border-radius:3px;font-weight:700;">5 = %100</span></div>';
+            }
             return `<tr>
                 <td style="font-weight:800;font-size:0.75rem;color:var(--text-dim);text-align:center;padding:0.35rem 0.65rem !important;">${index + 1}</td>
                 <td style="max-width:380px;white-space:normal;line-height:1.35;font-size:0.8rem;font-weight:700;color:var(--text-primary);padding:0.35rem 0.65rem !important;">${escapeAttr(q.questionText)}</td>
@@ -12333,6 +13025,12 @@ function openEditQuestionGroupModal(groupId) {
     document.getElementById('edit-group-name').value = group.name || group.title || '';
     document.getElementById('edit-group-icon').value = group.icon || 'fa-clipboard-check';
     document.getElementById('edit-group-scale').value = group.scoringStrategy || getQuestionBankAuditType(group.auditTypeId).scoringStrategy || 'scaleAverage';
+    
+    const type = (appData.auditTypes || []).find(t => (t.categories || []).some(c => String(c.id) === String(groupId)));
+    const category = type ? (type.categories || []).find(c => String(c.id) === String(groupId)) : null;
+    const weight = category && category.weight !== undefined ? category.weight : 1.0;
+    document.getElementById('edit-group-weight').value = weight;
+    
     updateEditGroupScaleInfo();
     document.getElementById('edit-group-modal').style.display = 'flex';
 }
@@ -12347,6 +13045,7 @@ function ensureEditQuestionGroupModal() {
                     <input type="hidden" id="edit-group-id">
                     <div class="input-group" style="margin-bottom:1rem;"><label style="display:block;font-size:.75rem;font-weight:800;color:var(--text-secondary);margin-bottom:.5rem;text-transform:uppercase;letter-spacing:1px;">Soru Grubu Adı</label><input type="text" id="edit-group-name" class="cms-input"></div>
                     <div class="input-group" style="margin-bottom:1rem;"><label style="display:block;font-size:.75rem;font-weight:800;color:var(--text-secondary);margin-bottom:.5rem;text-transform:uppercase;letter-spacing:1px;">İkon</label><select id="edit-group-icon" class="cms-input"><option value="fa-clipboard-check">Denetim</option><option value="fa-folder-open">Klasör</option><option value="fa-shield-alt">Güvenlik</option><option value="fa-broom">Temizlik</option><option value="fa-train-subway">Peron</option><option value="fa-ticket-alt">Turnike</option></select></div>
+                    <div class="input-group" style="margin-bottom:1rem;"><label style="display:block;font-size:.75rem;font-weight:800;color:var(--text-secondary);margin-bottom:.5rem;text-transform:uppercase;letter-spacing:1px;">Kategori Ağırlığı</label><input type="number" id="edit-group-weight" class="cms-input" min="0" step="0.1" value="1.0"></div>
                     <div class="input-group" style="margin-bottom:1rem;"><label style="display:block;font-size:.75rem;font-weight:800;color:var(--text-secondary);margin-bottom:.5rem;text-transform:uppercase;letter-spacing:1px;">Skala Tipi</label><select id="edit-group-scale" class="cms-input" onchange="updateEditGroupScaleInfo()">${Object.entries(QUESTION_BANK_SCALE_OPTIONS).map(([value, opt]) => `<option value="${value}">${opt.label}</option>`).join('')}</select></div>
                     <div id="edit-group-scale-info" style="background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.35);border-radius:14px;padding:1rem;color:var(--text-primary);line-height:1.45;"></div>
                 </div>
@@ -12740,42 +13439,63 @@ function renderLines() {
     }
     if (emptyState) emptyState.style.display = 'none';
 
-    container.innerHTML = visibleLines.map((line, index) => {
+    const rowsHtml = visibleLines.map((line) => {
         const stations = getSortedLineStations(line);
         const color = appData.lineColors?.[line] || '#2563eb';
 
         return `
-            <article class="line-premium-card line-network-card" style="--line-color:${escapeAttr(color)};--line-index:${index};">
-                <div class="line-premium-top">
-                    <div class="line-premium-title">
-                        <div class="line-network-logo" style="background:${escapeAttr(color)};">${escapeAttr(line)}</div>
+            <tr class="people-row" style="--line-color:${escapeAttr(color)};">
+                <td style="padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border-main); vertical-align: middle;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <div class="line-network-logo" style="background:${escapeAttr(color)}; width: 36px; height: 36px; flex: 0 0 36px; box-shadow: none; font-size: 0.65rem; border-width: 2px;">${escapeAttr(line)}</div>
+                        <span style="font-weight: 700; font-size: 0.85rem; color: var(--text-primary);">${escapeAttr(line)} Hattı</span>
                     </div>
-                    <div class="line-network-top-meta">
-                        <div class="line-network-station-count">
-                            <strong>${stations.length}</strong>
-                            <span>İstasyon</span>
-                        </div>
-                        <div class="line-premium-color">
-                            <span class="line-premium-dot"></span>
-                            ${escapeAttr(color)}
-                        </div>
+                </td>
+                <td style="padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border-main); vertical-align: middle;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">
+                        <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: ${escapeAttr(color)}; border: 1px solid rgba(255,255,255,0.2);"></span>
+                        <span>${escapeAttr(color)}</span>
                     </div>
-                </div>
-
-                <div class="line-premium-actions">
-                    <button class="btn-primary line-network-card-btn line-network-card-btn--stations" onclick="viewStations('${jsArg(line)}')" title="İstasyonları yönet">
-                        <i class="fas fa-location-dot"></i> İstasyonları Yönet
-                    </button>
-                    <button class="btn-outline line-network-card-btn line-network-card-btn--edit" onclick="openEditLineModal('${jsArg(line)}')" title="Hattı düzenle">
-                        <i class="fas fa-pen"></i>
-                    </button>
-                    <button class="btn-outline line-network-card-btn line-network-card-btn--delete" onclick="removeLineFromFirebase('${jsArg(line)}')" title="Hattı sil">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                </div>
-            </article>
+                </td>
+                <td style="padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border-main); vertical-align: middle;">
+                    <span style="font-weight: 700; font-size: 0.8rem; background: rgba(59, 130, 246, 0.08); color: #3b82f6; padding: 0.25rem 0.6rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
+                        <i class="fas fa-location-dot" style="font-size: 0.7rem;"></i> ${stations.length} İstasyon
+                    </span>
+                </td>
+                <td style="padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border-main); text-align: center; vertical-align: middle;">
+                    <div style="display: flex; gap: 0.4rem; justify-content: center; align-items: center;">
+                        <button class="btn-primary" onclick="viewStations('${jsArg(line)}')" title="İstasyonları Yönet" style="font-size: 0.75rem; padding: 0.35rem 0.75rem; height: 28px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; font-weight: 600;">
+                            <i class="fas fa-location-dot" style="font-size: 0.7rem;"></i> İstasyonları Yönet
+                        </button>
+                        <button class="btn-outline" onclick="openEditLineModal('${jsArg(line)}')" title="Hattı Düzenle" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; background: none; border: 1px solid var(--border-main); color: var(--text-secondary); cursor: pointer; transition: all 0.2s;">
+                            <i class="fas fa-pen" style="font-size: 0.7rem;"></i>
+                        </button>
+                        <button class="btn-outline" onclick="removeLineFromFirebase('${jsArg(line)}')" title="Hattı Sil" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; background: none; border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.05)'" onmouseout="this.style.background='none'">
+                            <i class="fas fa-trash-alt" style="font-size: 0.7rem;"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
         `;
     }).join('');
+
+    container.innerHTML = `
+        <div class="table-responsive">
+            <table class="cms-table people-table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        <th style="font-weight: 850; font-size: 0.72rem; text-transform: uppercase; padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-main); text-align: left;">Hat</th>
+                        <th style="font-weight: 850; font-size: 0.72rem; text-transform: uppercase; padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-main); text-align: left;">Hat Rengi</th>
+                        <th style="font-weight: 850; font-size: 0.72rem; text-transform: uppercase; padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-main); text-align: left;">İstasyon Sayısı</th>
+                        <th style="font-weight: 850; font-size: 0.72rem; text-transform: uppercase; padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-main); text-align: center; width: 260px;">İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml}
+                </tbody>
+            </table>
+        </div>
+    `;
 }
 
 function viewStations(lineName) {
@@ -12802,29 +13522,41 @@ function viewStations(lineName) {
             const num = stationNums[station] ?? index + 1;
             const nfcKey = `${lineName}_${station}`;
             const nfcData = appData.stationNfcs?.[nfcKey];
+            const locData = appData.stationLocations?.[nfcKey];
             const nfcBadge = nfcData && nfcData.uid 
-                ? `<span class="station-nfc-badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; margin-left: 8px;"><i class="fa-solid fa-nfc-directional" style="margin-right:2px;"></i> NFC: ${escapeAttr(nfcData.uid)}</span>` 
-                : `<span class="station-nfc-badge" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; margin-left: 8px;"><i class="fas fa-ban" style="margin-right:2px;"></i> NFC Yok</span>`;
+                ? `<span class="station-nfc-badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 700;"><i class="fa-solid fa-nfc-directional" style="margin-right:2px;"></i> NFC: ${escapeAttr(nfcData.uid)}</span>` 
+                : `<span class="station-nfc-badge" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 700;"><i class="fas fa-ban" style="margin-right:2px;"></i> NFC Yok</span>`;
+            const locBadge = locData && locData.latitude && locData.longitude
+                ? `<span class="station-loc-badge" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 700;"><i class="fas fa-location-dot" style="margin-right:2px;"></i> Konum: ${locData.latitude.toFixed(4)}, ${locData.longitude.toFixed(4)} (${locData.radius}m)</span>`
+                : `<span class="station-loc-badge" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 700;"><i class="fas fa-ban" style="margin-right:2px;"></i> Konum Yok</span>`;
             return `
-            <div class="station-premium-item station-network-item"
+            <tr class="people-row station-network-item"
                 data-station-search="${escapeAttr(normalizeLineSearchText(`${num} ${station}`))}"
                 style="--line-color:${escapeAttr(color)};">
-                <div class="station-premium-name">
-                    <span class="station-premium-index">${escapeAttr(num)}</span>
-                    <span class="station-network-name">
-                        <strong style="display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap;">${escapeAttr(station)} ${nfcBadge}</strong>
-                        <small>${escapeAttr(lineName)} hattı · ${escapeAttr(num)}. sıra</small>
-                    </span>
-                </div>
-                <div class="station-network-actions">
-                    <button class="btn-outline station-network-btn station-network-btn--edit" onclick="editStationInLine('${jsArg(lineName)}', '${jsArg(station)}')" title="İstasyonu düzenle">
-                        <i class="fas fa-pen"></i>
-                    </button>
-                    <button class="btn-outline station-network-btn station-network-btn--delete" onclick="removeStationFromFirebase('${jsArg(lineName)}', '${jsArg(station)}')" title="İstasyonu sil">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                </div>
-            </div>
+                <td style="padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border-main); vertical-align: middle;">
+                    <span class="station-premium-index" style="width: 28px; height: 28px; font-size: 0.7rem; border-radius: 6px;">${escapeAttr(num)}</span>
+                </td>
+                <td style="padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border-main); vertical-align: middle;">
+                    <div style="font-weight: 700; font-size: 0.85rem; color: var(--text-primary);">${escapeAttr(station)}</div>
+                    <div style="font-size: 0.68rem; color: var(--text-dim); margin-top: 2px;">${escapeAttr(lineName)} hattı · ${escapeAttr(num)}. sıra</div>
+                </td>
+                <td style="padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border-main); vertical-align: middle;">
+                    <div style="display: inline-flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
+                        ${nfcBadge}
+                        ${locBadge}
+                    </div>
+                </td>
+                <td style="padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border-main); text-align: center; vertical-align: middle;">
+                    <div style="display: flex; gap: 0.4rem; justify-content: center; align-items: center;">
+                        <button class="btn-outline" onclick="editStationInLine('${jsArg(lineName)}', '${jsArg(station)}')" title="İstasyonu Düzenle" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; background: none; border: 1px solid var(--border-main); color: var(--text-secondary); cursor: pointer; transition: all 0.2s;">
+                            <i class="fas fa-pen" style="font-size: 0.7rem;"></i>
+                        </button>
+                        <button class="btn-outline" onclick="removeStationFromFirebase('${jsArg(lineName)}', '${jsArg(station)}')" title="İstasyonu Sil" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; background: none; border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.05)'" onmouseout="this.style.background='none'">
+                            <i class="fas fa-trash-alt" style="font-size: 0.7rem;"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
         `}).join('')
         : '';
 
@@ -12849,8 +13581,20 @@ function viewStations(lineName) {
                 <span id="station-modal-result-count">${stations.length} kayıt</span>
             </div>
 
-            <div class="station-premium-list">
-                ${stationListHtml}
+            <div class="station-premium-table-container table-responsive" style="max-height: min(440px, 52vh); overflow-y: auto;">
+                <table class="cms-table people-table" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th style="font-weight: 850; font-size: 0.72rem; text-transform: uppercase; padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-main); text-align: left; width: 60px;">Sıra</th>
+                            <th style="font-weight: 850; font-size: 0.72rem; text-transform: uppercase; padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-main); text-align: left;">İstasyon</th>
+                            <th style="font-weight: 850; font-size: 0.72rem; text-transform: uppercase; padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-main); text-align: left;">Donanım / Durum</th>
+                            <th style="font-weight: 850; font-size: 0.72rem; text-transform: uppercase; padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-main); text-align: center; width: 100px;">İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${stationListHtml || `<tr><td colspan="4" style="text-align:center; padding:2.5rem; color:var(--text-dim); font-weight:700; font-size:0.8rem;">Henüz istasyon tanımlanmadı.</td></tr>`}
+                    </tbody>
+                </table>
             </div>
 
             <div id="station-modal-empty-state" class="station-network-empty" style="display:${stations.length ? 'none' : 'flex'};">
@@ -13080,23 +13824,31 @@ async function processNewGroup() {
         questions: []
     }, type));
     await saveAuditTypeCategories(type.id, categories);
+    const localType = (appData.auditTypes || []).find(item => String(item.id) === String(type.id));
+    if (localType) localType.categories = categories;
     closeGroupModal();
     showToast('Kategori olusturuldu.');
+    checkAndWarnCategoryWeights(type.id);
 }
 
 async function saveQuestionGroupEdit() {
     const id = document.getElementById('edit-group-id')?.value;
     const name = document.getElementById('edit-group-name')?.value.trim();
     const icon = document.getElementById('edit-group-icon')?.value || 'fa-layer-group';
+    const weightVal = document.getElementById('edit-group-weight')?.value;
+    const weight = weightVal !== undefined && weightVal !== '' ? parseFloat(weightVal) : 1.0;
     if (!id || !name) return showToast('Kategori adini giriniz.');
     const type = (appData.auditTypes || []).find(t => (t.categories || []).some(c => String(c.id) === String(id)));
     if (!type) return showToast('Kategori bulunamadi.');
     const categories = (type.categories || []).map(category => String(category.id) === String(id)
-        ? normalizeAuditModelCategory({ ...category, name, title: name, icon, updatedAt: new Date().toISOString() }, type)
+        ? normalizeAuditModelCategory({ ...category, name, title: name, icon, weight: isNaN(weight) ? 1.0 : weight, updatedAt: new Date().toISOString() }, type)
         : category);
     await saveAuditTypeCategories(type.id, categories);
+    const localType = (appData.auditTypes || []).find(item => String(item.id) === String(type.id));
+    if (localType) localType.categories = categories;
     closeEditQuestionGroupModal();
     showToast('Kategori guncellendi.');
+    checkAndWarnCategoryWeights(type.id);
 }
 
 
@@ -13175,7 +13927,21 @@ async function processNewQuestion() {
     const category = (type.categories || []).find(item => String(item.id) === String(categoryId));
     if (!category) return showToast('Kategori bulunamadi.');
 
-    const isBoolean = (type.allowedAnswerTypes || []).includes('boolean') && !(type.allowedAnswerTypes || []).includes('scale');
+    const selectedTypeVal = document.getElementById('new-q-type')?.value || '5s-score';
+    let qType = '5s-score';
+    let qAnswerType = 'scale';
+    let qMaxScore = 5;
+
+    if (selectedTypeVal === 'scale6') {
+        qType = 'scale6';
+        qAnswerType = 'scale6';
+        qMaxScore = 5;
+    } else if (selectedTypeVal === 'yes-no') {
+        qType = 'yes-no';
+        qAnswerType = 'boolean';
+        qMaxScore = 1;
+    }
+
     const categories = (type.categories || []).map(item => {
         if (String(item.id) !== String(categoryId)) return item;
         const questions = [...(item.questions || [])];
@@ -13187,9 +13953,9 @@ async function processNewQuestion() {
             categoryName: item.name,
             text: questionText,
             questionText,
-            type: isBoolean ? 'yes-no' : '5s-score',
-            answerType: isBoolean ? 'boolean' : 'scale',
-            maxScore: isBoolean ? 1 : 5,
+            type: qType,
+            answerType: qAnswerType,
+            maxScore: qMaxScore,
             orderIndex: questions.length
         }, item, type));
         return normalizeAuditModelCategory({ ...item, questions }, type);
@@ -13334,6 +14100,46 @@ async function deleteEmbeddedAuditTypeQuestion(questionId) {
     }
 }
 
+async function deleteEmbeddedAuditTypeCategory(categoryId) {
+    if (!appData.auditTypes) return null;
+    let targetAuditTypeId = null;
+    for (const type of appData.auditTypes) {
+        let changed = false;
+        const updatedCategories = (type.categories || []).map(category => {
+            if (String(category.id) === String(categoryId)) {
+                changed = true;
+                targetAuditTypeId = type.id;
+                return { ...category, isDeleted: true, isActive: false, updatedAt: new Date().toISOString() };
+            }
+            return category;
+        });
+
+        if (changed) {
+            await db.collection('auditTypes').doc(type.id).set({
+                categories: updatedCategories
+            }, { merge: true });
+            type.categories = updatedCategories;
+            break;
+        }
+    }
+    return targetAuditTypeId;
+}
+
+function checkAndWarnCategoryWeights(auditTypeId) {
+    const type = (appData.auditTypes || []).find(t => String(t.id) === String(auditTypeId));
+    if (!type) return;
+    const activeCategories = (type.categories || []).filter(c => !c.isDeleted && c.isActive !== false);
+    let sum = 0;
+    activeCategories.forEach(c => {
+        sum += c.weight !== undefined ? Number(c.weight) : 1.0;
+    });
+    if (Math.abs(sum - 100) > 0.0001) {
+        setTimeout(() => {
+            showToast(`Uyarı: "${type.title}" aktif kategori ağırlıkları toplamı 100 olmalıdır. (Mevcut: ${sum})`, 'warning');
+        }, 500);
+    }
+}
+
 async function toggleQuestionStatus(questionId, currentActive) {
     try {
         const nextActive = !currentActive;
@@ -13368,6 +14174,16 @@ function openEditQuestionModal(questionId) {
     document.getElementById('edit-q-id').value = question.id;
     document.getElementById('edit-q-text').value = question.questionText || '';
     document.getElementById('edit-q-category').value = question.categoryName || '';
+    
+    let currentTypeVal = '5s-score';
+    if (question.answerType === 'scale6' || question.type === 'scale6') {
+        currentTypeVal = 'scale6';
+    } else if (question.answerType === 'boolean' || question.type === 'yes-no') {
+        currentTypeVal = 'yes-no';
+    }
+    const typeSelect = document.getElementById('edit-q-type');
+    if (typeSelect) typeSelect.value = currentTypeVal;
+    
     document.getElementById('edit-question-modal').style.display = 'flex';
 }
 
@@ -13385,6 +14201,14 @@ function ensureEditQuestionModal() {
                     <div class="input-group" style="display:flex;flex-direction:column;gap:0.5rem;">
                         <label style="display:block;font-size:.72rem;font-weight:800;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin:0;">Kategori Adı</label>
                         <input type="text" id="edit-q-category" class="cms-input" style="width:100%;padding:0.65rem 0.85rem;border-radius:10px;background:var(--bg-main);border:1px solid var(--border-main);color:var(--text-primary);font-size:0.85rem;font-weight:700;box-sizing:border-box;">
+                    </div>
+                    <div class="input-group" style="display:flex;flex-direction:column;gap:0.5rem;">
+                        <label style="display:block;font-size:.72rem;font-weight:800;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin:0;">Değerlendirme Skalası (Soru Tipi)</label>
+                        <select id="edit-q-type" class="cms-input" style="width:100%;padding:0.65rem 0.85rem;border-radius:10px;background:var(--bg-main);border:1px solid var(--border-main);color:var(--text-primary);font-size:0.85rem;font-weight:700;box-sizing:border-box;">
+                            <option value="5s-score">1-5 Skalası (1-5 Puan)</option>
+                            <option value="scale6">6'lı Sistem Skalası (0-5 Puan)</option>
+                            <option value="yes-no">Evet / Hayır</option>
+                        </select>
                     </div>
                     <div class="input-group" style="display:flex;flex-direction:column;gap:0.5rem;">
                         <label style="display:block;font-size:.72rem;font-weight:800;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin:0;">Soru Metni</label>
@@ -13409,19 +14233,44 @@ async function saveQuestionEdit() {
     const id = document.getElementById('edit-q-id')?.value;
     const categoryName = document.getElementById('edit-q-category')?.value.trim();
     const questionText = document.getElementById('edit-q-text')?.value.trim();
+    const selectedTypeVal = document.getElementById('edit-q-type')?.value || '5s-score';
+    
     if (!id || !categoryName || !questionText) return showToast('Lütfen tüm alanları doldurunuz.');
+
+    let qType = '5s-score';
+    let qAnswerType = 'scale';
+    let qMaxScore = 5;
+
+    if (selectedTypeVal === 'scale6') {
+        qType = 'scale6';
+        qAnswerType = 'scale6';
+        qMaxScore = 5;
+    } else if (selectedTypeVal === 'yes-no') {
+        qType = 'yes-no';
+        qAnswerType = 'boolean';
+        qMaxScore = 1;
+    }
+
+    const updates = { 
+        categoryName, 
+        questionText,
+        type: qType,
+        answerType: qAnswerType,
+        maxScore: qMaxScore
+    };
+
     try {
-        await updateEmbeddedAuditTypeQuestion(id, { categoryName, questionText });
+        await updateEmbeddedAuditTypeQuestion(id, updates);
 
         const auditDocRef = db.collection('auditQuestions').doc(id);
         const auditDocSnap = await auditDocRef.get();
         if (auditDocSnap.exists) {
-            await auditDocRef.set({ categoryName, questionText }, { merge: true });
+            await auditDocRef.set(updates, { merge: true });
         }
         const questionsDocRef = db.collection('questions').doc(id);
         const questionsDocSnap = await questionsDocRef.get();
         if (questionsDocSnap.exists) {
-            await questionsDocRef.set({ categoryName, questionText }, { merge: true });
+            await questionsDocRef.set(updates, { merge: true });
         }
         closeEditQuestionModal();
         deriveCompatibilityCollectionsFromAuditTypes();
@@ -13996,7 +14845,8 @@ async function seedLinesStationsToFirebase() {
             lines: appData.lines || [],
             stations: appData.stations || {},
             stationNumbers: appData.stationNumbers || {},
-            stationNfcs: appData.stationNfcs || {}
+            stationNfcs: appData.stationNfcs || {},
+            stationLocations: appData.stationLocations || {}
         });
         console.log('Lines/Stations seeded to Firestore.');
     } catch (e) {
@@ -14011,7 +14861,8 @@ async function saveLinesStationsToFirebase() {
             lines: appData.lines || [],
             stations: appData.stations || {},
             stationNumbers: appData.stationNumbers || {},
-            stationNfcs: appData.stationNfcs || {}
+            stationNfcs: appData.stationNfcs || {},
+            stationLocations: appData.stationLocations || {}
         }, { merge: true });
         console.log('Lines/Stations saved to Firestore.');
     } catch (e) {
@@ -15053,3 +15904,5 @@ async function handlePlanningExcelImport(event) {
     };
     reader.readAsArrayBuffer(file);
 }
+
+
