@@ -829,6 +829,9 @@ function initRealtimeSync() {
         renderPeople();
         renderPermissions();
         populateStatsFilters();
+        if (appData.auditsLoaded) {
+            renderAll();
+        }
     }, err => console.error('Users Sync Error:', err));
 
     // Permissions Listener
@@ -11824,12 +11827,19 @@ function getUserUsername(user) {
 
 function getAuditorDisplayName(auditorName) {
     if (!auditorName || auditorName === 'Bilinmeyen' || auditorName === 'Bilinmiyor') return auditorName;
-    const user = (appData.users || []).find(u => 
-        u.username === auditorName || 
-        u.name === auditorName || 
-        u.fullName === auditorName ||
-        (u.email && u.email.split('@')[0] === auditorName.split('@')[0])
-    );
+    const searchName = auditorName.toLowerCase().trim();
+    const user = (appData.users || []).find(u => {
+        const username = String(u.username || '').toLowerCase().trim();
+        const name = String(u.name || '').toLowerCase().trim();
+        const fullName = String(u.fullName || '').toLowerCase().trim();
+        const emailPrefix = u.email ? String(u.email.split('@')[0] || '').toLowerCase().trim() : '';
+        const searchPrefix = searchName.split('@')[0];
+        
+        return username === searchName || 
+               name === searchName || 
+               fullName === searchName ||
+               (emailPrefix && emailPrefix === searchPrefix);
+    });
     return user ? getUserDisplayName(user) : auditorName;
 }
 
