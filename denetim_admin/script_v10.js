@@ -3634,9 +3634,27 @@ function renderImageGallery(paths) {
     `;
 }
 
+let selectedClosePhotos = [];
+
 function openNCCloseModal(id) {
     document.getElementById('nc-close-id').value = id;
     document.getElementById('nc-close-comment').value = '';
+    
+    // Reset photo selection
+    selectedClosePhotos = [];
+    const input = document.getElementById('nc-photo-input');
+    if (input) input.value = '';
+    
+    const previews = document.getElementById('nc-photo-previews');
+    if (previews) previews.innerHTML = '';
+    
+    const btn = document.getElementById('nc-photo-btn');
+    if (btn) {
+        btn.innerHTML = '<i class="fas fa-camera" style="font-size: 1.5rem; margin-bottom: 0.5rem;"></i><span style="font-size: 0.8rem; font-weight: 600;">Kanıt Fotoğrafı Ekle</span>';
+        btn.style.borderColor = '';
+        btn.style.background = '';
+    }
+
     document.getElementById('nc-close-modal').style.display = 'flex';
 }
 
@@ -3644,7 +3662,7 @@ function closeNCModal() {
     document.getElementById('nc-close-modal').style.display = 'none';
 }
 
-function processNCClose() {
+async function processNCClose() {
     const id = document.getElementById('nc-close-id').value;
     const comment = document.getElementById('nc-close-comment').value;
 
@@ -3653,19 +3671,53 @@ function processNCClose() {
         return;
     }
 
-    const closureName = currentUser ? (currentUser.name || currentUser.username || (currentUser.email ? currentUser.email.split('@')[0] : '')) : 'Admin';
-    db.collection('nonconformities').doc(id).update({
-        status: 'waitingControl',
-        closureComment: comment,
-        closureDate: new Date().toISOString(),
-        closedByName: closureName
-    }).then(() => {
+    if (selectedClosePhotos.length === 0) {
+        showToast('Lütfen en az 1 adet çözüm kanıt fotoğrafı ekleyiniz!');
+        return;
+    }
+
+    const saveBtn = document.querySelector('#nc-close-modal .btn-primary');
+    let originalBtnHtml = '';
+    if (saveBtn) {
+        originalBtnHtml = saveBtn.innerHTML;
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Yükleniyor...';
+    }
+
+    try {
+        const uploadPromises = selectedClosePhotos.map(async (file, index) => {
+            const extension = file.name.split('.').pop() || 'jpg';
+            const storagePath = `nonconformities/${id}_${Date.now()}_${index}.${extension}`;
+            const storageRef = storage.ref(storagePath);
+            
+            showToast(`${index + 1}. fotoğraf yükleniyor...`);
+            const snapshot = await storageRef.put(file);
+            const downloadUrl = await snapshot.ref.getDownloadURL();
+            return downloadUrl;
+        });
+
+        const closurePhotoPaths = await Promise.all(uploadPromises);
+        const closureName = currentUser ? (currentUser.name || currentUser.username || (currentUser.email ? currentUser.email.split('@')[0] : '')) : 'Admin';
+
+        await db.collection('nonconformities').doc(id).update({
+            status: 'waitingControl',
+            closureComment: comment,
+            closureDate: new Date().toISOString(),
+            closedByName: closureName,
+            closurePhotoPaths: closurePhotoPaths
+        });
+
         showToast(`${id} kontrol için gönderildi.`);
         closeNCModal();
-    }).catch(err => {
+        if (typeof renderNCs === 'function') renderNCs();
+    } catch (err) {
         console.error('NC Close Error:', err);
-        showToast('Hata oluştu!');
-    });
+        showToast('Fotoğraflar yüklenirken veya durum güncellenirken hata oluştu!');
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = originalBtnHtml;
+        }
+    }
 }
 
 function approveNC(id) {
@@ -11471,13 +11523,60 @@ function handleGlobalSearch(e) {
     }
 }
 
-function mockAddPhoto() {
+function handleClosePhotoSelect(event) {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
+
+    // Limit to 3 files total
+    const remainingSlots = 3 - selectedClosePhotos.length;
+    if (remainingSlots <= 0) {
+        showToast('En fazla 3 adet kanıt fotoğrafı ekleyebilirsiniz.');
+        return;
+    }
+
+    const filesToAdd = files.slice(0, remainingSlots);
+    selectedClosePhotos = selectedClosePhotos.concat(filesToAdd);
+
+    renderClosePhotoPreviews();
+}
+
+function removeClosePhoto(index) {
+    selectedClosePhotos.splice(index, 1);
+    renderClosePhotoPreviews();
+    
+    // Also reset input so that the same files can be re-selected if deleted
+    const input = document.getElementById('nc-photo-input');
+    if (input) input.value = '';
+}
+
+function renderClosePhotoPreviews() {
+    const previewsContainer = document.getElementById('nc-photo-previews');
+    if (!previewsContainer) return;
+
+    previewsContainer.innerHTML = selectedClosePhotos.map((file, index) => {
+        const localUrl = URL.createObjectURL(file);
+        return `
+            <div class="nc-photo-preview-item" style="position: relative; width: 68px; height: 68px; border-radius: 8px; border: 1px solid var(--border-main); overflow: hidden; background: var(--bg-input);">
+                <img src="${localUrl}" style="width: 100%; height: 100%; object-fit: cover;" alt="Önizleme">
+                <button type="button" onclick="removeClosePhoto(${index})" style="position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; background: rgba(239, 68, 68, 0.85); border: none; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#ef4444'" onmouseout="this.style.background='rgba(239, 68, 68, 0.85)'">
+                    <i class="fas fa-times" style="font-size: 0.6rem;"></i>
+                </button>
+            </div>
+        `;
+    }).join('');
+
     const btn = document.getElementById('nc-photo-btn');
-    if (!btn) return;
-    btn.innerHTML = '<i class="fas fa-check-circle" style="color: #10b981; font-size: 1.5rem; margin-bottom: 0.5rem;"></i><span style="font-size: 0.8rem; font-weight: 600; color: #10b981;">Fotoğraf Eklendi (1/3)</span>';
-    btn.style.borderColor = '#10b981';
-    btn.style.background = 'rgba(16, 185, 129, 0.05)';
-    showToast('Kanıt fotoğrafı eklendi.');
+    if (btn) {
+        if (selectedClosePhotos.length > 0) {
+            btn.innerHTML = `<i class="fas fa-check-circle" style="color: #10b981; font-size: 1.5rem; margin-bottom: 0.5rem;"></i><span style="font-size: 0.8rem; font-weight: 600; color: #10b981;">Fotoğraf Eklendi (${selectedClosePhotos.length}/3)</span>`;
+            btn.style.borderColor = '#10b981';
+            btn.style.background = 'rgba(16, 185, 129, 0.05)';
+        } else {
+            btn.innerHTML = '<i class="fas fa-camera" style="font-size: 1.5rem; margin-bottom: 0.5rem;"></i><span style="font-size: 0.8rem; font-weight: 600;">Kanıt Fotoğrafı Ekle</span>';
+            btn.style.borderColor = '';
+            btn.style.background = '';
+        }
+    }
 }
 
 // ─── QUESTION BANK MANAGEMENT ───
