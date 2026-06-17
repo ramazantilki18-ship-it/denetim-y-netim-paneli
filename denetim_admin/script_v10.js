@@ -5173,7 +5173,7 @@ function exportDetailedAnswersToExcel() {
             const row = {};
             row['Denetim ID'] = audit.id || '';
             row['Tarih'] = dateStr;
-            row['Denetçi'] = audit.auditorName || '';
+            row['Denetçi'] = getAuditorDisplayName(audit.auditorName) || '';
             row['Hat'] = audit.line || '';
             row['İstasyon'] = audit.station || '';
             row['Denetim Tipi'] = typeName;
@@ -5239,7 +5239,7 @@ function exportAuditsToExcel() {
             return {
                 'Denetim ID': audit.id || '',
                 'Tarih': dateStr,
-                'Denetçi': audit.auditorName || '',
+                'Denetçi': getAuditorDisplayName(audit.auditorName) || '',
                 'Hat': audit.line || '',
                 'İstasyon': audit.station || '',
                 'Denetim Tipi': typeName,
@@ -7723,7 +7723,7 @@ function createAuditRow(audit, options = {}) {
         <td class="audit-station-cell">
             <div>${audit.station}</div>
         </td>
-        <td class="audit-user-cell">${audit.auditorName}</td>
+        <td class="audit-user-cell">${escapeAttr(getAuditorDisplayName(audit.auditorName))}</td>
         <td class="audit-score-cell"><strong style="color: ${statusColor};">${displayScore.toFixed(1)}</strong></td>
         <td class="audit-status-cell"><span class="status-badge" style="background: ${statusColor}22; color: ${statusColor}; border-color: ${statusColor};">${statusText}</span></td>
         ${!hideActionColumn ? `
@@ -7861,7 +7861,7 @@ function openAuditModal(id) {
                             </div>
                             <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                                 <div style="padding: 6px 12px; background: rgba(255,255,255,0.1); border-radius: 8px; font-size: 0.7rem; font-weight: 800; display: flex; align-items: center; gap: 6px;" title="Kullanıcı">
-                                    <i class="fas fa-user" style="opacity: 0.7;"></i> ${audit.auditorName || 'Bilinmiyor'}
+                                    <i class="fas fa-user" style="opacity: 0.7;"></i> ${escapeAttr(getAuditorDisplayName(audit.auditorName || 'Bilinmiyor'))}
                                 </div>
                                 <div style="padding: 6px 12px; background: rgba(255,255,255,0.1); border-radius: 8px; font-size: 0.7rem; font-weight: 800; display: flex; align-items: center; gap: 6px;" title="Tarih">
                                     <i class="far fa-calendar-alt" style="opacity: 0.7;"></i> ${dateOnly}
@@ -9192,7 +9192,7 @@ function drawAuditPdfHero(doc, audit, y) {
         auditPdfText(doc, `Tarih: ${formatAuditPdfDateTime(audit.date)}`, infoX, infoY);
         infoY += 4;
     }
-    auditPdfText(doc, `Denetçi: ${audit.auditorName || '-'}`, infoX, infoY);
+    auditPdfText(doc, `Denetçi: ${getAuditorDisplayName(audit.auditorName) || '-'}`, infoX, infoY);
 
     const badgeH = 20;
     const badgeY = y + 5;
@@ -9358,7 +9358,7 @@ async function generateBulkAuditPDFs(action = 'download') {
                     toTurkishUpperCase(safePdfValue(a.auditType)),
                     toTurkishUpperCase(safePdfValue(a.line)),
                     toTurkishUpperCase(a.station || '-'),
-                    toTurkishUpperCase(safePdfValue(a.auditorName)),
+                    toTurkishUpperCase(safePdfValue(getAuditorDisplayName(a.auditorName))),
                     Number(a.score || 0).toFixed(1)
                 ]),
                 styles: { font: 'DejaVuSans', fontStyle: 'normal', fontSize: 8.5, cellPadding: 4, valign: 'middle', textColor: [51, 65, 85] },
@@ -11819,6 +11819,17 @@ function getUserDisplayName(user) {
 
 function getUserUsername(user) {
     return user.username || (user.email ? user.email.split('@')[0] : '') || getUserDisplayName(user);
+}
+
+function getAuditorDisplayName(auditorName) {
+    if (!auditorName || auditorName === 'Bilinmeyen' || auditorName === 'Bilinmiyor') return auditorName;
+    const user = (appData.users || []).find(u => 
+        u.username === auditorName || 
+        u.name === auditorName || 
+        u.fullName === auditorName ||
+        (u.email && u.email.split('@')[0] === auditorName.split('@')[0])
+    );
+    return user ? getUserDisplayName(user) : auditorName;
 }
 
 function getUserAuthorityValue(user) {
@@ -14566,7 +14577,8 @@ function renderAuditorPerformance() {
 
     const rows = Object.entries(auditorStats).map(([name, stats]) => {
         const avgScore = stats.auditsCount > 0 ? stats.totalScore / stats.auditsCount : 0;
-        return { name, ...stats, avgScore };
+        const displayName = getAuditorDisplayName(name);
+        return { name: displayName, ...stats, avgScore };
     }).sort((a, b) => b.auditsCount - a.auditsCount);
 
     if (!rows.length) {
