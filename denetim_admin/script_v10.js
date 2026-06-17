@@ -7923,7 +7923,7 @@ function openAuditModal(id) {
             const comment = ans ? [ (ans.comment || ans.detail || '').trim(), ...(Array.isArray(ans.additionalComments) ? ans.additionalComments : []) ].filter(Boolean).join('<br/><br/>') : '';
 
             return `
-                        <div onclick="goToNCFromAudit('${audit.id}', '${cat}')" class="audit-nc-card${isResolved ? ' is-resolved' : ''}">
+                        <div onclick="goToNCFromAudit('${audit.id}', '${cat}', '${nc ? nc.id : ''}')" class="audit-nc-card${isResolved ? ' is-resolved' : ''}">
                             <div style="width: 36px; height: 36px; background: ${isResolved ? '#f0fdf4' : '#fff1f2'}; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: ${cardStatusColor}; flex-shrink: 0;">
                                 <i class="fas ${isResolved ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i>
                             </div>
@@ -7948,12 +7948,12 @@ function openAuditModal(id) {
                                         if (nc && nc.auditorPhotoPaths && nc.auditorPhotoPaths.length > 0) {
                                             return `
                                                 <div style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px;">
-                                                    ${nc.auditorPhotoPaths.slice(0, 3).map(p => {
-                                                        const resolved = resolveImagePath(p);
-                                                        return `
-                                                            <img src="${resolved}" class="audit-nc-thumb">
-                                                        `;
-                                                    }).join('')}
+                                                     ${nc.auditorPhotoPaths.slice(0, 3).map(p => {
+                                                         const resolved = resolveImagePath(p);
+                                                         return `
+                                                             <img src="${resolved}" class="audit-nc-thumb" onclick="openImagePreview('${resolved}'); event.stopPropagation();" title="Görseli büyük aç">
+                                                         `;
+                                                     }).join('')}
                                                     ${nc.auditorPhotoPaths.length > 3 ? `<div style="width: 40px; height: 40px; border-radius: 6px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: #64748b; font-weight: 700;">+${nc.auditorPhotoPaths.length - 3}</div>` : ''}
                                                 </div>
                                             `;
@@ -8207,8 +8207,14 @@ function openAuditModal(id) {
     }
 }
 
-function goToNCFromAudit(auditId, category) {
-    const nc = appData.nonconformities.find(n => String(n.auditId) === String(auditId) && n.category === category);
+function goToNCFromAudit(auditId, category, ncId) {
+    let nc = null;
+    if (ncId) {
+        nc = appData.nonconformities.find(n => String(n.id) === String(ncId));
+    }
+    if (!nc) {
+        nc = appData.nonconformities.find(n => String(n.auditId) === String(auditId) && n.category === category);
+    }
     if (nc) {
         // Close the current audit modal first to avoid ID/Z-index confusion, then open NC
         parentAuditIdForNC = null;
