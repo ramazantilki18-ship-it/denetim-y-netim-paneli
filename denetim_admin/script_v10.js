@@ -10101,7 +10101,7 @@ function updateCharts(data) {
 
         const sortedAuditors = Object.keys(auditorStats).map(name => {
             return {
-                name,
+                name: getAuditorDisplayName(name),
                 count: auditorStats[name].count
             };
         }).sort((a, b) => b.count - a.count); // Sort descending by count
