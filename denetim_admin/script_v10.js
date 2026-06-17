@@ -1187,12 +1187,12 @@ function populateStatsFilters() {
         const currentUsers = getMultiSelectValues(userSelect);
         if (userSelect.options.length <= 1) {
             userSelect.innerHTML = '<option value="all">Tüm Denetçiler</option>';
-            const userNames = [
-                ...(appData.users || []).map(u => u.name || u.username).filter(Boolean),
+            const usernames = [
+                ...(appData.users || []).map(u => getUserUsername(u)).filter(Boolean),
                 ...accessibleAudits.map(audit => audit.auditorName).filter(Boolean)
             ];
-            [...new Set(userNames)].sort((a, b) => a.localeCompare(b, 'tr')).forEach(userName => {
-                userSelect.add(new Option(userName, userName));
+            [...new Set(usernames)].sort((a, b) => getAuditorDisplayName(a).localeCompare(getAuditorDisplayName(b), 'tr')).forEach(uName => {
+                userSelect.add(new Option(getAuditorDisplayName(uName), uName));
             });
             setMultiSelectValues(userSelect, currentUsers);
         }
@@ -1296,9 +1296,9 @@ function populateAuditPageFilters() {
     const currentUsers = getMultiSelectValues(userSelect);
     if (userSelect.options.length <= 1) {
         userSelect.innerHTML = '<option value="all">Tüm Kullanıcılar</option>';
-        const auditors = accessibleAudits.map(audit => audit.auditorName).filter(Boolean);
-        [...new Set(auditors)].sort((a, b) => a.localeCompare(b, 'tr')).forEach(auditor => {
-            userSelect.add(new Option(auditor, auditor));
+        const auditors = [...new Set(accessibleAudits.map(audit => audit.auditorName).filter(Boolean))];
+        auditors.sort((a, b) => getAuditorDisplayName(a).localeCompare(getAuditorDisplayName(b), 'tr')).forEach(auditor => {
+            userSelect.add(new Option(getAuditorDisplayName(auditor), auditor));
         });
         setMultiSelectValues(userSelect, currentUsers);
     }
@@ -2904,7 +2904,7 @@ function renderNCs(filter) {
         const auditorComment = String(nc.auditorComment || '').trim();
         const closureComment = String(nc.closureComment || '').trim();
         
-        const closedByName = nc.closedByName || nc.auditorName || owner || '-';
+        const closedByName = getAuditorDisplayName(nc.closedByName) || getAuditorDisplayName(nc.auditorName) || owner || '-';
         const approvedByName = (nc.approvedByName && nc.approvedByName !== '-')
             ? nc.approvedByName
             : (nc.status === 'completed' ? 'Ramazan Tilki' : '-');
@@ -3595,7 +3595,8 @@ function inspectNC(id, parentAuditId = null) {
 }
 
 function getNcResponsibleTitle(nc, audit = {}) {
-    return audit.auditorName || nc.auditorName || nc.owner || 'Kullanıcı Atanmamış';
+    const raw = audit.auditorName || nc.auditorName || nc.owner || 'Kullanıcı Atanmamış';
+    return getAuditorDisplayName(raw);
 }
 
 function renderImageGallery(paths) {
@@ -6583,7 +6584,7 @@ function renderProfessionalAuditorChart(audits) {
         if (!groups.has(auditor)) groups.set(auditor, []);
         groups.get(auditor).push(getAuditDisplayScore(audit));
     });
-    const rows = [...groups.entries()].map(([auditor, scores]) => ({ auditor, average: statsMean(scores), count: scores.length }))
+    const rows = [...groups.entries()].map(([auditor, scores]) => ({ auditor: getAuditorDisplayName(auditor), average: statsMean(scores), count: scores.length }))
         .sort((a, b) => b.count - a.count).slice(0, 10);
     statsSetScrollableChartHeight('stats-auditor-scroll', 'stats-auditor-canvas-wrap', rows.length, 54);
     const options = statsBaseOptions({ indexAxis: 'y', percentage: true });
@@ -14446,9 +14447,9 @@ function populateDashboardFilters() {
     const currentUsers = getMultiSelectValues(userSelect);
     if (userSelect.options.length <= 1) {
         userSelect.innerHTML = '<option value="all">Tüm Denetçiler</option>';
-        const auditors = accessibleAudits.map(audit => audit.auditorName).filter(Boolean);
-        [...new Set(auditors)].sort((a, b) => a.localeCompare(b, 'tr')).forEach(auditor => {
-            userSelect.add(new Option(auditor, auditor));
+        const auditors = [...new Set(accessibleAudits.map(audit => audit.auditorName).filter(Boolean))];
+        auditors.sort((a, b) => getAuditorDisplayName(a).localeCompare(getAuditorDisplayName(b), 'tr')).forEach(auditor => {
+            userSelect.add(new Option(getAuditorDisplayName(auditor), auditor));
         });
         setMultiSelectValues(userSelect, currentUsers);
     }
