@@ -283,8 +283,18 @@ function isFieldAuditorActionOwner(user = currentUser) {
 }
 
 function canOperationalRoleAccessView(viewId, user = currentUser) {
-    if (isFieldAuditor(user)) return FIELD_AUDITOR_WEB_VIEWS.has(viewId);
-    if (isFieldAuditorActionOwner(user)) return ACTION_OWNER_WEB_VIEWS.has(viewId);
+    if (isFieldAuditor(user)) {
+        if (FIELD_AUDITOR_WEB_VIEWS.has(viewId)) return true;
+        if ((viewId === 'stats-view' || viewId === 'reports-view') && hasPermission('stats_view', user)) return true;
+        if (viewId === 'dashboard-view' && hasPermission('dashboard_view', user)) return true;
+        return false;
+    }
+    if (isFieldAuditorActionOwner(user)) {
+        if (ACTION_OWNER_WEB_VIEWS.has(viewId)) return true;
+        if ((viewId === 'stats-view' || viewId === 'reports-view') && hasPermission('stats_view', user)) return true;
+        if (viewId === 'dashboard-view' && hasPermission('dashboard_view', user)) return true;
+        return false;
+    }
     return true;
 }
 
@@ -363,6 +373,231 @@ const DEFAULT_SYSTEM_SETTINGS = {
 
 // Charts
 let performanceChart, categoryChart, auditorChart, statsTrendChart, statsLineDistChart, statsNcStatusChart, statsCategorySuccessChart;
+
+// Unified Date Filter Configurations for Dashboard, Stats, Audits, and NC Pages
+const unifiedDateFilters = {
+    dashboard: { years: [], months: [], weeks: [], days: [], activeTab: 'year', labelId: 'unified-date-label', containerId: 'custom-options-unified-date', applyFn: () => renderAll() },
+    stats: { years: [], months: [], weeks: [], days: [], activeTab: 'year', labelId: 'stats-unified-date-label', containerId: 'custom-options-stats-unified-date', applyFn: () => updateStats() },
+    audits: { years: [], months: [], weeks: [], days: [], activeTab: 'year', labelId: 'audits-unified-date-label', containerId: 'custom-options-audits-unified-date', applyFn: () => renderAllAuditsTable() },
+    nc: { years: [], months: [], weeks: [], days: [], activeTab: 'year', labelId: 'nc-unified-date-label', containerId: 'custom-options-nc-unified-date', applyFn: () => renderNCs() }
+};
+
+function getISOWeekNumber(d) {
+    const date = new Date(d.getTime());
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+    const week1 = new Date(date.getFullYear(), 0, 4);
+    return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000
+                          - 3 + (week1.getDay() + 6) % 7) / 7);
+}
+
+function getLocalDateString(dateStr) {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+}
+
+function switchDateTab(pageName = 'dashboard', tabName, e) {
+    if (e) e.stopPropagation();
+    unifiedDateFilters[pageName].activeTab = tabName;
+    renderUnifiedDateOptions(pageName);
+}
+
+function toggleUnifiedDateItem(pageName = 'dashboard', type, value, checked) {
+    const filter = unifiedDateFilters[pageName];
+    if (type === 'year') {
+        if (checked) {
+            if (!filter.years.includes(value)) filter.years.push(value);
+        } else {
+            filter.years = filter.years.filter(y => y !== value);
+        }
+    } else if (type === 'month') {
+        if (checked) {
+            if (!filter.months.includes(value)) filter.months.push(value);
+        } else {
+            filter.months = filter.months.filter(m => m !== value);
+        }
+    } else if (type === 'week') {
+        if (checked) {
+            if (!filter.weeks.includes(value)) filter.weeks.push(value);
+        } else {
+            filter.weeks = filter.weeks.filter(w => w !== value);
+        }
+    } else if (type === 'day') {
+        if (checked) {
+            if (!filter.days.includes(value)) filter.days.push(value);
+        } else {
+            filter.days = filter.days.filter(d => d !== value);
+        }
+    }
+    const sumEl = document.querySelector(`#${filter.containerId} .date-summary-text`);
+    if (sumEl) sumEl.innerText = getUnifiedDateSummary(pageName);
+}
+
+function getUnifiedDateSummary(pageName = 'dashboard') {
+    const filter = unifiedDateFilters[pageName];
+    const parts = [];
+    if (filter.years.length > 0) parts.push(`${filter.years.length} Yıl`);
+    if (filter.months.length > 0) parts.push(`${filter.months.length} Ay`);
+    if (filter.weeks.length > 0) parts.push(`${filter.weeks.length} Hf`);
+    if (filter.days.length > 0) parts.push(`${filter.days.length} Gün`);
+    return parts.length > 0 ? parts.join(', ') : 'Tüm Zamanlar';
+}
+
+function clearUnifiedDateFilters(pageName = 'dashboard', e) {
+    if (e) e.stopPropagation();
+    const filter = unifiedDateFilters[pageName];
+    filter.years = [];
+    filter.months = [];
+    filter.weeks = [];
+    filter.days = [];
+    renderUnifiedDateOptions(pageName);
+    updateUnifiedDateTriggerLabel(pageName);
+}
+
+function applyUnifiedDateFilters(pageName = 'dashboard', e) {
+    if (e) e.stopPropagation();
+    updateUnifiedDateTriggerLabel(pageName);
+    const card = document.getElementById(unifiedDateFilters[pageName].containerId);
+    if (card) card.style.display = 'none';
+    if (typeof unifiedDateFilters[pageName].applyFn === 'function') {
+        unifiedDateFilters[pageName].applyFn();
+    }
+}
+
+function updateUnifiedDateTriggerLabel(pageName = 'dashboard') {
+    const filter = unifiedDateFilters[pageName];
+    const label = document.getElementById(filter.labelId);
+    if (!label) return;
+    label.innerText = getUnifiedDateSummary(pageName);
+}
+
+function renderUnifiedDateOptions(pageName = 'dashboard') {
+    const filter = unifiedDateFilters[pageName];
+    const container = document.getElementById(filter.containerId);
+    if (!container) return;
+
+    const audits = getFilteredAudits() || [];
+    
+    const yearsSet = new Set();
+    const months = [
+        { value: '1', text: 'Ocak' },
+        { value: '2', text: 'Şubat' },
+        { value: '3', text: 'Mart' },
+        { value: '4', text: 'Nisan' },
+        { value: '5', text: 'Mayıs' },
+        { value: '6', text: 'Haziran' },
+        { value: '7', text: 'Temmuz' },
+        { value: '8', text: 'Ağustos' },
+        { value: '9', text: 'Eylül' },
+        { value: '10', text: 'Ekim' },
+        { value: '11', text: 'Kasım' },
+        { value: '12', text: 'Aralık' }
+    ];
+    
+    const weeksSet = new Set();
+    const daysSet = new Set();
+
+    audits.forEach(audit => {
+        if (!audit.date) return;
+        const d = new Date(audit.date);
+        if (isNaN(d.getTime())) return;
+        
+        const y = d.getFullYear().toString();
+        yearsSet.add(y);
+        
+        const w = getISOWeekNumber(d);
+        weeksSet.add(w);
+        
+        const localDateStr = getLocalDateString(audit.date);
+        if (localDateStr) daysSet.add(localDateStr);
+    });
+
+    const years = [...yearsSet].sort((a, b) => b.localeCompare(a));
+    const weeks = [...weeksSet].sort((a, b) => a - b);
+    const days = [...daysSet].sort((a, b) => b.localeCompare(a));
+
+    const activeTab = filter.activeTab || 'year';
+    let listHtml = '';
+    
+    if (activeTab === 'year') {
+        if (years.length === 0) {
+            listHtml = '<div style="color:var(--text-dim);font-size:0.75rem;padding:0.5rem;text-align:center;">Veri bulunamadı.</div>';
+        } else {
+            years.forEach(y => {
+                const checked = filter.years.includes(y) ? 'checked' : '';
+                listHtml += `
+                    <label style="display:flex;align-items:center;gap:0.5rem;padding:0.45rem 0.55rem;border-radius:6px;cursor:pointer;font-size:0.76rem;" class="custom-option-item" onclick="event.stopPropagation();">
+                        <input type="checkbox" ${checked} onchange="toggleUnifiedDateItem('${pageName}', 'year', '${y}', this.checked)" style="width:14px;height:14px;accent-color:#f97316;">
+                        <span style="color:var(--text-primary);">${y}</span>
+                    </label>
+                `;
+            });
+        }
+    } else if (activeTab === 'month') {
+        months.forEach(m => {
+            const checked = filter.months.includes(m.value) ? 'checked' : '';
+            listHtml += `
+                <label style="display:flex;align-items:center;gap:0.5rem;padding:0.45rem 0.55rem;border-radius:6px;cursor:pointer;font-size:0.76rem;" class="custom-option-item" onclick="event.stopPropagation();">
+                    <input type="checkbox" ${checked} onchange="toggleUnifiedDateItem('${pageName}', 'month', '${m.value}', this.checked)" style="width:14px;height:14px;accent-color:#f97316;">
+                    <span style="color:var(--text-primary);">${m.text}</span>
+                </label>
+            `;
+        });
+    } else if (activeTab === 'week') {
+        if (weeks.length === 0) {
+            listHtml = '<div style="color:var(--text-dim);font-size:0.75rem;padding:0.5rem;text-align:center;">Veri bulunamadı.</div>';
+        } else {
+            weeks.forEach(w => {
+                const checked = filter.weeks.includes(w.toString()) ? 'checked' : '';
+                listHtml += `
+                    <label style="display:flex;align-items:center;gap:0.5rem;padding:0.45rem 0.55rem;border-radius:6px;cursor:pointer;font-size:0.76rem;" class="custom-option-item" onclick="event.stopPropagation();">
+                        <input type="checkbox" ${checked} onchange="toggleUnifiedDateItem('${pageName}', 'week', '${w}', this.checked)" style="width:14px;height:14px;accent-color:#f97316;">
+                        <span style="color:var(--text-primary);">Hafta ${w}</span>
+                    </label>
+                `;
+            });
+        }
+    } else if (activeTab === 'day') {
+        if (days.length === 0) {
+            listHtml = '<div style="color:var(--text-dim);font-size:0.75rem;padding:0.5rem;text-align:center;">Veri bulunamadı.</div>';
+        } else {
+            days.forEach(dayStr => {
+                const checked = filter.days.includes(dayStr) ? 'checked' : '';
+                const parts = dayStr.split('-');
+                const displayDay = `${parts[2]}.${parts[1]}.${parts[0]}`;
+                listHtml += `
+                    <label style="display:flex;align-items:center;gap:0.5rem;padding:0.45rem 0.55rem;border-radius:6px;cursor:pointer;font-size:0.76rem;" class="custom-option-item" onclick="event.stopPropagation();">
+                        <input type="checkbox" ${checked} onchange="toggleUnifiedDateItem('${pageName}', 'day', '${dayStr}', this.checked)" style="width:14px;height:14px;accent-color:#f97316;">
+                        <span style="color:var(--text-primary);">${displayDay}</span>
+                    </label>
+                `;
+            });
+        }
+    }
+    
+    container.innerHTML = `
+        <div style="display: flex; gap: 4px; border-bottom: 1px solid var(--border-main); margin-bottom: 0.6rem; padding-bottom: 0.4rem;">
+            <button type="button" class="date-tab-btn" onclick="switchDateTab('${pageName}', 'year', event)" style="flex: 1; background: ${activeTab === 'year' ? 'rgba(249, 115, 22, 0.16)' : 'transparent'}; border: 1px solid ${activeTab === 'year' ? 'rgba(249, 115, 22, 0.3)' : 'transparent'}; color: ${activeTab === 'year' ? '#f97316' : 'var(--text-dim)'}; font-size: 0.75rem; font-weight: 700; cursor: pointer; padding: 0.35rem; border-radius: 6px; transition: all 0.2s;">Yıl</button>
+            <button type="button" class="date-tab-btn" onclick="switchDateTab('${pageName}', 'month', event)" style="flex: 1; background: ${activeTab === 'month' ? 'rgba(249, 115, 22, 0.16)' : 'transparent'}; border: 1px solid ${activeTab === 'month' ? 'rgba(249, 115, 22, 0.3)' : 'transparent'}; color: ${activeTab === 'month' ? '#f97316' : 'var(--text-dim)'}; font-size: 0.75rem; font-weight: 700; cursor: pointer; padding: 0.35rem; border-radius: 6px; transition: all 0.2s;">Ay</button>
+            <button type="button" class="date-tab-btn" onclick="switchDateTab('${pageName}', 'week', event)" style="flex: 1; background: ${activeTab === 'week' ? 'rgba(249, 115, 22, 0.16)' : 'transparent'}; border: 1px solid ${activeTab === 'week' ? 'rgba(249, 115, 22, 0.3)' : 'transparent'}; color: ${activeTab === 'week' ? '#f97316' : 'var(--text-dim)'}; font-size: 0.75rem; font-weight: 700; cursor: pointer; padding: 0.35rem; border-radius: 6px; transition: all 0.2s;">Hafta</button>
+            <button type="button" class="date-tab-btn" onclick="switchDateTab('${pageName}', 'day', event)" style="flex: 1; background: ${activeTab === 'day' ? 'rgba(249, 115, 22, 0.16)' : 'transparent'}; border: 1px solid ${activeTab === 'day' ? 'rgba(249, 115, 22, 0.3)' : 'transparent'}; color: ${activeTab === 'day' ? '#f97316' : 'var(--text-dim)'}; font-size: 0.75rem; font-weight: 700; cursor: pointer; padding: 0.35rem; border-radius: 6px; transition: all 0.2s;">Gün</button>
+        </div>
+        <div class="date-tab-content" style="max-height: 200px; overflow-y: auto; padding-right: 2px; margin-bottom: 0.8rem;" class="custom-scrollbar">
+            ${listHtml}
+        </div>
+        <div style="border-top: 1px solid var(--border-main); padding-top: 0.6rem; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;">
+            <span class="date-summary-text" style="font-size: 0.65rem; color: var(--text-dim); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${getUnifiedDateSummary(pageName)}</span>
+            <div style="display: flex; gap: 4px;">
+                <button type="button" onclick="clearUnifiedDateFilters('${pageName}', event)" style="background: transparent; border: 1px dashed rgba(239, 68, 68, 0.4); color: #ef4444; font-size: 0.7rem; font-weight: 700; padding: 0.3rem 0.5rem; border-radius: 6px; cursor: pointer; transition: all 0.2s;">Temizle</button>
+                <button type="button" onclick="applyUnifiedDateFilters('${pageName}', event)" style="background: #f97316; border: none; color: white; font-size: 0.7rem; font-weight: 800; padding: 0.3rem 0.6rem; border-radius: 6px; cursor: pointer; transition: all 0.2s;">Uygula</button>
+            </div>
+        </div>
+    `;
+}
 
 // Initialization
 document.addEventListener('DOMContentLoaded', () => {
@@ -666,6 +901,8 @@ function resetPersonnelForm() {
     document.getElementById('new-user-email').value = '';
     document.getElementById('new-user-pass').value = '';
     document.getElementById('personnel-role-id').value = '';
+    const titleInput = document.getElementById('personnel-title');
+    if (titleInput) titleInput.value = '';
     personnelSelectedLines = [];
     renderPersonnelTags();
     updatePersonnelScopeUI();
@@ -1135,6 +1372,8 @@ function handleAuditMultiFilterChange(select) {
 }
 
 function populateStatsFilters() {
+    renderUnifiedDateOptions('stats');
+    updateUnifiedDateTriggerLabel('stats');
     populateAuditTypeFilters();
 
     const lineSelect = document.getElementById('filter-stats-line');
@@ -1251,6 +1490,8 @@ async function fetchData() {
 
 // Populate Audits page dynamic filters (Line, Station, User, Year)
 function populateAuditPageFilters() {
+    renderUnifiedDateOptions('audits');
+    updateUnifiedDateTriggerLabel('audits');
     const lineSelect = document.getElementById('audit-filter-line');
     const stationSelect = document.getElementById('audit-filter-station');
     const userSelect = document.getElementById('audit-filter-user');
@@ -1395,13 +1636,26 @@ const NAV_VIEW_PERMISSIONS = {
     'planning-view': 'planning',
     'announcements-view': 'announcement_mgmt',
     'logs-view': 'view_logs',
-    'settings-view': 'settings'
+    'settings-view': 'settings',
+    'stats-view': 'stats_view',
+    'reports-view': 'stats_view',
+    'dashboard-view': 'dashboard_view'
 };
 
 function canShowNavView(viewId, user = currentUser) {
-    if (isFieldAuditor(user)) return FIELD_AUDITOR_WEB_VIEWS.has(viewId);
-    if (isFieldAuditorActionOwner(user)) return ACTION_OWNER_WEB_VIEWS.has(viewId);
     if (viewId === 'feedbacks-view') return isSuperAdmin(user);
+    if (isFieldAuditor(user)) {
+        if (FIELD_AUDITOR_WEB_VIEWS.has(viewId)) return true;
+        if ((viewId === 'stats-view' || viewId === 'reports-view') && hasPermission('stats_view', user)) return true;
+        if (viewId === 'dashboard-view' && hasPermission('dashboard_view', user)) return true;
+        return false;
+    }
+    if (isFieldAuditorActionOwner(user)) {
+        if (ACTION_OWNER_WEB_VIEWS.has(viewId)) return true;
+        if ((viewId === 'stats-view' || viewId === 'reports-view') && hasPermission('stats_view', user)) return true;
+        if (viewId === 'dashboard-view' && hasPermission('dashboard_view', user)) return true;
+        return false;
+    }
     const requiredPerm = NAV_VIEW_PERMISSIONS[viewId];
     return requiredPerm ? hasPermission(requiredPerm, user) : true;
 }
@@ -2277,6 +2531,8 @@ async function importLocationsFromExcel(event) {
 
 
 function initNCFilters() {
+    renderUnifiedDateOptions('nc');
+    updateUnifiedDateTriggerLabel('nc');
     const activeNCs = getFilteredNCs();
     const lines = [...new Set(activeNCs.map(n => {
         const audit = getAccessibleAuditById(n.auditId) || {};
@@ -2754,8 +3010,6 @@ function renderNCs(filter) {
 
         const ncDateStr = nc.detectionDate || nc.date || audit.date;
         const ncDate = ncDateStr ? new Date(ncDateStr) : null;
-        const ncYear = ncDate ? ncDate.getFullYear().toString() : 'N/A';
-        const ncMonth = ncDate ? (ncDate.getMonth() + 1).toString() : 'N/A';
 
         const ncResp = getNcResponsibleTitle(nc, audit);
 
@@ -2776,12 +3030,35 @@ function renderNCs(filter) {
         const matchesLine = !filterLines.length || filterLines.includes(ncLine);
         const matchesStation = !filterStations.length || filterStations.includes(ncStation);
         const matchesCat = !filterCats.length || filterCats.includes(nc.category);
-        const matchesYear = !filterYears.length || filterYears.includes(ncYear);
-        const matchesMonth = !filterMonths.length || filterMonths.includes(ncMonth);
+
+        // Unified Date Filters for NC
+        let matchesUnifiedDate = true;
+        if (ncDate) {
+            const ncYear = ncDate.getFullYear().toString();
+            const ncMonth = (ncDate.getMonth() + 1).toString();
+            const uYears = unifiedDateFilters.nc.years || [];
+            const uMonths = unifiedDateFilters.nc.months || [];
+            const uWeeks = unifiedDateFilters.nc.weeks || [];
+            const uDays = unifiedDateFilters.nc.days || [];
+
+            if (uYears.length && !uYears.includes(ncYear)) matchesUnifiedDate = false;
+            if (uMonths.length && !uMonths.includes(ncMonth)) matchesUnifiedDate = false;
+            if (uWeeks.length && !uWeeks.includes(getISOWeekNumber(ncDate).toString())) matchesUnifiedDate = false;
+            if (uDays.length && !uDays.includes(getLocalDateString(ncDate))) matchesUnifiedDate = false;
+        } else {
+            const uYears = unifiedDateFilters.nc.years || [];
+            const uMonths = unifiedDateFilters.nc.months || [];
+            const uWeeks = unifiedDateFilters.nc.weeks || [];
+            const uDays = unifiedDateFilters.nc.days || [];
+            if (uYears.length || uMonths.length || uWeeks.length || uDays.length) {
+                matchesUnifiedDate = false;
+            }
+        }
+
         const matchesStatus = !filterStatuses.length || filterStatuses.includes(ncStatusKey);
         const matchesResp = !filterResponsibles.length || filterResponsibles.includes(ncResp);
 
-        return matchesSearch && matchesLine && matchesStation && matchesCat && matchesYear && matchesMonth && matchesStatus && matchesResp;
+        return matchesSearch && matchesLine && matchesStation && matchesCat && matchesUnifiedDate && matchesStatus && matchesResp;
     });
 
     // Step 2: Update status tabs counts based on ADVANCED filtered data
@@ -2812,7 +3089,7 @@ function renderNCs(filter) {
     if (!filtered.length) {
         tbody.innerHTML = `
             <tr class="nc-empty-row">
-                <td colspan="10">
+                <td colspan="11">
                     <div class="nc-empty-state">
                         <i class="fas fa-check-circle"></i>
                         <span>Filtrelere uygun uygunsuzluk kaydı bulunamadı.</span>
@@ -2925,9 +3202,12 @@ function renderNCs(filter) {
         const ans = audit.answers ? audit.answers.find(a => String(a.questionId) === String(nc.questionId) || String(a.questionText) === String(nc.questionText)) : null;
         const firstCommentHtml = ans ? (ans.comment || ans.detail || '').trim() : nc.detail;
 
+        const ncWeekNum = isNaN(ncDateObj.getTime()) ? '-' : getISOWeekNumber(ncDateObj);
+
         tr.innerHTML = `
             <td><input type="checkbox" class="nc-row-select" data-nc-id="${nc.id}" ${appData.selectedNCIds.has(nc.id) ? 'checked' : ''} onchange="toggleNCSelection(this)"></td>
             <td class="nc-date-cell">${dateFormatted}</td>
+            <td class="nc-week-cell" style="text-align:center; font-size:0.8rem; color:var(--text-dim); font-weight:600;">${ncWeekNum !== '-' ? `${ncWeekNum}. Hf` : '-'}</td>
             <td><span style="color: var(--text-dim); font-weight: 500;">${timeFormatted}</span></td>
             <td style="text-align:center;">${photoThumb}</td>
             <td class="nc-detail-cell" title="Uygunsuzluğu incele">
@@ -3236,7 +3516,9 @@ async function renderNCDetailsToPdf(doc, nc, audit, imageCache, startY = 20, isB
     doc.setFontSize(8);
     auditPdfText(doc, 'Kayit ID: ' + String(nc.id).substring(0,8), pageW - margin, y - 3, { align: 'right' });
     const ncDateStr = nc.detectionDate || nc.date || audit.date;
-    auditPdfText(doc, 'Tarih: ' + formatAuditPdfDate(ncDateStr), pageW - margin, y + 2, { align: 'right' });
+    const ncPdfWeekNum = ncDateStr ? getISOWeekNumber(new Date(ncDateStr)) : '-';
+    const ncPdfWeekText = ncPdfWeekNum !== '-' ? ` (${ncPdfWeekNum}. Hafta)` : '';
+    auditPdfText(doc, 'Tarih: ' + formatAuditPdfDate(ncDateStr) + ncPdfWeekText, pageW - margin, y + 2, { align: 'right' });
     
     if (isBulk) {
         doc.setFontSize(7);
@@ -3480,6 +3762,8 @@ function inspectNC(id, parentAuditId = null) {
             hour: '2-digit',
             minute: '2-digit'
         });
+    const recordDateWeekNum = isNaN(recordDate.getTime()) ? '-' : getISOWeekNumber(recordDate);
+    const recordDateTextWithWeek = recordDateText + (recordDateWeekNum !== '-' ? ` (${recordDateWeekNum}. Hafta)` : '');
     const line = audit.line || nc.line || 'Hat Belirtilmedi';
     const station = audit.station || nc.station || 'İstasyon Belirtilmedi';
     const lineColor = appData.lineColors?.[line] || '#64748b';
@@ -3517,7 +3801,7 @@ function inspectNC(id, parentAuditId = null) {
                 </div>
                 <div class="nc-detail-overview-meta">
                     <span><i class="fas fa-calendar-day"></i> Kayıt Tarihi</span>
-                    <strong>${escapeAttr(recordDateText)}</strong>
+                    <strong>${escapeAttr(recordDateTextWithWeek)}</strong>
                 </div>
             </section>
 
@@ -5778,24 +6062,55 @@ function getProfessionalStatsData() {
         audits = audits.filter(audit => userFilters.includes(audit.auditorName));
         ncs = ncs.filter(nc => userFilters.includes(nc.auditorName || auditLookup.get(String(nc.auditId))?.auditorName));
     }
-    if (yearFilters.length) {
+    // Apply Unified Date Filters: Year
+    const uYears = unifiedDateFilters.stats.years;
+    if (uYears.length) {
         audits = audits.filter(audit => {
             const date = statsAuditDate(audit);
-            return date && yearFilters.includes(String(date.getFullYear()));
+            return date && uYears.includes(String(date.getFullYear()));
         });
         ncs = ncs.filter(nc => {
             const date = statsNcDate(nc, auditLookup);
-            return date && yearFilters.includes(String(date.getFullYear()));
+            return date && uYears.includes(String(date.getFullYear()));
         });
     }
-    if (monthFilters.length) {
+
+    // Apply Unified Date Filters: Month
+    const uMonths = unifiedDateFilters.stats.months;
+    if (uMonths.length) {
         audits = audits.filter(audit => {
             const date = statsAuditDate(audit);
-            return date && monthFilters.includes(String(date.getMonth() + 1));
+            return date && uMonths.includes(String(date.getMonth() + 1));
         });
         ncs = ncs.filter(nc => {
             const date = statsNcDate(nc, auditLookup);
-            return date && monthFilters.includes(String(date.getMonth() + 1));
+            return date && uMonths.includes(String(date.getMonth() + 1));
+        });
+    }
+
+    // Apply Unified Date Filters: Week
+    const uWeeks = unifiedDateFilters.stats.weeks;
+    if (uWeeks.length) {
+        audits = audits.filter(audit => {
+            const date = statsAuditDate(audit);
+            return date && uWeeks.includes(getISOWeekNumber(date).toString());
+        });
+        ncs = ncs.filter(nc => {
+            const date = statsNcDate(nc, auditLookup);
+            return date && uWeeks.includes(getISOWeekNumber(date).toString());
+        });
+    }
+
+    // Apply Unified Date Filters: Day
+    const uDays = unifiedDateFilters.stats.days;
+    if (uDays.length) {
+        audits = audits.filter(audit => {
+            const date = statsAuditDate(audit);
+            return date && uDays.includes(getLocalDateString(date));
+        });
+        ncs = ncs.filter(nc => {
+            const date = statsNcDate(nc, auditLookup);
+            return date && uDays.includes(getLocalDateString(date));
         });
     }
 
@@ -5803,7 +6118,14 @@ function getProfessionalStatsData() {
         audits,
         ncs,
         auditLookup,
-        filters: { typeFilters, lineFilters, stationFilters, userFilters, yearFilters, monthFilters }
+        filters: { 
+            typeFilters, 
+            lineFilters, 
+            stationFilters, 
+            userFilters, 
+            yearFilters: uYears, 
+            monthFilters: uMonths 
+        }
     };
 }
 
@@ -6587,9 +6909,32 @@ function renderProfessionalAuditorChart(audits) {
         if (!groups.has(auditor)) groups.set(auditor, []);
         groups.get(auditor).push(getAuditDisplayScore(audit));
     });
-    const rows = [...groups.entries()].map(([auditor, scores]) => ({ auditor: getAuditorDisplayName(auditor), average: statsMean(scores), count: scores.length }))
-        .sort((a, b) => b.count - a.count).slice(0, 10);
-    statsSetScrollableChartHeight('stats-auditor-scroll', 'stats-auditor-canvas-wrap', rows.length, 54);
+    const rows = [...groups.entries()].map(([auditor, scores]) => {
+        const user = getAuditorUserObject(auditor);
+        let title = '';
+        let lines = '';
+        if (user) {
+            title = user.title || getRbacRoleDisplayName(user) || 'Saha Denetçisi';
+            if (hasGlobalScope(user)) {
+                lines = 'Tüm Hatlar';
+            } else {
+                const lList = Array.isArray(user.authorizedLines) ? user.authorizedLines.filter(Boolean) : [];
+                lines = lList.length ? lList.join(', ') : 'Yetki Tanımlı Hat Yok';
+            }
+        } else {
+            title = 'Denetçi';
+            lines = 'Hat Tanımlanmamış';
+        }
+        return {
+            auditor: getAuditorDisplayName(auditor),
+            average: statsMean(scores),
+            count: scores.length,
+            title,
+            lines
+        };
+    }).sort((a, b) => b.count - a.count).slice(0, 10);
+
+    statsSetScrollableChartHeight('stats-auditor-scroll', 'stats-auditor-canvas-wrap', rows.length, 68);
     const options = statsBaseOptions({ indexAxis: 'y', percentage: true });
     options.scales.x.max = 100;
     options.scales.x.title = { display: true, text: 'Ortalama Puan (%)', color: statsChartTheme().dim, font: { size: 10, weight: '800' } };
@@ -6606,10 +6951,26 @@ function renderProfessionalAuditorChart(audits) {
     options.layout.padding = { top: 10, right: 58, bottom: 0, left: 4 };
     options.plugins.legend.align = 'center';
     options.plugins.tooltip.callbacks.title = items => rows[items[0]?.dataIndex]?.auditor || '';
+    options.plugins.tooltip.callbacks.afterTitle = items => {
+        const row = rows[items[0]?.dataIndex];
+        if (!row) return '';
+        return `Ünvan: ${row.title}\nYetkili Hatlar: ${row.lines}`;
+    };
+
     statsCreateChart('stats-auditor-chart', {
         type: 'bar',
         data: {
-            labels: rows.map(row => statsWrapAxisLabel(`${row.auditor} · ${row.count} denetim`)),
+            labels: rows.map(row => {
+                let subLabel = `${row.title} (${row.lines})`;
+                if (subLabel.length > 30) {
+                    subLabel = subLabel.slice(0, 27) + '...';
+                }
+                return [
+                    row.auditor,
+                    subLabel,
+                    `${row.count} denetim`
+                ];
+            }),
             datasets: [
                 { label: 'Ortalama Puan', data: rows.map(row => row.average), xAxisID: 'x', statsValueType: 'percentage', statsLabelInside: true, statsLabelAnchor: 'end', statsLabelAlign: 'start', backgroundColor: '#8b5cf6', borderRadius: 7, barThickness: 15 },
                 { type: 'line', label: 'Denetim Adedi', data: rows.map(row => row.count), xAxisID: 'x1', statsValueType: 'count', statsLabelSuffix: ' adet', statsShowZero: true, statsLabelAlign: 'top', statsLabelOffset: 5, borderColor: statsChartTheme().cyan, backgroundColor: statsChartTheme().cyan, pointRadius: 5, pointHoverRadius: 6, pointBorderColor: '#ffffff', pointBorderWidth: 1.5, borderWidth: 2 }
@@ -7617,9 +7978,7 @@ function renderAllAuditsTable() {
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    const filterMonths = getMultiSelectValues('audit-filter-month');
     const filterLines = getMultiSelectValues('audit-filter-line');
-    const filterYears = getMultiSelectValues('audit-filter-year');
     const filterStations = getMultiSelectValues('audit-filter-station');
     const filterUsers = getMultiSelectValues('audit-filter-user');
     const filterStatuses = getMultiSelectValues('audit-filter-status');
@@ -7631,11 +7990,36 @@ function renderAllAuditsTable() {
     if (filterTypes.length) {
         audits = audits.filter(a => filterTypes.some(typeVal => filterByAuditType([a], typeVal).length > 0));
     }
-    if (filterMonths.length) {
-        audits = audits.filter(a => filterMonths.includes(getAuditMonthValue(a)));
+
+    // Apply Unified Date Filters
+    const uYears = unifiedDateFilters.audits.years || [];
+    const uMonths = unifiedDateFilters.audits.months || [];
+    const uWeeks = unifiedDateFilters.audits.weeks || [];
+    const uDays = unifiedDateFilters.audits.days || [];
+
+    if (uYears.length) {
+        audits = audits.filter(a => {
+            const date = a.date ? new Date(a.date) : null;
+            return date && uYears.includes(date.getFullYear().toString());
+        });
     }
-    if (filterYears.length) {
-        audits = audits.filter(a => filterYears.includes(getAuditYearValue(a)));
+    if (uMonths.length) {
+        audits = audits.filter(a => {
+            const date = a.date ? new Date(a.date) : null;
+            return date && uMonths.includes((date.getMonth() + 1).toString());
+        });
+    }
+    if (uWeeks.length) {
+        audits = audits.filter(a => {
+            const date = a.date ? new Date(a.date) : null;
+            return date && uWeeks.includes(getISOWeekNumber(date).toString());
+        });
+    }
+    if (uDays.length) {
+        audits = audits.filter(a => {
+            const date = a.date ? new Date(a.date) : null;
+            return date && uDays.includes(getLocalDateString(a.date));
+        });
     }
     if (filterLines.length) {
         audits = audits.filter(a => filterLines.includes(a.line));
@@ -7671,7 +8055,7 @@ function renderAllAuditsTable() {
     }
 
     if (!audits.length) {
-        tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--text-dim); padding: 2rem; font-weight: 600;">Seçilen filtrelere uygun denetim kaydı bulunamadı.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; color: var(--text-dim); padding: 2rem; font-weight: 600;">Seçilen filtrelere uygun denetim kaydı bulunamadı.</td></tr>`;
         syncAuditSelectionUI();
         renderTablePagination('all-audits-table-pagination', 1, 0, 'changeAuditsPage');
         return;
@@ -7697,7 +8081,22 @@ function renderAllAuditsTable() {
     renderTablePagination('all-audits-table-pagination', auditsCurrentPage, totalPages, 'changeAuditsPage');
 }
 
-
+function getAuditConformityCounts(audit = {}) {
+    let conformities = 0;
+    let nonConformities = 0;
+    const answers = Array.isArray(audit.answers) ? audit.answers : [];
+    answers.forEach(ans => {
+        if (ans.isOutOfScope === true) return;
+        const scored = scoreAuditAnswer(audit, ans);
+        if (scored.isOutOfScope) return;
+        if (scored.isNonconformity) {
+            nonConformities++;
+        } else {
+            conformities++;
+        }
+    });
+    return { conformities, nonConformities };
+}
 
 function createAuditRow(audit, options = {}) {
     const tr = document.createElement('tr');
@@ -7717,8 +8116,12 @@ function createAuditRow(audit, options = {}) {
     const typeColor = getAuditTypeColor(audit.auditTypeId || (appData.auditTypes || []).find(t => (t.title || t.name) === auditTypeStr)?.id);
     const typeBadgeHtml = `<span class="status-badge" style="background: ${typeColor}15; color: ${typeColor}; border: 1px solid ${typeColor}40; font-weight: 700;">${auditTypeStr}</span>`;
 
+    const { conformities, nonConformities } = getAuditConformityCounts(audit);
+    const weekNum = getISOWeekNumber(dateObj);
+
     tr.innerHTML = `
         <td class="audit-date-cell">${date}</td>
+        <td class="audit-week-cell" style="text-align:center; font-size:0.8rem; color:var(--text-dim); font-weight:600;">${weekNum}. Hf</td>
         <td class="audit-time-cell"><span>${time}</span></td>
         <td class="audit-type-cell">${typeBadgeHtml}</td>
         <td class="audit-line-cell" style="text-align:center;">
@@ -7728,6 +8131,11 @@ function createAuditRow(audit, options = {}) {
             <div>${audit.station}</div>
         </td>
         <td class="audit-user-cell">${escapeAttr(getAuditorDisplayName(audit.auditorName))}</td>
+        <td class="audit-findings-cell" style="text-align:center; white-space:nowrap; font-size:0.8rem; font-weight:700;">
+            <span style="color:#10b981;">${conformities}</span>
+            <span style="color:var(--text-dim); font-weight:500; margin:0 3px;">/</span>
+            <span style="color:#ef4444;">${nonConformities}</span>
+        </td>
         <td class="audit-score-cell"><strong style="color: ${statusColor};">${displayScore.toFixed(1)}</strong></td>
         <td class="audit-status-cell"><span class="status-badge" style="background: ${statusColor}22; color: ${statusColor}; border-color: ${statusColor};">${statusText}</span></td>
         ${!hideActionColumn ? `
@@ -7785,7 +8193,9 @@ function openAuditModal(id) {
         configureAuditModalFooter({ showReport: true, reportLabel: 'Rapor Al' });
 
         const auditDate = audit.date ? new Date(audit.date) : new Date(NaN);
-        const dateOnly = isNaN(auditDate.getTime()) ? '-' : auditDate.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+        const modalWeekNum = isNaN(auditDate.getTime()) ? '-' : getISOWeekNumber(auditDate);
+        const modalWeekText = modalWeekNum !== '-' ? ` (${modalWeekNum}. Hafta)` : '';
+        const dateOnly = isNaN(auditDate.getTime()) ? '-' : auditDate.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) + modalWeekText;
         const timeOnly = isNaN(auditDate.getTime()) ? '-' : auditDate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
 
         const startedDate = audit.startedAt ? new Date(audit.startedAt) : null;
@@ -9059,7 +9469,9 @@ async function renderAuditDetailsToPdf(doc, audit, imageCache) {
     
     setAuditPdfFont(doc, 'normal');
     doc.setFontSize(8);
-    auditPdfText(doc, 'Rapor Tarihi: ' + formatAuditPdfDate(audit.date), pageW - margin, y, { align: 'right' });
+    const auditPdfWeekNum = audit.date ? getISOWeekNumber(new Date(audit.date)) : '-';
+    const auditPdfWeekText = auditPdfWeekNum !== '-' ? ` (${auditPdfWeekNum}. Hafta)` : '';
+    auditPdfText(doc, 'Rapor Tarihi: ' + formatAuditPdfDate(audit.date) + auditPdfWeekText, pageW - margin, y, { align: 'right' });
     doc.setDrawColor(227, 30, 36); // Red underline
     doc.setLineWidth(0.5);
     doc.line(margin, y + 3, margin + 75, y + 3);
@@ -9615,6 +10027,8 @@ function openAddUserModal(userId) {
             document.getElementById('new-user-pass').value = '********';
             document.getElementById('new-user-pass').required = false;
             document.getElementById('personnel-role-id').value = inferRbacRoleId(user);
+            const titleInput = document.getElementById('personnel-title');
+            if (titleInput) titleInput.value = user.title || '';
             personnelSelectedLines = Array.isArray(user.authorizedLines) ? [...user.authorizedLines] : [];
             renderPersonnelTags();
             updatePersonnelScopeUI();
@@ -9644,6 +10058,7 @@ async function processNewUser(event) {
     const email = document.getElementById('new-user-email').value.trim();
     const password = document.getElementById('new-user-pass').value;
     const roleId = document.getElementById('personnel-role-id').value;
+    const titleVal = document.getElementById('personnel-title')?.value.trim() || '';
 
     if (!email) {
         showToast('Lütfen e-posta adresini girin.');
@@ -9694,7 +10109,7 @@ async function processNewUser(event) {
         name: displayName,
         roleId,
         roleName: selectedRole.name,
-        title: selectedRole.name,
+        title: titleVal || selectedRole.name,
         role: getLegacyRoleFromRbac(roleId),
         scopeType: isGlobalScope ? 'global' : 'restricted',
         isGlobalScope,
@@ -9806,6 +10221,8 @@ function renderStationMatrix() {
         const typeIndex = Object.keys(auditsByType).indexOf(typeName);
         const premiumColors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899', '#06b6d4'];
         const typeColor = premiumColors[typeIndex % premiumColors.length];
+        const needsScroll = typeAudits.length > 5;
+        const scrollStyles = needsScroll ? 'max-height: 195px; overflow-y: auto;' : '';
 
         htmlContent += `
             <div style="margin-bottom: 1.5rem; background: transparent !important; border-left: 4px solid ${typeColor}; border-radius: 12px; overflow: hidden; box-shadow: none !important; width: fit-content; max-width: 100%;">
@@ -9817,14 +10234,14 @@ function renderStationMatrix() {
                     </h4>
                 </div>
                 `}
-                <div style="overflow-x: auto; padding: 0.5rem 1rem;">
+                <div style="overflow-x: auto; ${scrollStyles} padding: 0 1rem 0.5rem 1rem;" class="custom-scrollbar">
                 <table style="width: max-content; border-collapse: collapse; font-size: 0.72rem; text-align: center;">
                     <thead>
                         <tr>
-                            <th style="text-align:center; padding: 2px 8px; border-bottom: 1px solid var(--border-main); color: var(--text-primary); font-weight: 800; white-space: nowrap; text-transform: uppercase;">HAT</th>
-                            <th style="text-align:left; padding: 2px 8px; border-bottom: 1px solid var(--border-main); color: var(--text-primary); font-weight: 800; white-space: nowrap; text-transform: uppercase;">İSTASYON</th>
-                            ${visibleCategories.map(c => `<th style="padding: 2px 6px; border-bottom: 1px solid var(--border-main); color: var(--text-primary); font-weight: 800; white-space: normal; line-height: 1.1; word-wrap: break-word; text-align: center; text-transform: uppercase;" title="${escapeAttr(c)}">${escapeAttr(c)}</th>`).join('')}
-                            <th style="padding: 2px 8px; border-bottom: 1px solid var(--border-main); color: var(--text-primary); font-weight: 900; white-space: nowrap; text-align: center; text-transform: uppercase;">SKOR</th>
+                            <th style="position: sticky; top: 0; background: var(--bg-body); z-index: 2; text-align:center; padding: 10px 8px 6px 8px; border-bottom: 2px solid var(--primary); color: var(--text-primary); font-weight: 800; white-space: nowrap; text-transform: uppercase;">HAT</th>
+                            <th style="position: sticky; top: 0; background: var(--bg-body); z-index: 2; text-align:left; padding: 10px 8px 6px 8px; border-bottom: 2px solid var(--primary); color: var(--text-primary); font-weight: 800; white-space: nowrap; text-transform: uppercase;">İSTASYON</th>
+                            ${visibleCategories.map(c => `<th style="position: sticky; top: 0; background: var(--bg-body); z-index: 2; padding: 10px 6px 6px 6px; border-bottom: 2px solid var(--primary); color: var(--text-primary); font-weight: 800; white-space: normal; line-height: 1.1; word-wrap: break-word; text-align: center; text-transform: uppercase;" title="${escapeAttr(c)}">${escapeAttr(c)}</th>`).join('')}
+                            <th style="position: sticky; top: 0; background: var(--bg-body); z-index: 2; padding: 10px 8px 6px 8px; border-bottom: 2px solid var(--primary); color: var(--text-primary); font-weight: 900; white-space: nowrap; text-align: center; text-transform: uppercase;">SKOR</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -10106,9 +10523,26 @@ function updateCharts(data) {
         });
 
         const sortedAuditors = Object.keys(auditorStats).map(name => {
+            const user = getAuditorUserObject(name);
+            let title = '';
+            let lines = '';
+            if (user) {
+                title = user.title || getRbacRoleDisplayName(user) || 'Saha Denetçisi';
+                if (hasGlobalScope(user)) {
+                    lines = 'Tüm Hatlar';
+                } else {
+                    const lList = Array.isArray(user.authorizedLines) ? user.authorizedLines.filter(Boolean) : [];
+                    lines = lList.length ? lList.join(', ') : 'Yetki Tanımlı Hat Yok';
+                }
+            } else {
+                title = 'Denetçi';
+                lines = 'Hat Tanımlanmamış';
+            }
             return {
                 name: getAuditorDisplayName(name),
-                count: auditorStats[name].count
+                count: auditorStats[name].count,
+                title,
+                lines
             };
         }).sort((a, b) => b.count - a.count); // Sort descending by count
 
@@ -10118,14 +10552,18 @@ function updateCharts(data) {
                 const isPremium = idx < 3;
                 
                 return `
-                    <div style="background: var(--bg-card); border: 1px solid ${isPremium ? 'rgba(255, 215, 0, 0.4)' : 'var(--border-main)'}; border-radius: 8px; padding: 0.4rem 0.6rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; transition: background 0.2s;" onmouseover="this.style.background='var(--bg-main)'" onmouseout="this.style.background='var(--bg-card)'">
-                        <div style="display: flex; align-items: center; gap: 0.5rem; overflow: hidden; flex: 1;">
-                            <div style="width: 22px; height: 22px; border-radius: 50%; background: ${isPremium ? 'rgba(255, 215, 0, 0.15)' : 'var(--bg-main)'}; color: ${isPremium ? '#FFD700' : 'var(--text-secondary)'}; display: flex; justify-content: center; align-items: center; font-size: 0.65rem; font-weight: 800; flex-shrink: 0;">
+                    <div style="background: var(--bg-card); border: 1px solid ${isPremium ? 'rgba(255, 215, 0, 0.4)' : 'var(--border-main)'}; border-radius: 8px; padding: 0.5rem 0.6rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; transition: background 0.2s;" onmouseover="this.style.background='var(--bg-main)'" onmouseout="this.style.background='var(--bg-card)'">
+                        <div style="display: flex; align-items: center; gap: 0.6rem; overflow: hidden; flex: 1;">
+                            <div style="width: 24px; height: 24px; border-radius: 50%; background: ${isPremium ? 'rgba(255, 215, 0, 0.15)' : 'var(--bg-main)'}; color: ${isPremium ? '#FFD700' : 'var(--text-secondary)'}; display: flex; justify-content: center; align-items: center; font-size: 0.7rem; font-weight: 800; flex-shrink: 0;">
                                 ${idx + 1}
                             </div>
-                            <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeAttr(item.name)}">${escapeAttr(item.name)}</div>
+                            <div style="display: flex; flex-direction: column; overflow: hidden; flex: 1; min-width: 0; line-height: 1.15;">
+                                <div style="font-size: 0.70rem; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeAttr(item.name)}">${escapeAttr(item.name)}</div>
+                                <div style="font-size: 0.62rem; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px;" title="${escapeAttr(item.title)}">${escapeAttr(item.title)}</div>
+                                <div style="font-size: 0.58rem; color: var(--text-secondary); opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px;" title="${escapeAttr(item.lines)}">${escapeAttr(item.lines)}</div>
+                            </div>
                         </div>
-                        <div style="font-size: 0.8rem; font-weight: 900; color: var(--primary); background: var(--bg-main); padding: 0.15rem 0.4rem; border-radius: 6px; flex-shrink: 0;">
+                        <div style="font-size: 0.8rem; font-weight: 900; color: var(--primary); background: var(--bg-main); padding: 0.2rem 0.45rem; border-radius: 6px; flex-shrink: 0;">
                             ${item.count}
                         </div>
                     </div>
@@ -11847,6 +12285,23 @@ function getAuditorDisplayName(auditorName) {
                (emailPrefix && emailPrefix === searchPrefix);
     });
     return user ? getUserDisplayName(user) : auditorName;
+}
+
+function getAuditorUserObject(auditorName) {
+    if (!auditorName || auditorName === 'Bilinmeyen' || auditorName === 'Bilinmiyor') return null;
+    const searchName = auditorName.toLowerCase().trim();
+    return (appData.users || []).find(u => {
+        const username = String(u.username || '').toLowerCase().trim();
+        const name = String(u.name || '').toLowerCase().trim();
+        const fullName = String(u.fullName || '').toLowerCase().trim();
+        const emailPrefix = u.email ? String(u.email.split('@')[0] || '').toLowerCase().trim() : '';
+        const searchPrefix = searchName.split('@')[0];
+        
+        return username === searchName || 
+               name === searchName || 
+               fullName === searchName ||
+               (emailPrefix && emailPrefix === searchPrefix);
+    });
 }
 
 function getUserAuthorityValue(user) {
@@ -14413,6 +14868,8 @@ async function saveQuestionEdit() {
 // --- YÖNETİCİ SAAS DASHBOARD GEREKSİNİMLERİ ---
 
 function populateDashboardFilters() {
+    renderUnifiedDateOptions();
+    updateUnifiedDateTriggerLabel();
     const typeSelect = document.getElementById('dashboard-filter-type');
     const lineSelect = document.getElementById('dashboard-filter-line');
     const stationSelect = document.getElementById('dashboard-filter-station');
@@ -14509,6 +14966,11 @@ function getFilteredDashboardData() {
     const yearFilters = getMultiSelectValues('dashboard-filter-year');
     const monthFilters = getMultiSelectValues('dashboard-filter-month');
 
+    const selectedYears = unifiedDateFilters.dashboard.years || [];
+    const selectedMonths = unifiedDateFilters.dashboard.months || [];
+    const selectedWeeks = unifiedDateFilters.dashboard.weeks || [];
+    const selectedDays = unifiedDateFilters.dashboard.days || [];
+
     let audits = getFilteredAudits() || [];
     let ncs = getFilteredNCs() || [];
 
@@ -14540,23 +15002,43 @@ function getFilteredDashboardData() {
         ncs = ncs.filter(nc => userFilters.includes(nc.auditorName));
     }
 
-    // Apply Year Filter
-    if (yearFilters.length) {
-        audits = audits.filter(a => yearFilters.includes(new Date(a.date).getFullYear().toString()));
+    // Apply Unified Date Filters: Year
+    if (selectedYears.length) {
+        audits = audits.filter(a => selectedYears.includes(new Date(a.date).getFullYear().toString()));
         ncs = ncs.filter(nc => {
             const audit = getAccessibleAuditById(nc.auditId) || {};
             const date = nc.detectionDate || nc.createdAt || nc.date || audit.date;
-            return yearFilters.includes(new Date(date).getFullYear().toString());
+            return selectedYears.includes(new Date(date).getFullYear().toString());
         });
     }
 
-    // Apply Month Filter
-    if (monthFilters.length) {
-        audits = audits.filter(a => monthFilters.includes((new Date(a.date).getMonth() + 1).toString()));
+    // Apply Unified Date Filters: Month
+    if (selectedMonths.length) {
+        audits = audits.filter(a => selectedMonths.includes((new Date(a.date).getMonth() + 1).toString()));
         ncs = ncs.filter(nc => {
             const audit = getAccessibleAuditById(nc.auditId) || {};
             const date = nc.detectionDate || nc.createdAt || nc.date || audit.date;
-            return monthFilters.includes((new Date(date).getMonth() + 1).toString());
+            return selectedMonths.includes((new Date(date).getMonth() + 1).toString());
+        });
+    }
+
+    // Apply Unified Date Filters: Week
+    if (selectedWeeks.length) {
+        audits = audits.filter(a => selectedWeeks.includes(getISOWeekNumber(new Date(a.date)).toString()));
+        ncs = ncs.filter(nc => {
+            const audit = getAccessibleAuditById(nc.auditId) || {};
+            const date = nc.detectionDate || nc.createdAt || nc.date || audit.date;
+            return selectedWeeks.includes(getISOWeekNumber(new Date(date)).toString());
+        });
+    }
+
+    // Apply Unified Date Filters: Day
+    if (selectedDays.length) {
+        audits = audits.filter(a => selectedDays.includes(getLocalDateString(a.date)));
+        ncs = ncs.filter(nc => {
+            const audit = getAccessibleAuditById(nc.auditId) || {};
+            const date = nc.detectionDate || nc.createdAt || nc.date || audit.date;
+            return selectedDays.includes(getLocalDateString(date));
         });
     }
 
@@ -14707,15 +15189,43 @@ window.clearFilters = function(view) {
 
     // Re-render UI
     if (view === 'dashboard') {
+        unifiedDateFilters.dashboard.years = [];
+        unifiedDateFilters.dashboard.months = [];
+        unifiedDateFilters.dashboard.weeks = [];
+        unifiedDateFilters.dashboard.days = [];
+        updateUnifiedDateTriggerLabel('dashboard');
+        renderUnifiedDateOptions('dashboard');
+        selectedYears = [];
+        selectedMonths = [];
+        selectedWeeks = [];
+        selectedDays = [];
         populateDashboardFilters();
         renderAll();
     } else if (view === 'stats') {
+        unifiedDateFilters.stats.years = [];
+        unifiedDateFilters.stats.months = [];
+        unifiedDateFilters.stats.weeks = [];
+        unifiedDateFilters.stats.days = [];
+        updateUnifiedDateTriggerLabel('stats');
+        renderUnifiedDateOptions('stats');
         populateStatsFilters();
         updateStats();
     } else if (view === 'audits') {
+        unifiedDateFilters.audits.years = [];
+        unifiedDateFilters.audits.months = [];
+        unifiedDateFilters.audits.weeks = [];
+        unifiedDateFilters.audits.days = [];
+        updateUnifiedDateTriggerLabel('audits');
+        renderUnifiedDateOptions('audits');
         populateAuditPageFilters();
         renderAllAuditsTable();
     } else if (view === 'nc') {
+        unifiedDateFilters.nc.years = [];
+        unifiedDateFilters.nc.months = [];
+        unifiedDateFilters.nc.weeks = [];
+        unifiedDateFilters.nc.days = [];
+        updateUnifiedDateTriggerLabel('nc');
+        renderUnifiedDateOptions('nc');
         initNCFilters();
         renderNCs();
     }
@@ -15552,16 +16062,16 @@ function downloadPeopleTemplate() {
 
     // 1. Data Template Sheet
     const headers = [
-        "Kullanıcı Adı", "Ad Soyad", "E-posta", "Rol (Yetki)", "Yetkili Hatlar"
+        "Kullanıcı Adı", "Ad Soyad", "E-posta", "Rol (Yetki)", "Ünvan", "Yetkili Hatlar"
     ];
     const exampleRow = [
-        "ramazan.tilki", "Ramazan Tilki", "ramazan.tilki@metro.istanbul", "Süper Admin", "Tümü"
+        "ramazan.tilki", "Ramazan Tilki", "ramazan.tilki@metro.istanbul", "Süper Admin", "Baş Onaylayıcı", "Tümü"
     ];
     const wsData = XLSX.utils.aoa_to_sheet([headers, exampleRow]);
     
     // Style headers
     wsData['!cols'] = [
-        { wch: 20 }, { wch: 25 }, { wch: 30 }, { wch: 25 }, { wch: 40 }
+        { wch: 20 }, { wch: 25 }, { wch: 30 }, { wch: 25 }, { wch: 20 }, { wch: 40 }
     ];
 
     XLSX.utils.book_append_sheet(wb, wsData, "Personel Şablonu");
@@ -15653,7 +16163,8 @@ async function handlePeopleExcelImport(event) {
                 const name = String(row[1] || '').trim();
                 const email = String(row[2] || '').trim();
                 const rawRole = String(row[3] || '').trim().toLowerCase();
-                const rawLines = String(row[4] || '').trim();
+                const title = String(row[4] || '').trim();
+                const rawLines = String(row[5] || '').trim();
 
                 if (!username || !name) continue;
 
@@ -15697,7 +16208,7 @@ async function handlePeopleExcelImport(event) {
                     username: username,
                     name: name,
                     email: email,
-                    title: roleName,
+                    title: title || roleName,
                     roleId: roleId,
                     roleName: roleName,
                     authorityValue: authorityValue,

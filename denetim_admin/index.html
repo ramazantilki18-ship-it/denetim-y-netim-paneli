@@ -334,26 +334,20 @@
                                     <div class="custom-options-list" id="custom-options-user"></div>
                                 </div>
                             </div>
-
-                            <!-- Dropdown 5: Yıllar -->
-                            <div class="custom-select-wrapper" id="custom-wrap-year">
-                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-year')">
-                                    <span class="custom-select-label">Tüm Yıllar</span>
-                                    <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                            <!-- Dropdown 5 & 6: Akıllı Tarih Seçici (Yenilikçi Çoklu Seçim) -->
+                            <div class="custom-select-wrapper" id="custom-wrap-unified-date" style="grid-column: span 2; position: relative;">
+                                <style>
+                                    .date-tab-btn:hover {
+                                        background: rgba(249, 115, 22, 0.08) !important;
+                                        color: #f97316 !important;
+                                    }
+                                </style>
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-unified-date')">
+                                    <span class="custom-select-label" id="unified-date-label">Tüm Zamanlar</span>
+                                    <i class="fas fa-calendar-alt" style="font-size: 0.75rem; color: var(--text-secondary);"></i>
                                 </div>
-                                <div class="custom-select-options-card">
-                                    <div class="custom-options-list" id="custom-options-year"></div>
-                                </div>
-                            </div>
-
-                            <!-- Dropdown 6: Aylar -->
-                            <div class="custom-select-wrapper" id="custom-wrap-month">
-                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-month')">
-                                    <span class="custom-select-label">Tüm Aylar</span>
-                                    <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
-                                </div>
-                                <div class="custom-select-options-card">
-                                    <div class="custom-options-list" id="custom-options-month"></div>
+                                <div class="custom-select-options-card" id="custom-options-unified-date" style="width: 320px; padding: 0.8rem; overflow-y: visible; max-height: unset; z-index: 1000; right: 0; left: auto;">
+                                    <!-- Dynamic content will go here -->
                                 </div>
                             </div>
 
@@ -468,7 +462,7 @@
                         </div>
                     </div>
                     <div style="max-height: 400px; overflow-y: auto; padding-right: 0.5rem; margin-right: -0.5rem;" class="custom-scrollbar">
-                        <div id="auditor-horizontal-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.5rem;">
+                        <div id="auditor-horizontal-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.5rem;">
                             <!-- Dinamik olarak kartlar JS ile eklenecek -->
                         </div>
                     </div>
@@ -487,11 +481,13 @@
                             <thead>
                                 <tr>
                                     <th>Tarih</th>
+                                    <th style="text-align:center; width:65px;">Hafta</th>
                                     <th>Saat</th>
                                     <th>Denetim Tipi</th>
                                     <th style="text-align:center;">Hat</th>
                                     <th>İstasyon</th>
                                     <th>Kullanıcı</th>
+                                    <th style="text-align:center; width:65px;">U / UY</th>
                                     <th style="text-align:center;">Puan</th>
                                     <th style="text-align:center;">Durum</th>
                                 </tr>
@@ -592,22 +588,14 @@
                                     <div class="custom-options-list" id="custom-options-stats-user"></div>
                                 </div>
                             </div>
-                            <div class="custom-select-wrapper" id="custom-wrap-stats-year">
-                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-stats-year')">
-                                    <span class="custom-select-label">Tüm Yıllar</span>
-                                    <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                            <!-- Dropdown 5 & 6: İstatistikler Akıllı Tarih Seçici -->
+                            <div class="custom-select-wrapper" id="custom-wrap-stats-unified-date" style="grid-column: span 2; position: relative;">
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-stats-unified-date')">
+                                    <span class="custom-select-label" id="stats-unified-date-label">Tüm Zamanlar</span>
+                                    <i class="fas fa-calendar-alt" style="font-size: 0.75rem; color: var(--text-secondary);"></i>
                                 </div>
-                                <div class="custom-select-options-card">
-                                    <div class="custom-options-list" id="custom-options-stats-year"></div>
-                                </div>
-                            </div>
-                            <div class="custom-select-wrapper" id="custom-wrap-stats-month">
-                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-stats-month')">
-                                    <span class="custom-select-label">Tüm Aylar</span>
-                                    <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
-                                </div>
-                                <div class="custom-select-options-card">
-                                    <div class="custom-options-list" id="custom-options-stats-month"></div>
+                                <div class="custom-select-options-card" id="custom-options-stats-unified-date" style="width: 320px; padding: 0.8rem; overflow-y: visible; max-height: unset; z-index: 1000; right: 0; left: auto;">
+                                    <!-- Dynamic content will go here -->
                                 </div>
                             </div>
                         </div>
@@ -988,25 +976,14 @@
                                 </div>
                             </div>
 
-                            <!-- Dropdown 2: Aylar -->
-                            <div class="custom-select-wrapper" id="custom-wrap-audit-month">
-                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-audit-month')">
-                                    <span class="custom-select-label">Tüm Aylar</span>
-                                    <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                            <!-- Dropdown 2 & 3: Denetimler Akıllı Tarih Seçici -->
+                            <div class="custom-select-wrapper" id="custom-wrap-audits-unified-date" style="grid-column: span 2; position: relative;">
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-audits-unified-date')">
+                                    <span class="custom-select-label" id="audits-unified-date-label">Tüm Zamanlar</span>
+                                    <i class="fas fa-calendar-alt" style="font-size: 0.75rem; color: var(--text-secondary);"></i>
                                 </div>
-                                <div class="custom-select-options-card">
-                                    <div class="custom-options-list" id="custom-options-audit-month"></div>
-                                </div>
-                            </div>
-
-                            <!-- Dropdown 3: Yıllar -->
-                            <div class="custom-select-wrapper" id="custom-wrap-audit-year">
-                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-audit-year')">
-                                    <span class="custom-select-label">Tüm Yıllar</span>
-                                    <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
-                                </div>
-                                <div class="custom-select-options-card">
-                                    <div class="custom-options-list" id="custom-options-audit-year"></div>
+                                <div class="custom-select-options-card" id="custom-options-audits-unified-date" style="width: 320px; padding: 0.8rem; overflow-y: visible; max-height: unset; z-index: 1000; right: 0; left: auto;">
+                                    <!-- Dynamic content will go here -->
                                 </div>
                             </div>
 
@@ -1078,11 +1055,13 @@
                                             Tarih <i id="audit-date-sort-icon" class="fas fa-arrow-down"></i>
                                         </button>
                                     </th>
+                                    <th style="width:65px; text-align:center;">Hafta</th>
                                     <th style="width:48px;">Saat</th>
                                     <th style="width:105px;">Denetim Tipi</th>
                                     <th style="width:42px; text-align:center;">Hat</th>
                                     <th style="width:auto;">İstasyon</th>
                                     <th style="width:100px;">Kullanıcı</th>
+                                    <th style="width:65px; text-align:center;">U / UY</th>
                                     <th id="audit-score-sort-header" style="width:54px;">
                                         <button type="button" class="table-date-sort-button" onclick="toggleAuditScoreSort()" title="Puana göre sıralamak için tıklayın.">
                                             Puan <i id="audit-score-sort-icon" class="fas fa-sort" style="opacity:0.4;"></i>
@@ -1235,24 +1214,18 @@
                                         <div class="custom-options-list" id="custom-options-nc-category"></div>
                                     </div>
                                 </div>
-                                <div class="custom-select-wrapper" id="custom-wrap-nc-year">
-                                    <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-nc-year')">
-                                        <span class="custom-select-label">Tüm Yıllar</span>
-                                        <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+
+                                <!-- Dropdown 5 & 6: Uygunsuzluklar Akıllı Tarih Seçici -->
+                                <div class="custom-select-wrapper" id="custom-wrap-nc-unified-date" style="grid-column: span 2; position: relative;">
+                                    <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-nc-unified-date')">
+                                        <span class="custom-select-label" id="nc-unified-date-label">Tüm Zamanlar</span>
+                                        <i class="fas fa-calendar-alt" style="font-size: 0.75rem; color: var(--text-secondary);"></i>
                                     </div>
-                                    <div class="custom-select-options-card">
-                                        <div class="custom-options-list" id="custom-options-nc-year"></div>
-                                    </div>
-                                </div>
-                                <div class="custom-select-wrapper" id="custom-wrap-nc-month">
-                                    <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-nc-month')">
-                                        <span class="custom-select-label">Tüm Aylar</span>
-                                        <i class="fas fa-chevron-down" style="font-size: 0.6rem; color: var(--text-secondary);"></i>
-                                    </div>
-                                    <div class="custom-select-options-card">
-                                        <div class="custom-options-list" id="custom-options-nc-month"></div>
+                                    <div class="custom-select-options-card" id="custom-options-nc-unified-date" style="width: 320px; padding: 0.8rem; overflow-y: visible; max-height: unset; z-index: 1000; right: 0; left: auto;">
+                                        <!-- Dynamic content will go here -->
                                     </div>
                                 </div>
+
                                 <div class="custom-select-wrapper" id="custom-wrap-nc-responsible">
                                     <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-nc-responsible')">
                                         <span class="custom-select-label">Tüm Kullanıcılar</span>
@@ -1278,6 +1251,7 @@
                                             Tarih <i id="nc-date-sort-icon" class="fas fa-arrow-down"></i>
                                         </button>
                                     </th>
+                                    <th style="width:60px; text-align:center;">Hafta</th>
                                     <th style="width:50px;">Saat</th>
                                     <th style="width:55px; text-align:center;">Görsel</th>
                                     <th style="width:auto; min-width: 250px;">Bulgu Detayı</th>
@@ -2087,10 +2061,18 @@
                     </div>
                 </div>
                 <div class="personnel-grid-2">
-                    <div class="personnel-field" style="grid-column: span 2;">
+                    <div class="personnel-field">
                         <label for="new-user-pass">Firebase Şifresi</label>
                         <input type="password" id="new-user-pass" name="password" placeholder="••••••••" autocomplete="new-password" minlength="6">
-                        <p class="personnel-field-hint" id="new-user-pass-hint">Mobil uygulama ve panel girişi için bu şifreyle Firebase Authentication hesabı oluşturulur.</p>
+                    </div>
+                    <div class="personnel-field">
+                        <label for="personnel-title">Ünvan</label>
+                        <input type="text" id="personnel-title" name="title" placeholder="Saha Mühendisi, Denetçi, vb.">
+                    </div>
+                </div>
+                <div class="personnel-grid-2" style="margin-top: -0.5rem; margin-bottom: 0.5rem;">
+                    <div class="personnel-field" style="grid-column: span 2; margin-top: 0;">
+                        <p class="personnel-field-hint" id="new-user-pass-hint" style="margin: 0;">Mobil uygulama ve panel girişi için bu şifreyle Firebase Authentication hesabı oluşturulur.</p>
                     </div>
                 </div>
                 <div id="personnel-scope-section" class="personnel-scope-section" hidden>
