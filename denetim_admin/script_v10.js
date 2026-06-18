@@ -1424,17 +1424,20 @@ function populateStatsFilters() {
         setMultiSelectValues(stationSelect, currentStations);
     }
 
-    // 3. Kullanıcı Filtresi
+    // 3. Kullanıcı Filtresi (yalnızca mevcut denetimlerdeki denetçiler, Türkçe normalize)
     if (userSelect) {
         const currentUsers = getMultiSelectValues(userSelect);
         if (userSelect.options.length <= 1) {
             userSelect.innerHTML = '<option value="all">Tüm Denetçiler</option>';
-            const usernames = [
-                ...(appData.users || []).map(u => getUserUsername(u)).filter(Boolean),
-                ...accessibleAudits.map(audit => audit.auditorName).filter(Boolean)
-            ];
-            [...new Set(usernames)].sort((a, b) => getAuditorDisplayName(a).localeCompare(getAuditorDisplayName(b), 'tr')).forEach(uName => {
-                userSelect.add(new Option(getAuditorDisplayName(uName), uName));
+            const auditorMap = new Map();
+            accessibleAudits.forEach(audit => {
+                if (!audit.auditorName) return;
+                const key = normalizeTurkish(audit.auditorName);
+                if (!auditorMap.has(key)) auditorMap.set(key, audit.auditorName);
+            });
+            const auditors = [...auditorMap.values()];
+            auditors.sort((a, b) => getAuditorDisplayName(a).localeCompare(getAuditorDisplayName(b), 'tr')).forEach(auditor => {
+                userSelect.add(new Option(getAuditorDisplayName(auditor), auditor));
             });
             setMultiSelectValues(userSelect, currentUsers);
         }
@@ -1536,11 +1539,17 @@ function populateAuditPageFilters() {
     });
     setMultiSelectValues(stationSelect, currentStations);
 
-    // 3. Kullanıcı Filtresi
+    // 3. Kullanıcı Filtresi (Türkçe karakter normalizasyonu ile tekil)
     const currentUsers = getMultiSelectValues(userSelect);
     if (userSelect.options.length <= 1) {
         userSelect.innerHTML = '<option value="all">Tüm Kullanıcılar</option>';
-        const auditors = [...new Set(accessibleAudits.map(audit => audit.auditorName).filter(Boolean))];
+        const auditorMap = new Map();
+        accessibleAudits.forEach(audit => {
+            if (!audit.auditorName) return;
+            const key = normalizeTurkish(audit.auditorName);
+            if (!auditorMap.has(key)) auditorMap.set(key, audit.auditorName);
+        });
+        const auditors = [...auditorMap.values()];
         auditors.sort((a, b) => getAuditorDisplayName(a).localeCompare(getAuditorDisplayName(b), 'tr')).forEach(auditor => {
             userSelect.add(new Option(getAuditorDisplayName(auditor), auditor));
         });
@@ -6059,8 +6068,8 @@ function getProfessionalStatsData() {
         ncs = ncs.filter(nc => stationFilters.includes(auditLookup.get(String(nc.auditId))?.station || nc.station));
     }
     if (userFilters.length) {
-        audits = audits.filter(audit => userFilters.includes(audit.auditorName));
-        ncs = ncs.filter(nc => userFilters.includes(nc.auditorName || auditLookup.get(String(nc.auditId))?.auditorName));
+        audits = audits.filter(audit => userFilters.some(f => normalizeTurkish(f) === normalizeTurkish(audit.auditorName)));
+        ncs = ncs.filter(nc => userFilters.some(f => normalizeTurkish(f) === normalizeTurkish(nc.auditorName || auditLookup.get(String(nc.auditId))?.auditorName)));
     }
     // Apply Unified Date Filters: Year
     const uYears = unifiedDateFilters.stats.years;
@@ -7379,8 +7388,8 @@ function renderAdvancedStats() {
 
     // 4. Auditor Filter (multi)
     if (userFilters.length) {
-        filteredAudits = filteredAudits.filter(a => userFilters.includes(a.auditorName));
-        filteredNCs = filteredNCs.filter(n => userFilters.includes(n.auditorName));
+        filteredAudits = filteredAudits.filter(a => userFilters.some(f => normalizeTurkish(f) === normalizeTurkish(a.auditorName)));
+        filteredNCs = filteredNCs.filter(n => userFilters.some(f => normalizeTurkish(f) === normalizeTurkish(n.auditorName)));
     }
 
     // 5. Year Filter (multi)
@@ -8028,7 +8037,7 @@ function renderAllAuditsTable() {
         audits = audits.filter(a => filterStations.includes(a.station));
     }
     if (filterUsers.length) {
-        audits = audits.filter(a => filterUsers.includes(a.auditorName));
+        audits = audits.filter(a => filterUsers.some(f => normalizeTurkish(f) === normalizeTurkish(a.auditorName)));
     }
     if (filterStatuses.length) {
         audits = audits.filter(a => filterStatuses.includes(getAuditStatusKey(a)));
@@ -12269,14 +12278,27 @@ function getUserUsername(user) {
     return user.username || (user.email ? user.email.split('@')[0] : '') || getUserDisplayName(user);
 }
 
+// Turkish character normalization for locale-insensitive matching
+function normalizeTurkish(str) {
+    if (!str) return '';
+    return str
+        .replace(/ı/g, 'i').replace(/İ/g, 'I')
+        .replace(/ş/g, 's').replace(/Ş/g, 'S')
+        .replace(/ç/g, 'c').replace(/Ç/g, 'C')
+        .replace(/ğ/g, 'g').replace(/Ğ/g, 'G')
+        .replace(/ü/g, 'u').replace(/Ü/g, 'U')
+        .replace(/ö/g, 'o').replace(/Ö/g, 'O')
+        .toLowerCase().trim();
+}
+
 function getAuditorDisplayName(auditorName) {
     if (!auditorName || auditorName === 'Bilinmeyen' || auditorName === 'Bilinmiyor') return auditorName;
-    const searchName = auditorName.toLowerCase().trim();
+    const searchName = normalizeTurkish(auditorName);
     const user = (appData.users || []).find(u => {
-        const username = String(u.username || '').toLowerCase().trim();
-        const name = String(u.name || '').toLowerCase().trim();
-        const fullName = String(u.fullName || '').toLowerCase().trim();
-        const emailPrefix = u.email ? String(u.email.split('@')[0] || '').toLowerCase().trim() : '';
+        const username = normalizeTurkish(u.username || '');
+        const name = normalizeTurkish(u.name || '');
+        const fullName = normalizeTurkish(u.fullName || '');
+        const emailPrefix = u.email ? normalizeTurkish(u.email.split('@')[0] || '') : '';
         const searchPrefix = searchName.split('@')[0];
         
         return username === searchName || 
@@ -12289,12 +12311,12 @@ function getAuditorDisplayName(auditorName) {
 
 function getAuditorUserObject(auditorName) {
     if (!auditorName || auditorName === 'Bilinmeyen' || auditorName === 'Bilinmiyor') return null;
-    const searchName = auditorName.toLowerCase().trim();
+    const searchName = normalizeTurkish(auditorName);
     return (appData.users || []).find(u => {
-        const username = String(u.username || '').toLowerCase().trim();
-        const name = String(u.name || '').toLowerCase().trim();
-        const fullName = String(u.fullName || '').toLowerCase().trim();
-        const emailPrefix = u.email ? String(u.email.split('@')[0] || '').toLowerCase().trim() : '';
+        const username = normalizeTurkish(u.username || '');
+        const name = normalizeTurkish(u.name || '');
+        const fullName = normalizeTurkish(u.fullName || '');
+        const emailPrefix = u.email ? normalizeTurkish(u.email.split('@')[0] || '') : '';
         const searchPrefix = searchName.split('@')[0];
         
         return username === searchName || 
@@ -14916,11 +14938,17 @@ function populateDashboardFilters() {
     });
     setMultiSelectValues(stationSelect, currentStations);
 
-    // 3. Denetçi / Personel Filtresi
+    // 3. Denetçi / Personel Filtresi (Türkçe normalize)
     const currentUsers = getMultiSelectValues(userSelect);
     if (userSelect.options.length <= 1) {
         userSelect.innerHTML = '<option value="all">Tüm Denetçiler</option>';
-        const auditors = [...new Set(accessibleAudits.map(audit => audit.auditorName).filter(Boolean))];
+        const auditorMap = new Map();
+        accessibleAudits.forEach(audit => {
+            if (!audit.auditorName) return;
+            const key = normalizeTurkish(audit.auditorName);
+            if (!auditorMap.has(key)) auditorMap.set(key, audit.auditorName);
+        });
+        const auditors = [...auditorMap.values()];
         auditors.sort((a, b) => getAuditorDisplayName(a).localeCompare(getAuditorDisplayName(b), 'tr')).forEach(auditor => {
             userSelect.add(new Option(getAuditorDisplayName(auditor), auditor));
         });
@@ -14998,8 +15026,8 @@ function getFilteredDashboardData() {
 
     // Apply Auditor Filter
     if (userFilters.length) {
-        audits = audits.filter(a => userFilters.includes(a.auditorName));
-        ncs = ncs.filter(nc => userFilters.includes(nc.auditorName));
+        audits = audits.filter(a => userFilters.some(f => normalizeTurkish(f) === normalizeTurkish(a.auditorName)));
+        ncs = ncs.filter(nc => userFilters.some(f => normalizeTurkish(f) === normalizeTurkish(nc.auditorName)));
     }
 
     // Apply Unified Date Filters: Year
