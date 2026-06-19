@@ -756,6 +756,7 @@ td {
 
 /* Button Styles */
 .btn-primary {
+    background-color: #3b82f6; /* Fallback for older browsers like IE11 */
     background: linear-gradient(135deg, var(--primary), #7c3aed);
     color: white;
     border: none;
@@ -2500,7 +2501,9 @@ input:checked + .slider:before {
 }
 
 .login-card {
+    background-color: #0b223d; /* Fallback for older browsers like IE11 */
     background: var(--bg-card);
+    border: 1px solid #183b61; /* Fallback */
     border: 1px solid var(--border-main);
     padding: 3rem;
     border-radius: 24px;
@@ -2565,8 +2568,11 @@ input:checked + .slider:before {
 
 .login-form input {
     width: 100%;
+    background-color: #102f52; /* Fallback for older browsers like IE11 */
     background: var(--bg-input);
+    border: 1px solid #183b61; /* Fallback */
     border: 1px solid var(--border-main);
+    color: #f8fafc; /* Fallback */
     color: var(--text-primary);
     padding: 0.85rem 1rem;
     border-radius: 12px;
