@@ -4080,6 +4080,7 @@ async function processNCClose() {
         if (typeof renderNCs === 'function') renderNCs();
     } catch (err) {
         console.error('NC Close Error:', err);
+        alert('NC Close Error: ' + err.message + '\n' + err.stack);
         showToast('Fotoğraflar yüklenirken veya durum güncellenirken hata oluştu!');
         if (saveBtn) {
             saveBtn.disabled = false;
