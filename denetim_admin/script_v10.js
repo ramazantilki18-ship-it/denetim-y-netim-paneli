@@ -3960,52 +3960,66 @@ function closeNCModal() {
 }
 
 function compressImage(file, maxWidth = 1200, quality = 0.75) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
+        // 5 saniyelik güvenlik zaman aşımı (timeout)
+        const timeoutId = setTimeout(() => {
+            console.warn('Görsel sıkıştırma zaman aşımına uğradı, orijinal dosya kullanılıyor.');
+            resolve(file);
+        }, 5000);
+
         if (!file.type.startsWith('image/')) {
+            clearTimeout(timeoutId);
             resolve(file);
             return;
         }
-        
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onerror = error => reject(error);
-        reader.onload = (event) => {
-            const img = new Image();
-            img.src = event.target.result;
-            img.onerror = error => reject(error);
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                let width = img.width;
-                let height = img.height;
 
-                if (width > maxWidth) {
-                    height = Math.round((height * maxWidth) / width);
-                    width = maxWidth;
-                }
+        const objectUrl = URL.createObjectURL(file);
+        const img = new Image();
+        img.src = objectUrl;
 
-                canvas.width = width;
-                canvas.height = height;
+        img.onerror = (error) => {
+            clearTimeout(timeoutId);
+            URL.revokeObjectURL(objectUrl);
+            console.warn('Görsel yüklenirken hata oluştu:', error);
+            resolve(file);
+        };
 
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
 
-                if (!canvas.toBlob) {
+            if (width > maxWidth) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            URL.revokeObjectURL(objectUrl);
+
+            if (!canvas.toBlob) {
+                clearTimeout(timeoutId);
+                resolve(file);
+                return;
+            }
+
+            canvas.toBlob((blob) => {
+                clearTimeout(timeoutId);
+                if (!blob) {
                     resolve(file);
                     return;
                 }
-
-                canvas.toBlob((blob) => {
-                    if (!blob) {
-                        resolve(file);
-                        return;
-                    }
-                    const compressedFile = new File([blob], file.name || 'photo.jpg', {
-                        type: 'image/jpeg',
-                        lastModified: Date.now()
-                    });
-                    resolve(compressedFile);
-                }, 'image/jpeg', quality);
-            };
+                const compressedFile = new File([blob], file.name || 'photo.jpg', {
+                    type: 'image/jpeg',
+                    lastModified: Date.now()
+                });
+                resolve(compressedFile);
+            }, 'image/jpeg', quality);
         };
     });
 }
