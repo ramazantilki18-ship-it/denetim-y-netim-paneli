@@ -16718,15 +16718,29 @@ function startPresenceHeartbeat() {
     // Run immediately on start
     runPresenceHeartbeat();
     
-    // Repeat every 30 seconds
-    presenceHeartbeatInterval = setInterval(runPresenceHeartbeat, 30000);
+    // Repeat every 30 minutes to check if calendar day changes
+    presenceHeartbeatInterval = setInterval(runPresenceHeartbeat, 1800000);
 }
 
 function runPresenceHeartbeat() {
     if (currentUser && currentUser.id) {
+        const now = new Date();
+        if (currentUser.lastActive) {
+            const lastActiveDate = new Date(currentUser.lastActive);
+            const isToday = lastActiveDate.getDate() === now.getDate() &&
+                            lastActiveDate.getMonth() === now.getMonth() &&
+                            lastActiveDate.getFullYear() === now.getFullYear();
+            if (isToday) {
+                console.log('Kullanıcı bugün zaten aktif kaydedilmiş, yazma atlanıyor.');
+                return;
+            }
+        }
+        
         db.collection('users').doc(currentUser.id).update({
-            lastActive: new Date().toISOString(),
+            lastActive: now.toISOString(),
             activePlatform: 'web'
+        }).then(() => {
+            currentUser.lastActive = now.toISOString();
         }).catch(err => console.error('Presence Heartbeat Error:', err));
     }
 }
@@ -16767,13 +16781,14 @@ function renderOnlineUsers() {
     if (totalCountEl) totalCountEl.innerText = totalUsers;
     
     const now = new Date();
-    const fiveMinutesMs = 5 * 60 * 1000;
     
-    // Filter online users
+    // Filter users active today (calendar day) on web
     const onlineUsers = (appData.users || []).filter(u => {
-        if (!u.lastActive) return false;
-        const diff = now - new Date(u.lastActive);
-        return diff >= 0 && diff < fiveMinutesMs;
+        if (!u.lastActive || u.activePlatform !== 'web') return false;
+        const lastActiveDate = new Date(u.lastActive);
+        return lastActiveDate.getDate() === now.getDate() &&
+               lastActiveDate.getMonth() === now.getMonth() &&
+               lastActiveDate.getFullYear() === now.getFullYear();
     });
     
     // Sort: most recently active first
@@ -16798,26 +16813,11 @@ function renderOnlineUsers() {
         const avatarBg = getUserAvatarBgColor(u.name);
         const initials = getUserInitials(u.name);
         
-        // Time text
-        const diffMs = now - new Date(u.lastActive);
-        const diffSec = Math.floor(diffMs / 1000);
-        let timeText = 'Şimdi';
-        if (diffSec < 15) {
-            timeText = 'Şimdi aktif';
-        } else if (diffSec < 60) {
-            timeText = `${diffSec} sn önce`;
-        } else {
-            const diffMin = Math.floor(diffSec / 60);
-            timeText = `${diffMin} dk önce`;
-        }
-        
-        // Platform Badge
-        let platformHtml = '';
-        if (u.activePlatform === 'web') {
-            platformHtml = `<span class="badge" style="background: rgba(37, 99, 235, 0.1); color: #2563eb; border: 1px solid rgba(37, 99, 235, 0.2); padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-desktop"></i>Web Panel</span>`;
-        } else {
-            platformHtml = `<span class="badge" style="background: rgba(16, 185, 129, 0.1); color: #16a34a; border: 1px solid rgba(16, 185, 129, 0.2); padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-mobile-alt"></i>Mobil</span>`;
-        }
+        // Time text (Format as Today HH:MM)
+        const dateObj = new Date(u.lastActive);
+        const hours = String(dateObj.getHours()).padStart(2, '0');
+        const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+        const timeText = `Bugün ${hours}:${minutes}`;
         
         tr.innerHTML = `
             <td style="padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
@@ -16838,9 +16838,6 @@ function renderOnlineUsers() {
             <td style="padding: 12px 16px; font-size: 0.8rem; color: var(--text-secondary); vertical-align: middle;">
                 <span style="font-weight: 600;">${escapeAttr(u.roleName || u.title || '-')}</span>
             </td>
-            <td style="padding: 12px 16px; text-align: center; vertical-align: middle;">
-                ${platformHtml}
-            </td>
             <td style="padding: 12px 16px; font-size: 0.8rem; color: var(--text-secondary); text-align: right; font-weight: 600; vertical-align: middle;">
                 <span style="display: inline-flex; align-items: center; gap: 6px; color: #10b981;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #10b981; display: inline-block;"></span>${timeText}</span>
             </td>
@@ -16848,7 +16845,7 @@ function renderOnlineUsers() {
         tbody.appendChild(tr);
     });
     
-    // Schedule periodic UI-only refresh if not already scheduled
+    // Schedule periodic UI-only refresh if not already scheduled (every 5 minutes is plenty for daily active view)
     if (!onlineUsersRefreshInterval) {
         onlineUsersRefreshInterval = setInterval(() => {
             if (document.getElementById('online-users-view')?.style.display !== 'none') {
@@ -16857,7 +16854,7 @@ function renderOnlineUsers() {
                 clearInterval(onlineUsersRefreshInterval);
                 onlineUsersRefreshInterval = null;
             }
-        }, 15000);
+        }, 300000);
     }
 }
 
