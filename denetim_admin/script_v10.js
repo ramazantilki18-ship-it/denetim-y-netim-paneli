@@ -4122,7 +4122,11 @@ function approveNC(id) {
 
 function rejectNC(id) {
     db.collection('nonconformities').doc(id).update({
-        status: 'open'
+        status: 'open',
+        closureComment: firebase.firestore.FieldValue.delete(),
+        closurePhotoPaths: firebase.firestore.FieldValue.delete(),
+        closedByName: firebase.firestore.FieldValue.delete(),
+        closureDate: firebase.firestore.FieldValue.delete()
     }).then(() => {
         showToast(`${id} reddedildi, tekrar açıldı.`);
         const nc = appData.nonconformities.find(n => n.id === id);
