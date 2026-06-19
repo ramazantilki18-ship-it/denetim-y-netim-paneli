@@ -16725,6 +16725,7 @@ function startPresenceHeartbeat() {
 function runPresenceHeartbeat() {
     if (currentUser && currentUser.id) {
         const now = new Date();
+        console.log('runPresenceHeartbeat running for:', currentUser.email);
         if (currentUser.lastActive) {
             const lastActiveDate = new Date(currentUser.lastActive);
             const isToday = lastActiveDate.getDate() === now.getDate() &&
@@ -16732,17 +16733,26 @@ function runPresenceHeartbeat() {
                             lastActiveDate.getFullYear() === now.getFullYear();
             if (isToday && currentUser.activePlatform === 'web') {
                 console.log('Kullanıcı bugün zaten aktif kaydedilmiş, yazma atlanıyor.');
+                showToast('Aktiflik zaten güncel: ' + currentUser.email);
                 return;
             }
         }
         
+        console.log('Updating lastActive in Firestore for:', currentUser.id);
         db.collection('users').doc(currentUser.id).update({
             lastActive: now.toISOString(),
             activePlatform: 'web'
         }).then(() => {
             currentUser.lastActive = now.toISOString();
             currentUser.activePlatform = 'web';
-        }).catch(err => console.error('Presence Heartbeat Error:', err));
+            console.log('lastActive successfully updated in Firestore!');
+            showToast('Giriş aktifliği veritabanına kaydedildi: ' + currentUser.email);
+        }).catch(err => {
+            console.error('Presence Heartbeat Error:', err);
+            showToast('Aktiflik yazma hatası: ' + err.message);
+        });
+    } else {
+        console.warn('runPresenceHeartbeat skipped because currentUser or currentUser.id is missing.');
     }
 }
 
