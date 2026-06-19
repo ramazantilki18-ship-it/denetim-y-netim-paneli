@@ -3609,6 +3609,9 @@ body:not(.light-mode) #nc-table .nc-row-actions {
 
     #nc-table th:nth-child(10),
     #nc-table td:nth-child(10) { width: 104px; }
+
+    #nc-table th:last-child,
+    #nc-table td:last-child { width: 140px; }
 }
 
 /* Uygunsuzluk yönetimi: profesyonel ve başlıksız çalışma alanı */
