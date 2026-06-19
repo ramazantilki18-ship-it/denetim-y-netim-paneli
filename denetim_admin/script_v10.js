@@ -1031,6 +1031,16 @@ async function handleLogin(e) {
 
 async function handleLogout() {
     try {
+        if (currentUser && currentUser.id) {
+            await db.collection('users').doc(currentUser.id).update({
+                lastActive: firebase.firestore.FieldValue.delete(),
+                activePlatform: firebase.firestore.FieldValue.delete()
+            }).catch(() => {});
+        }
+        if (presenceHeartbeatInterval) {
+            clearInterval(presenceHeartbeatInterval);
+            presenceHeartbeatInterval = null;
+        }
         await firebase.auth().signOut();
     } catch (err) {
         console.error('Logout error:', err);
@@ -1040,6 +1050,7 @@ async function handleLogout() {
 function initRealtimeSync() {
     pushDebug('Inside initRealtimeSync');
     console.log('Real-time sync başlatıldı...');
+    startPresenceHeartbeat();
 
     // Automatically clean up old duplicate 'audit-type-5s' document if it exists in Firestore
     db.collection('auditTypes').doc('audit-type-5s').delete()
@@ -1085,6 +1096,9 @@ function initRealtimeSync() {
         renderPeople();
         renderPermissions();
         populateStatsFilters();
+        if (document.getElementById('online-users-view')?.style.display !== 'none') {
+            renderOnlineUsers();
+        }
         if (appData.auditsLoaded) {
             renderAll();
         }
@@ -1625,6 +1639,7 @@ const VIEW_TITLES = {
     'reports-view': 'Raporlar & Analizler',
     'settings-view': 'Sistem Ayarları',
     'logs-view': 'Sistem Logları',
+    'online-users-view': 'Çevrimiçi Kullanıcılar',
 };
 
 const VIEW_DESCRIPTIONS = {
@@ -1644,6 +1659,7 @@ const VIEW_DESCRIPTIONS = {
     'reports-view': 'Kurumsal rapor çıktıları ve dışa aktarma işlemleri.',
     'settings-view': 'Sistem davranışı, rapor ve bildirim ayarları.',
     'logs-view': 'Sistem genelinde yapılan işlemlerin geçmiş kayıtları ve denetim logları.',
+    'online-users-view': 'Sistemde son 5 dakika içerisinde aktif olan çevrimiçi kullanıcıları görüntüleyin.',
 };
 
 function updateActivePageTitle(viewId) {
@@ -1667,7 +1683,8 @@ const NAV_VIEW_PERMISSIONS = {
     'settings-view': 'settings',
     'stats-view': 'stats_view',
     'reports-view': 'stats_view',
-    'dashboard-view': 'dashboard_view'
+    'dashboard-view': 'dashboard_view',
+    'online-users-view': 'perm_mgmt'
 };
 
 function canShowNavView(viewId, user = currentUser) {
@@ -1718,7 +1735,7 @@ function updatePermissionGatedUI() {
     });
 
     // YÖNETİM başlığı ve ayırıcı çizginin durumunu güncelle
-    const mgmtViews = ['people-view', 'questions-view', 'lines-view', 'nfc-view', 'location-view', 'planning-view', 'announcements-view', 'logs-view', 'permissions-view'];
+    const mgmtViews = ['people-view', 'questions-view', 'lines-view', 'nfc-view', 'location-view', 'planning-view', 'announcements-view', 'logs-view', 'permissions-view', 'online-users-view'];
     const hasAnyMgmtPermission = !fieldAuditorOnly && mgmtViews.some(viewId => {
         const perm = NAV_VIEW_PERMISSIONS[viewId];
         return perm ? hasPermission(perm) : false;
@@ -1824,6 +1841,9 @@ function switchView(viewId) {
     if (viewId === 'nc-management-view') {
         initNCFilters();
         renderNCs();
+    }
+    if (viewId === 'online-users-view') {
+        renderOnlineUsers();
     }
 }
 
@@ -16684,6 +16704,161 @@ async function handlePlanningExcelImport(event) {
         }
     };
     reader.readAsArrayBuffer(file);
+}
+
+// Presence Tracking & Online Users Management
+let presenceHeartbeatInterval = null;
+let onlineUsersRefreshInterval = null;
+
+function startPresenceHeartbeat() {
+    if (presenceHeartbeatInterval) {
+        clearInterval(presenceHeartbeatInterval);
+    }
+    
+    // Run immediately on start
+    runPresenceHeartbeat();
+    
+    // Repeat every 30 seconds
+    presenceHeartbeatInterval = setInterval(runPresenceHeartbeat, 30000);
+}
+
+function runPresenceHeartbeat() {
+    if (currentUser && currentUser.id) {
+        db.collection('users').doc(currentUser.id).update({
+            lastActive: new Date().toISOString(),
+            activePlatform: 'web'
+        }).catch(err => console.error('Presence Heartbeat Error:', err));
+    }
+}
+
+function getUserInitials(name) {
+    if (!name) return 'U';
+    const parts = name.split(' ');
+    if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name[0].toUpperCase();
+}
+
+function getUserAvatarBgColor(name) {
+    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#14b8a6', '#f43f5e'];
+    if (!name) return colors[0];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+}
+
+function renderOnlineUsers() {
+    console.log('Rendering online users...');
+    const tbody = document.getElementById('online-users-list');
+    const emptyDiv = document.getElementById('online-users-empty');
+    const onlineCountEl = document.getElementById('online-users-count');
+    const totalCountEl = document.getElementById('total-users-count');
+    
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    // Total count update
+    const totalUsers = appData.users ? appData.users.length : 0;
+    if (totalCountEl) totalCountEl.innerText = totalUsers;
+    
+    const now = new Date();
+    const fiveMinutesMs = 5 * 60 * 1000;
+    
+    // Filter online users
+    const onlineUsers = (appData.users || []).filter(u => {
+        if (!u.lastActive) return false;
+        const diff = now - new Date(u.lastActive);
+        return diff >= 0 && diff < fiveMinutesMs;
+    });
+    
+    // Sort: most recently active first
+    onlineUsers.sort((a, b) => new Date(b.lastActive) - new Date(a.lastActive));
+    
+    if (onlineCountEl) onlineCountEl.innerText = onlineUsers.length;
+    
+    if (onlineUsers.length === 0) {
+        emptyDiv.style.display = 'block';
+        tbody.parentElement.style.display = 'none';
+        return;
+    }
+    
+    emptyDiv.style.display = 'none';
+    tbody.parentElement.style.display = 'table';
+    
+    onlineUsers.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid var(--border-color)';
+        
+        // Avatar color and initials
+        const avatarBg = getUserAvatarBgColor(u.name);
+        const initials = getUserInitials(u.name);
+        
+        // Time text
+        const diffMs = now - new Date(u.lastActive);
+        const diffSec = Math.floor(diffMs / 1000);
+        let timeText = 'Şimdi';
+        if (diffSec < 15) {
+            timeText = 'Şimdi aktif';
+        } else if (diffSec < 60) {
+            timeText = `${diffSec} sn önce`;
+        } else {
+            const diffMin = Math.floor(diffSec / 60);
+            timeText = `${diffMin} dk önce`;
+        }
+        
+        // Platform Badge
+        let platformHtml = '';
+        if (u.activePlatform === 'web') {
+            platformHtml = `<span class="badge" style="background: rgba(37, 99, 235, 0.1); color: #2563eb; border: 1px solid rgba(37, 99, 235, 0.2); padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-desktop"></i>Web Panel</span>`;
+        } else {
+            platformHtml = `<span class="badge" style="background: rgba(16, 185, 129, 0.1); color: #16a34a; border: 1px solid rgba(16, 185, 129, 0.2); padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-mobile-alt"></i>Mobil</span>`;
+        }
+        
+        tr.innerHTML = `
+            <td style="padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
+                <div style="position: relative; display: inline-block; flex-shrink: 0;">
+                    <div style="width: 36px; height: 36px; border-radius: 50%; background: ${avatarBg}; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem;">
+                        ${initials}
+                    </div>
+                    <span style="position: absolute; bottom: -2px; right: -2px; width: 12px; height: 12px; border-radius: 50%; background: #10b981; border: 2.5px solid var(--bg-card); box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.3);"></span>
+                </div>
+                <div>
+                    <div style="font-weight: 700; color: var(--text-primary); font-size: 0.85rem; line-height: 1.2;">${escapeAttr(u.name || '-')}</div>
+                    <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 2px;">@${escapeAttr(u.username || '-')}</div>
+                </div>
+            </td>
+            <td style="padding: 12px 16px; font-size: 0.8rem; color: var(--text-secondary); vertical-align: middle;">
+                ${escapeAttr(u.email || '-')}
+            </td>
+            <td style="padding: 12px 16px; font-size: 0.8rem; color: var(--text-secondary); vertical-align: middle;">
+                <span style="font-weight: 600;">${escapeAttr(u.roleName || u.title || '-')}</span>
+            </td>
+            <td style="padding: 12px 16px; text-align: center; vertical-align: middle;">
+                ${platformHtml}
+            </td>
+            <td style="padding: 12px 16px; font-size: 0.8rem; color: var(--text-secondary); text-align: right; font-weight: 600; vertical-align: middle;">
+                <span style="display: inline-flex; align-items: center; gap: 6px; color: #10b981;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #10b981; display: inline-block;"></span>${timeText}</span>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+    
+    // Schedule periodic UI-only refresh if not already scheduled
+    if (!onlineUsersRefreshInterval) {
+        onlineUsersRefreshInterval = setInterval(() => {
+            if (document.getElementById('online-users-view')?.style.display !== 'none') {
+                renderOnlineUsers();
+            } else {
+                clearInterval(onlineUsersRefreshInterval);
+                onlineUsersRefreshInterval = null;
+            }
+        }, 15000);
+    }
 }
 
 
