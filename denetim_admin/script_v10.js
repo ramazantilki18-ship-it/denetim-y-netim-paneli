@@ -1058,23 +1058,7 @@ function initRealtimeSync() {
     db.collection('nonconformities').onSnapshot(snapshot => {
         appData.nonconformities = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        // Auto-clean orphaned closure fields for open/inProgress/overdue NCs
-        appData.nonconformities.forEach(nc => {
-            const hasClosureFields = nc.closureComment !== undefined || 
-                                     nc.closurePhotoPaths !== undefined || 
-                                     nc.closedByName !== undefined || 
-                                     nc.closureDate !== undefined;
-            const isOpenStatus = nc.status === 'open' || nc.status === 'inProgress' || nc.status === 'overdue';
-            if (isOpenStatus && hasClosureFields) {
-                console.log(`Cleaning orphaned closure fields for NC: ${nc.id}`);
-                db.collection('nonconformities').doc(nc.id).update({
-                    closureComment: firebase.firestore.FieldValue.delete(),
-                    closurePhotoPaths: firebase.firestore.FieldValue.delete(),
-                    closedByName: firebase.firestore.FieldValue.delete(),
-                    closureDate: firebase.firestore.FieldValue.delete()
-                }).catch(err => console.error('Error cleaning orphaned NC fields:', err));
-            }
-        });
+        // Auto-clean orphaned closure fields disabled because rejectNC handles it safely.
 
         updateStats();
         renderNCs();
@@ -4170,6 +4154,16 @@ function rejectNC(id) {
         const nc = appData.nonconformities.find(n => n.id === id);
         logActivity('Uygunsuzluk Reddedildi', `${nc ? nc.line : ''} hattı, ${nc ? nc.station : ''} istasyonundaki uygunsuzluk çözümü web panelinden reddedildi. (ID: ${id})`);
     }).catch(err => console.error('Reject Error:', err));
+}
+
+function logActivity(action, details) {
+    const userStr = currentUser ? (currentUser.name || currentUser.username || (currentUser.email ? currentUser.email.split('@')[0] : '')) : 'Admin';
+    db.collection('system_logs').add({
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        user: userStr,
+        action: action,
+        details: details
+    }).catch(err => console.error('Failed to write system log:', err));
 }
 
 function filterNCs(status, btn) {
