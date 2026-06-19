@@ -3220,7 +3220,7 @@ function renderNCs(filter) {
         let closureMetaHtml = '';
         if (nc.status === 'completed' || nc.status === 'waitingControl') {
             closureMetaHtml = `
-                <div class="nc-closure-meta" style="margin-top:4px; font-size:0.68rem; color:#475569; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
+                <div class="nc-closure-meta" style="margin-top:4px; font-size:0.68rem; color: var(--text-secondary); display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
                     <span><i class="fas fa-user-pen" style="color: #2563eb; margin-right: 4px;"></i><strong>Kapatan:</strong> ${escapeAttr(closedByName)}</span>
                     ${nc.status === 'completed' ? `<span><i class="fas fa-user-check" style="color: #16a34a; margin-right: 4px;"></i><strong>Onaylayan:</strong> ${escapeAttr(approvedByName)}</span>` : ''}
                 </div>
