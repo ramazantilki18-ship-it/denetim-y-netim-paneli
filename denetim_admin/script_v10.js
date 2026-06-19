@@ -4021,6 +4021,30 @@ function compressImage(file, maxWidth = 1200, quality = 0.75) {
     });
 }
 
+async function uploadToCloudinary(file, folder = 'nonconformities') {
+    const cloudName = 'dpk2rnnfn';
+    const uploadPreset = 'denetimuygulaması';
+    const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', uploadPreset);
+    formData.append('folder', folder);
+
+    const response = await fetch(url, {
+        method: 'POST',
+        body: formData
+    });
+
+    if (!response.ok) {
+        const errText = await response.text();
+        throw new Error('Cloudinary upload failed: ' + errText);
+    }
+
+    const data = await response.json();
+    return data.secure_url;
+}
+
 async function processNCClose() {
     const id = document.getElementById('nc-close-id').value;
     const comment = document.getElementById('nc-close-comment').value;
@@ -4053,14 +4077,9 @@ async function processNCClose() {
                 console.warn('Compression failed, using original file:', compressErr);
             }
 
-            // Orijinal dosya isminden uzantıyı alıyoruz (uploadFile Blob olduğu için name alanı yoktur)
-            const extension = file.name.split('.').pop() || 'jpg';
-            const storagePath = `uploads/nonconformities/${id}_${Date.now()}_${index}.${extension}`;
-            const storageRef = storage.ref(storagePath);
-            
             showToast(`${index + 1}. fotoğraf yükleniyor...`);
-            const snapshot = await storageRef.put(uploadFile);
-            const downloadUrl = await snapshot.ref.getDownloadURL();
+            // Firebase Storage yerine Cloudinary kullanıyoruz (CORS kilitlenmesini engeller)
+            const downloadUrl = await uploadToCloudinary(uploadFile, `nonconformities/${id}`);
             return downloadUrl;
         });
 
