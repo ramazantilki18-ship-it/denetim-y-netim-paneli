@@ -16715,7 +16715,6 @@ function runPresenceHeartbeat() {
                             lastActiveDate.getFullYear() === now.getFullYear();
             if (isToday) {
                 console.log('Kullanıcı bugün zaten giriş yapmış, veritabanı yazma işlemi atlanıyor.');
-                showToast('Bugünkü girişiniz zaten kayıtlı: ' + currentUser.email);
                 return;
             }
         }
@@ -16728,10 +16727,8 @@ function runPresenceHeartbeat() {
             currentUser.lastActive = now.toISOString();
             currentUser.activePlatform = 'web';
             console.log('Today\'s login successfully recorded in Firestore!');
-            showToast('Bugünkü ilk girişiniz başarıyla kaydedildi: ' + currentUser.email);
         }).catch(err => {
             console.error('Giriş kaydı hatası:', err);
-            showToast('Giriş kaydı başarısız: ' + err.message);
         });
     } else {
         console.warn('runPresenceHeartbeat skipped because currentUser or currentUser.id is missing.');
