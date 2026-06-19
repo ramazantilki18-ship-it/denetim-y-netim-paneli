@@ -3989,6 +3989,11 @@ function compressImage(file, maxWidth = 1200, quality = 0.75) {
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
 
+                if (!canvas.toBlob) {
+                    resolve(file);
+                    return;
+                }
+
                 canvas.toBlob((blob) => {
                     if (!blob) {
                         resolve(file);
