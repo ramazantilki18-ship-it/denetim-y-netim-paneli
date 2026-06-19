@@ -1639,7 +1639,7 @@ const VIEW_TITLES = {
     'reports-view': 'Raporlar & Analizler',
     'settings-view': 'Sistem Ayarları',
     'logs-view': 'Sistem Logları',
-    'online-users-view': 'Çevrimiçi Kullanıcılar',
+    'online-users-view': 'Günlük Aktif Kullanıcılar',
 };
 
 const VIEW_DESCRIPTIONS = {
@@ -1659,7 +1659,7 @@ const VIEW_DESCRIPTIONS = {
     'reports-view': 'Kurumsal rapor çıktıları ve dışa aktarma işlemleri.',
     'settings-view': 'Sistem davranışı, rapor ve bildirim ayarları.',
     'logs-view': 'Sistem genelinde yapılan işlemlerin geçmiş kayıtları ve denetim logları.',
-    'online-users-view': 'Sistemde son 5 dakika içerisinde aktif olan çevrimiçi kullanıcıları görüntüleyin.',
+    'online-users-view': 'Bugün sistemde aktif olan (giriş yapan veya işlem gerçekleştiren) web kullanıcılarını görüntüleyin.',
 };
 
 function updateActivePageTitle(viewId) {
