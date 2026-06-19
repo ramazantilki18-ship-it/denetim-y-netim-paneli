@@ -3959,6 +3959,52 @@ function closeNCModal() {
     document.getElementById('nc-close-modal').style.display = 'none';
 }
 
+function compressImage(file, maxWidth = 1200, quality = 0.75) {
+    return new Promise((resolve, reject) => {
+        if (!file.type.startsWith('image/')) {
+            resolve(file);
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onerror = error => reject(error);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onerror = error => reject(error);
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                if (width > maxWidth) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                canvas.toBlob((blob) => {
+                    if (!blob) {
+                        resolve(file);
+                        return;
+                    }
+                    const compressedFile = new File([blob], file.name || 'photo.jpg', {
+                        type: 'image/jpeg',
+                        lastModified: Date.now()
+                    });
+                    resolve(compressedFile);
+                }, 'image/jpeg', quality);
+            };
+        };
+    });
+}
+
 async function processNCClose() {
     const id = document.getElementById('nc-close-id').value;
     const comment = document.getElementById('nc-close-comment').value;
@@ -3983,12 +4029,20 @@ async function processNCClose() {
 
     try {
         const uploadPromises = selectedClosePhotos.map(async (file, index) => {
-            const extension = file.name.split('.').pop() || 'jpg';
-            const storagePath = `nonconformities/${id}_${Date.now()}_${index}.${extension}`;
+            let uploadFile = file;
+            try {
+                showToast(`${index + 1}. fotoğraf optimize ediliyor...`);
+                uploadFile = await compressImage(file, 1200, 0.75);
+            } catch (compressErr) {
+                console.warn('Compression failed, using original file:', compressErr);
+            }
+
+            const extension = uploadFile.name.split('.').pop() || 'jpg';
+            const storagePath = `uploads/nonconformities/${id}_${Date.now()}_${index}.${extension}`;
             const storageRef = storage.ref(storagePath);
             
             showToast(`${index + 1}. fotoğraf yükleniyor...`);
-            const snapshot = await storageRef.put(file);
+            const snapshot = await storageRef.put(uploadFile);
             const downloadUrl = await snapshot.ref.getDownloadURL();
             return downloadUrl;
         });

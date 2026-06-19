@@ -40,6 +40,13 @@ service firebase.storage {
       allow delete: if isAdmin();
     }
 
+    // ─── Uygunsuzluk kapatma fotoğrafları ─────────────────────────────────
+    match /nonconformities/{allPaths=**} {
+      allow read: if true;
+      allow write: if isSignedIn() && isImage() && isUnder10MB();
+      allow delete: if isAdmin();
+    }
+
     // ─── Varsayılan: kapalı ───────────────────────────────────────────────
     match /{allPaths=**} {
       allow read, write: if false;
