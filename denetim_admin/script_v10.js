@@ -1031,16 +1031,6 @@ async function handleLogin(e) {
 
 async function handleLogout() {
     try {
-        if (currentUser && currentUser.id) {
-            await db.collection('users').doc(currentUser.id).update({
-                lastActive: firebase.firestore.FieldValue.delete(),
-                activePlatform: firebase.firestore.FieldValue.delete()
-            }).catch(() => {});
-        }
-        if (presenceHeartbeatInterval) {
-            clearInterval(presenceHeartbeatInterval);
-            presenceHeartbeatInterval = null;
-        }
         await firebase.auth().signOut();
     } catch (err) {
         console.error('Logout error:', err);
@@ -16706,50 +16696,42 @@ async function handlePlanningExcelImport(event) {
     reader.readAsArrayBuffer(file);
 }
 
-// Presence Tracking & Online Users Management
-let presenceHeartbeatInterval = null;
+// Presence Tracking & Daily Active Users Management
 let onlineUsersRefreshInterval = null;
 
 function startPresenceHeartbeat() {
-    if (presenceHeartbeatInterval) {
-        clearInterval(presenceHeartbeatInterval);
-    }
-    
-    // Run immediately on start
+    // Run once on page load / sign in (no setInterval needed for daily logins)
     runPresenceHeartbeat();
-    
-    // Repeat every 30 minutes to check if calendar day changes
-    presenceHeartbeatInterval = setInterval(runPresenceHeartbeat, 1800000);
 }
 
 function runPresenceHeartbeat() {
     if (currentUser && currentUser.id) {
         const now = new Date();
-        console.log('runPresenceHeartbeat running for:', currentUser.email);
+        console.log('Daily active check running for:', currentUser.email);
         if (currentUser.lastActive) {
             const lastActiveDate = new Date(currentUser.lastActive);
             const isToday = lastActiveDate.getDate() === now.getDate() &&
                             lastActiveDate.getMonth() === now.getMonth() &&
                             lastActiveDate.getFullYear() === now.getFullYear();
-            if (isToday && currentUser.activePlatform === 'web') {
-                console.log('Kullanıcı bugün zaten aktif kaydedilmiş, yazma atlanıyor.');
-                showToast('Aktiflik zaten güncel: ' + currentUser.email);
+            if (isToday) {
+                console.log('Kullanıcı bugün zaten giriş yapmış, veritabanı yazma işlemi atlanıyor.');
+                showToast('Bugünkü girişiniz zaten kayıtlı: ' + currentUser.email);
                 return;
             }
         }
         
-        console.log('Updating lastActive in Firestore for:', currentUser.id);
+        console.log('Updating today\'s login in Firestore for:', currentUser.id);
         db.collection('users').doc(currentUser.id).update({
             lastActive: now.toISOString(),
             activePlatform: 'web'
         }).then(() => {
             currentUser.lastActive = now.toISOString();
             currentUser.activePlatform = 'web';
-            console.log('lastActive successfully updated in Firestore!');
-            showToast('Giriş aktifliği veritabanına kaydedildi: ' + currentUser.email);
+            console.log('Today\'s login successfully recorded in Firestore!');
+            showToast('Bugünkü ilk girişiniz başarıyla kaydedildi: ' + currentUser.email);
         }).catch(err => {
-            console.error('Presence Heartbeat Error:', err);
-            showToast('Aktiflik yazma hatası: ' + err.message);
+            console.error('Giriş kaydı hatası:', err);
+            showToast('Giriş kaydı başarısız: ' + err.message);
         });
     } else {
         console.warn('runPresenceHeartbeat skipped because currentUser or currentUser.id is missing.');
