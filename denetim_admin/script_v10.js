@@ -2762,6 +2762,12 @@ function resolveImagePath(pathStr) {
     if (pathStr.startsWith('http://') || pathStr.startsWith('https://') || pathStr.startsWith('data:')) {
         return pathStr;
     }
+    if (pathStr.startsWith('//')) {
+        return 'https:' + pathStr;
+    }
+    if (pathStr.includes('cloudinary.com')) {
+        return pathStr.startsWith('http') ? pathStr : 'https://' + pathStr;
+    }
     if (pathStr.startsWith('assets/')) {
         return '../denetim_app/' + pathStr;
     }
@@ -3222,7 +3228,7 @@ function renderNCs(filter) {
         const auditorComment = String(nc.auditorComment || '').trim();
         const closureComment = String(nc.closureComment || '').trim();
         
-        const closedByName = getAuditorDisplayName(nc.closedByName) || getAuditorDisplayName(nc.auditorName) || owner || '-';
+        const closedByName = nc.closedByName ? (getAuditorDisplayName(nc.closedByName) || '-') : '-';
         const approvedByName = (nc.approvedByName && nc.approvedByName !== '-')
             ? nc.approvedByName
             : (nc.status === 'completed' ? 'Ramazan Tilki' : '-');
@@ -3816,7 +3822,7 @@ function inspectNC(id, parentAuditId = null) {
             minute: '2-digit'
         })
         : '-';
-    const closedByName = nc.closedByName || nc.auditorName || auditUserName || '-';
+    const closedByName = nc.closedByName ? (getAuditorDisplayName(nc.closedByName) || '-') : '-';
     const approvedByName = (nc.approvedByName && nc.approvedByName !== '-')
         ? nc.approvedByName
         : (normalizedStatus === 'completed' ? 'Ramazan Tilki' : '-');
@@ -3925,7 +3931,10 @@ function getNcResponsibleTitle(nc, audit = {}) {
 }
 
 function renderImageGallery(paths) {
-    if (!paths || paths.length === 0) {
+    if (typeof paths === 'string') {
+        paths = [paths];
+    }
+    if (!Array.isArray(paths) || paths.length === 0) {
         return `
             <div class="nc-image-empty">
                 <i class="fas fa-image"></i>
