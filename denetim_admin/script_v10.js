@@ -16730,7 +16730,7 @@ function runPresenceHeartbeat() {
             const isToday = lastActiveDate.getDate() === now.getDate() &&
                             lastActiveDate.getMonth() === now.getMonth() &&
                             lastActiveDate.getFullYear() === now.getFullYear();
-            if (isToday) {
+            if (isToday && currentUser.activePlatform === 'web') {
                 console.log('Kullanıcı bugün zaten aktif kaydedilmiş, yazma atlanıyor.');
                 return;
             }
@@ -16741,6 +16741,7 @@ function runPresenceHeartbeat() {
             activePlatform: 'web'
         }).then(() => {
             currentUser.lastActive = now.toISOString();
+            currentUser.activePlatform = 'web';
         }).catch(err => console.error('Presence Heartbeat Error:', err));
     }
 }
