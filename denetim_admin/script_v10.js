@@ -2658,15 +2658,6 @@ function getFilteredAudits() {
 
     if (hasGlobalScope(currentUser)) return audits;
 
-    const roleId = inferRbacRoleId(currentUser);
-    if (roleId === 'Field_Auditor') {
-        const auditorKey = currentUser.username || currentUser.name;
-        return audits.filter(audit =>
-            audit.auditorName === auditorKey &&
-            userMatchesLineScope(currentUser, audit.line)
-        );
-    }
-
     return audits.filter(audit => userMatchesLineScope(currentUser, audit.line));
 }
 
@@ -2692,12 +2683,6 @@ function getFilteredNCs() {
         const ncLine = audit.line || nc.line || 'N/A';
 
         if (hasGlobalScope(currentUser)) return true;
-
-        const roleId = inferRbacRoleId(currentUser);
-        if (roleId === 'Field_Auditor') {
-            return nc.auditorName === (currentUser.username || currentUser.name) &&
-                userMatchesLineScope(currentUser, ncLine);
-        }
 
         return userMatchesLineScope(currentUser, ncLine);
     });
@@ -3650,7 +3635,7 @@ function syncAuditSelectionUI() {
         downloadBtn.innerHTML = `<i class="fas fa-download"></i> İndir (${selectedCount})`;
     }
     if (deleteBtn) {
-        deleteBtn.style.display = selectedCount > 0 ? 'inline-flex' : 'none';
+        deleteBtn.style.display = (selectedCount > 0 && isSuperAdmin()) ? 'inline-flex' : 'none';
         deleteBtn.innerHTML = `<i class="fas fa-trash-alt"></i> Seçilenleri Sil (${selectedCount})`;
     }
 
@@ -3663,6 +3648,10 @@ function syncAuditSelectionUI() {
 }
 
 async function deleteBulkAudits() {
+    if (!isSuperAdmin()) {
+        showToast('Bu işlem için yetkiniz bulunmamaktadır. Sadece yöneticiler silme işlemi yapabilir.');
+        return;
+    }
     const selectedCount = appData.selectedAuditIds.size;
     if (selectedCount === 0) return;
     if (!confirm(`Seçilen ${selectedCount} denetim kaydını ve bunlara bağlı tüm uygunsuzlukları silmek istediğinize emin misiniz? Bu işlem geri alınamaz!`)) return;
@@ -4641,8 +4630,7 @@ function isPlanAssignedToCurrentUser(plan) {
 
 function canDeletePlan(plan, user = currentUser) {
     if (!plan || !user) return false;
-    if (inferRbacRoleId(user) === 'Super_Admin') return true;
-    return Boolean(plan.createdBy) && plan.createdBy === user.id;
+    return inferRbacRoleId(user) === 'Super_Admin';
 }
 
 function renderPlanning() {
@@ -5366,6 +5354,10 @@ async function processNewPlan() {
 }
 
 async function deletePlan(planId) {
+    if (!isSuperAdmin()) {
+        showToast('Plan silme yetkiniz bulunmamaktadır.');
+        return;
+    }
     const plan = (appData.plans || []).find(p => p.id === planId);
     if (!plan) {
         showToast('Plan bulunamadı.');
@@ -5373,7 +5365,7 @@ async function deletePlan(planId) {
     }
 
     if (!canDeletePlan(plan)) {
-        showToast('Bu görevi silme yetkiniz yok. Sadece kendi oluşturduğunuz görevleri silebilirsiniz.');
+        showToast('Bu görevi silme yetkiniz yok.');
         return;
     }
 
@@ -5388,6 +5380,10 @@ async function deletePlan(planId) {
 }
 
 async function deletePlansForAuditor(userId) {
+    if (!isSuperAdmin()) {
+        showToast('Plan silme yetkiniz bulunmamaktadır.');
+        return;
+    }
     let plansToDelete = appData.plans || [];
     
     // Filter based on tab first so we only delete what's currently viewed!
@@ -5430,6 +5426,10 @@ async function deletePlansForAuditor(userId) {
 }
 
 async function deleteAllPlansInActiveTab() {
+    if (!isSuperAdmin()) {
+        showToast('Plan silme yetkiniz bulunmamaktadır.');
+        return;
+    }
     let plansToDelete = appData.plans || [];
     
     // Filter based on active tab first so we only delete what's currently viewed!
@@ -8201,7 +8201,7 @@ function renderAllAuditsTable() {
     const paginatedAudits = audits.slice(startIdx, startIdx + ITEMS_PER_PAGE);
 
     paginatedAudits.forEach(audit => {
-        const tr = createAuditRow(audit, { showDelete: true });
+        const tr = createAuditRow(audit, { showDelete: isSuperAdmin() });
         const selectTd = document.createElement('td');
         selectTd.className = 'audit-select-cell';
         selectTd.innerHTML = `<input type="checkbox" class="audit-row-select" data-audit-id="${audit.id}" ${appData.selectedAuditIds.has(audit.id) ? 'checked' : ''} onchange="toggleAuditSelection(this)">`;
@@ -8290,6 +8290,10 @@ function createAuditRow(audit, options = {}) {
 }
 
 async function deleteAudit(id) {
+    if (!isSuperAdmin()) {
+        showToast('Denetim silme yetkiniz bulunmamaktadır.');
+        return;
+    }
     if (!confirm('Bu denetim kaydını ve bağlı uygunsuzluk kayıtlarını silmek istediğinize emin misiniz?')) return;
     try {
         const relatedNCs = await db.collection('nonconformities').where('auditId', '==', id).get();
@@ -10295,6 +10299,10 @@ async function processNewUser(event) {
 }
 
 function deleteUser(id) {
+    if (!isSuperAdmin()) {
+        showToast('Personel silme yetkiniz bulunmamaktadır.');
+        return;
+    }
     if (!hasPermission('user_delete')) {
         showToast('Personel silme yetkiniz yok.');
         return;
@@ -11615,6 +11623,10 @@ async function processLineSave() {
 }
 
 async function removeLineFromFirebase(lineName) {
+    if (!isSuperAdmin()) {
+        showToast('Hat silme yetkiniz bulunmamaktadır.');
+        return;
+    }
     if (!confirm(`"${lineName}" hattını ve tüm istasyonlarını silmek istediğinize emin misiniz?`)) return;
 
     delete appData.lineColors[lineName];
@@ -12071,6 +12083,10 @@ async function editStationInLine(lineName, stationName) {
 }
 
 async function removeStationFromFirebase(lineName, stationName) {
+    if (!isSuperAdmin()) {
+        showToast('İstasyon silme yetkiniz bulunmamaktadır.');
+        return;
+    }
     if (!confirm(`"${stationName}" istasyonunu silmek istediğinize emin misiniz?`)) return;
 
     if (appData.stations[lineName]) {
@@ -12270,6 +12286,10 @@ function closeQuestionModal() {
 
 
 async function deleteQuestionGroup(id) {
+    if (!isSuperAdmin()) {
+        showToast('Soru grubu silme yetkiniz bulunmamaktadır.');
+        return;
+    }
     if(!confirm('Bu soru grubunu silmek istediğinize emin misiniz? (İçindeki tüm sorular da silinecektir)')) return;
     
     try {
@@ -12308,6 +12328,10 @@ async function deleteQuestionGroup(id) {
 }
 
 async function deleteQuestion(id) {
+    if (!isSuperAdmin()) {
+        showToast('Soru silme yetkiniz bulunmamaktadır.');
+        return;
+    }
     if(!confirm('Bu soruyu silmek istediğinize emin misiniz?')) return;
     try {
         await deleteEmbeddedAuditTypeQuestion(id);
@@ -12590,6 +12614,10 @@ function closeAnnouncementModal() {
 
 
 function deleteAnnouncement(id) {
+    if (!isSuperAdmin()) {
+        showToast('Duyuru silme yetkiniz bulunmamaktadır.');
+        return;
+    }
     if (!hasPermission('announcement_mgmt')) {
         showToast('Duyuru silme yetkiniz yok.');
         return;
@@ -13659,6 +13687,10 @@ async function saveAuditTypeFromModal() {
 }
 
 async function deleteAuditType(id) {
+    if (!isSuperAdmin()) {
+        showToast('Denetim tipi silme yetkiniz bulunmamaktadır.');
+        return;
+    }
     const activeTypes = (appData.auditTypes || []).filter(t => !t.isDeleted);
     if (activeTypes.length <= 1) {
         showToast('En az bir denetim tipi kalmalıdır.');

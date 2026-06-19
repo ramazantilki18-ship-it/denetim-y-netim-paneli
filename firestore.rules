@@ -38,17 +38,20 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && (isOwner(userId) || isAdmin());
-      allow update, delete: if isAdmin() || isOwner(userId);
+      allow update: if isAdmin() || isOwner(userId);
+      allow delete: if isAdmin();
     }
 
     match /audits/{auditId} {
       allow read: if isSignedIn();
-      allow create, update, delete: if isSignedIn();
+      allow create, update: if isSignedIn();
+      allow delete: if isAdmin();
     }
 
     match /nonconformities/{ncId} {
       allow read: if isSignedIn();
-      allow create, update, delete: if isSignedIn();
+      allow create, update: if isSignedIn();
+      allow delete: if isAdmin();
     }
 
     match /question_groups/{groupId} {
@@ -64,17 +67,13 @@ service cloud.firestore {
     match /plans/{planId} {
       allow read: if isSignedIn();
       allow create, update: if isSignedIn();
-      allow delete: if isAdmin()
-        || (
-          isSignedIn()
-          && resource.data.createdBy == request.auth.uid
-        );
+      allow delete: if isAdmin();
     }
 
     match /announcements/{announcementId} {
       allow read: if isSignedIn();
       allow create, update: if isAdmin();
-      allow delete: if isAdmin() || (isSignedIn() && resource.data.endAt <= request.time);
+      allow delete: if isAdmin();
     }
 
     match /system_config/{docId} {
