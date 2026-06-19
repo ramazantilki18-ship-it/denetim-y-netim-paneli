@@ -4014,11 +4014,8 @@ function compressImage(file, maxWidth = 1200, quality = 0.75) {
                     resolve(file);
                     return;
                 }
-                const compressedFile = new File([blob], file.name || 'photo.jpg', {
-                    type: 'image/jpeg',
-                    lastModified: Date.now()
-                });
-                resolve(compressedFile);
+                // Blob olarak çözümlüyoruz (iOS File constructor hatasını önler)
+                resolve(blob);
             }, 'image/jpeg', quality);
         };
     });
@@ -4056,7 +4053,8 @@ async function processNCClose() {
                 console.warn('Compression failed, using original file:', compressErr);
             }
 
-            const extension = uploadFile.name.split('.').pop() || 'jpg';
+            // Orijinal dosya isminden uzantıyı alıyoruz (uploadFile Blob olduğu için name alanı yoktur)
+            const extension = file.name.split('.').pop() || 'jpg';
             const storagePath = `uploads/nonconformities/${id}_${Date.now()}_${index}.${extension}`;
             const storageRef = storage.ref(storagePath);
             
