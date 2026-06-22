@@ -22,3 +22,6 @@ denetim_app/build/
 denetim_app/.flutter-plugins
 denetim_app/.flutter-plugins-dependencies
 denetim_app/*.iml
+
+# Temporary scratch folder
+scratch/

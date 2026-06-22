@@ -1108,6 +1108,7 @@ function initRealtimeSync() {
             if (data.stationLocations) appData.stationLocations = data.stationLocations;
             
             runM1Migration();
+            runCoordinatesCorrection();
         } else {
             seedLinesStationsToFirebase();
         }
@@ -2180,8 +2181,8 @@ function renderLocationList() {
                             <span class="profile-line-logo" style="background-color: ${color}; color: white; font-weight: bold; font-size: 0.65rem; width: 22px; height: 22px; border-radius: 50%;">${escapeAttr(line)}</span>
                         </td>
                         <td style="padding: 12px 16px; font-weight: 600; color: var(--text-primary);">${escapeAttr(station)}</td>
-                        <td style="padding: 12px 16px; font-family: monospace; font-size: 0.9rem; color: var(--text-primary); font-weight: 700;">
-                            ${hasLoc ? `${lat}, ${lng}` : '<span style="color: var(--text-dim); font-weight: normal; font-style: italic;">Tanımlanmamış</span>'}
+                        <td style="padding: 12px 16px; font-family: monospace; font-size: 0.85rem; color: var(--text-primary); font-weight: 700; white-space: nowrap;">
+                            ${hasLoc ? `${parseFloat(lat).toFixed(6)}, ${parseFloat(lng).toFixed(6)}` : '<span style="color: var(--text-dim); font-weight: normal; font-style: italic;">Tanımlanmamış</span>'}
                         </td>
                         <td style="padding: 12px 16px; font-weight: 600; color: var(--text-primary);">${radius ? `${radius} m` : '-'}</td>
                         <td style="padding: 12px 16px; text-align: center;">${badgeHtml}</td>
@@ -15619,7 +15620,8 @@ async function runM1Migration() {
         lines: appData.lines,
         stations: appData.stations,
         stationNumbers: appData.stationNumbers,
-        stationNfcs: appData.stationNfcs || {}
+        stationNfcs: appData.stationNfcs || {},
+        stationLocations: appData.stationLocations || {}
     });
     
     console.log('M1 Migration / Station Numbers successfully applied and saved to Firestore!');
@@ -15660,6 +15662,71 @@ async function runM1Migration() {
         }
     } catch (e) {
         console.error('Error migrating audits/NCs/plans to M1:', e);
+    }
+}
+
+async function runCoordinatesCorrection() {
+    if (!appData.stationLocations) appData.stationLocations = {};
+    let needsUpdate = false;
+    const updatedLocations = { ...appData.stationLocations };
+    
+    // T1_Çemberlitaş check
+    const cemberlitasKey = 'T1_Çemberlitaş';
+    const cemberlitasLoc = updatedLocations[cemberlitasKey];
+    if (cemberlitasLoc) {
+        const diffLat = Math.abs((cemberlitasLoc.latitude || 0) - 41.008611);
+        const diffLng = Math.abs((cemberlitasLoc.longitude || 0) - 28.971111);
+        const diffRadius = Math.abs((cemberlitasLoc.radius || 0) - 150);
+        if (diffLat > 0.0001 || diffLng > 0.0001 || diffRadius > 0.1) {
+            updatedLocations[cemberlitasKey] = {
+                latitude: 41.008611,
+                longitude: 28.971111,
+                radius: 150
+            };
+            needsUpdate = true;
+        }
+    } else {
+        updatedLocations[cemberlitasKey] = {
+            latitude: 41.008611,
+            longitude: 28.971111,
+            radius: 150
+        };
+        needsUpdate = true;
+    }
+
+    // T1_Güngören check
+    const gungorenKey = 'T1_Güngören';
+    const gungorenLoc = updatedLocations[gungorenKey];
+    if (gungorenLoc) {
+        const diffLat = Math.abs((gungorenLoc.latitude || 0) - 41.01528);
+        const diffLng = Math.abs((gungorenLoc.longitude || 0) - 28.87750);
+        const diffRadius = Math.abs((gungorenLoc.radius || 0) - 150);
+        if (diffLat > 0.0001 || diffLng > 0.0001 || diffRadius > 0.1) {
+            updatedLocations[gungorenKey] = {
+                latitude: 41.01528,
+                longitude: 28.87750,
+                radius: 150
+            };
+            needsUpdate = true;
+        }
+    } else {
+        updatedLocations[gungorenKey] = {
+            latitude: 41.01528,
+            longitude: 28.87750,
+            radius: 150
+        };
+        needsUpdate = true;
+    }
+
+    if (needsUpdate) {
+        try {
+            await db.collection('system_config').doc('lines_stations').update({
+                stationLocations: updatedLocations
+            });
+            console.log('[AUTO-PATCH] Çemberlitaş ve Güngören koordinatları ve yarıçapları (150m) başarıyla güncellendi.');
+        } catch (e) {
+            console.error('[AUTO-PATCH] Koordinat güncelleme hatası:', e);
+        }
     }
 }
 
