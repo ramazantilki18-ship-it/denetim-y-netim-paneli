@@ -448,18 +448,19 @@
                 <!-- Gizli eski alan (redirectToNC'lerin kırılmaması için) -->
                 <div id="stat-open-nc" style="display:none;">0</div>
 
-                <!-- Charts Section -->
-                <section class="charts-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin-bottom: 1.5rem;">
-                    <div class="chart-container" style="background: var(--bg-card); border: 1px solid var(--border-main); border-radius: 18px; padding: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
-                        <h3 style="margin-bottom: 1.25rem; font-size: 0.95rem; font-weight: 800; color: var(--text-primary); display:flex; align-items:center; gap:0.4rem;"><i class="fas fa-chart-line" style="color:var(--primary);"></i> Denetim Performans Trendi</h3>
-                        <div style="height: 280px; position: relative;">
-                            <canvas id="performanceChart"></canvas>
+                <!-- Station Audits Section -->
+                <section class="data-section" style="margin-bottom: 1.5rem; background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important;">
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-main); border-radius: 18px; padding: 1.2rem 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+                        <div style="margin-bottom: 0.8rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+                            <h3 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: var(--text-primary); display:flex; align-items:center; gap:0.4rem;">
+                                <i class="fas fa-industry" style="color:var(--primary);"></i> İstasyon Bazlı Denetim Sayıları
+                            </h3>
+                            <div id="dashboard-station-chart-tabs" style="display: flex; gap: 5px; flex-wrap: wrap; align-items: center;">
+                                <!-- Dynamic tabs populated by JS -->
+                            </div>
                         </div>
-                    </div>
-                    <div class="chart-container" style="background: var(--bg-card); border: 1px solid var(--border-main); border-radius: 18px; padding: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
-                        <h3 style="margin-bottom: 1.25rem; font-size: 0.95rem; font-weight: 800; color: var(--text-primary); display:flex; align-items:center; gap:0.4rem;"><i class="fas fa-chart-bar" style="color:#f43f5e;"></i> Kategori Bazlı Performans</h3>
-                        <div style="height: 280px; position: relative;">
-                            <canvas id="categoryChart"></canvas>
+                        <div style="height: 180px; position: relative; width: 100%;">
+                            <canvas id="dashboard-stations-chart"></canvas>
                         </div>
                     </div>
                 </section>
@@ -475,6 +476,22 @@
                     <div style="max-height: 400px; overflow-y: auto; padding-right: 0.5rem; margin-right: -0.5rem;" class="custom-scrollbar">
                         <div id="auditor-horizontal-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.5rem;">
                             <!-- Dinamik olarak kartlar JS ile eklenecek -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Charts Section -->
+                <section class="charts-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin-bottom: 1.5rem;">
+                    <div class="chart-container" style="background: var(--bg-card); border: 1px solid var(--border-main); border-radius: 18px; padding: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+                        <h3 style="margin-bottom: 1.25rem; font-size: 0.95rem; font-weight: 800; color: var(--text-primary); display:flex; align-items:center; gap:0.4rem;"><i class="fas fa-chart-line" style="color:var(--primary);"></i> Denetim Performans Trendi</h3>
+                        <div style="height: 280px; position: relative;">
+                            <canvas id="performanceChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container" style="background: var(--bg-card); border: 1px solid var(--border-main); border-radius: 18px; padding: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+                        <h3 style="margin-bottom: 1.25rem; font-size: 0.95rem; font-weight: 800; color: var(--text-primary); display:flex; align-items:center; gap:0.4rem;"><i class="fas fa-chart-bar" style="color:#f43f5e;"></i> Kategori Bazlı Performans</h3>
+                        <div style="height: 280px; position: relative;">
+                            <canvas id="categoryChart"></canvas>
                         </div>
                     </div>
                 </section>
@@ -837,20 +854,20 @@
                 </section>
 
                 <section class="stats-dashboard-grid stats-dashboard-grid-main">
+                    <article class="stats-analytics-card">
+                        <div class="stats-card-heading"><div><h3>Puan Segmentleri</h3><p>Denetimlerin başarı bantlarına dağılımı.</p></div></div>
+                        <div class="stats-chart"><canvas id="stats-score-distribution-chart"></canvas></div>
+                    </article>
                     <article class="stats-analytics-card stats-span-2">
-                        <div class="stats-card-heading"><div><span class="stats-section-kicker">Zaman Serisi</span><h3>Performans ve Denetim Hacmi</h3><p>Aylık Ortalama ilgili ayın puanını, Son 3 Ayın Ortalaması genel performans yönünü, mavi çubuklar ise aynı aydaki denetim adedini gösterir.</p></div><span class="stats-card-chip">7 dönem görünür · Kaydırılabilir</span></div>
+                        <div class="stats-card-heading"><div><h3>Performans ve Denetim Hacmi</h3><p>Aylık Ortalama ilgili ayın puanını, Son 3 Ayın Ortalaması genel performans yönünü, mavi çubuklar ise aynı aydaki denetim adedini gösterir.</p></div><span class="stats-card-chip">7 dönem görünür · Kaydırılabilir</span></div>
                         <div id="stats-trend-scroll" class="stats-horizontal-scroll">
                             <div id="stats-trend-canvas-wrap" class="stats-trend-canvas-wrap">
                                 <div class="stats-chart stats-trend-combined"><canvas id="stats-trend-chart"></canvas></div>
                             </div>
                         </div>
                     </article>
-                    <article class="stats-analytics-card">
-                        <div class="stats-card-heading"><div><span class="stats-section-kicker">Aksiyon Sağlığı</span><h3>Uygunsuzluk Durumu</h3><p>Açık, geciken, kontrolde ve kapalı kayıtların oranı.</p></div></div>
-                        <div class="stats-chart stats-chart-large"><canvas id="stats-nc-status-chart"></canvas></div>
-                    </article>
                     <article class="stats-analytics-card stats-span-2">
-                        <div class="stats-card-heading"><div><span class="stats-section-kicker">Hat Kıyaslaması</span><h3>Puan ve Uygunsuzluk Yoğunluğu</h3><p>Hatların ortalama başarısı ile denetim başına risk yoğunluğunu birlikte gösterir.</p></div></div>
+                        <div class="stats-card-heading"><div><h3>Puan ve Uygunsuzluk Yoğunluğu</h3><p>Hatların ortalama başarısı ile denetim başına risk yoğunluğunu birlikte gösterir.</p></div></div>
                         <div id="stats-line-performance-scroll" class="stats-comparison-scroll">
                             <div id="stats-line-performance-canvas-wrap" class="stats-comparison-canvas-wrap">
                                 <div class="stats-chart stats-comparison-chart"><canvas id="stats-line-performance-chart"></canvas></div>
@@ -858,14 +875,27 @@
                         </div>
                     </article>
                     <article class="stats-analytics-card">
-                        <div class="stats-card-heading"><div><span class="stats-section-kicker">Dağılım</span><h3>Puan Segmentleri</h3><p>Denetimlerin başarı bantlarına dağılımı.</p></div></div>
-                        <div class="stats-chart"><canvas id="stats-score-distribution-chart"></canvas></div>
+                        <div class="stats-card-heading"><div><h3>Uygunsuzluk Durumu</h3><p>Açık, geciken, kontrolde ve kapalı kayıtların oranı.</p></div></div>
+                        <div class="stats-chart stats-chart-large"><canvas id="stats-nc-status-chart"></canvas></div>
+                    </article>
+                    <article class="stats-analytics-card" style="grid-column: span 3; padding: 0.8rem 1.15rem;">
+                        <div class="stats-card-heading" style="margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <h3 style="margin: 0; font-size: 0.9rem; white-space: nowrap;">İstasyon Bazlı Denetim Sayıları</h3>
+                            </div>
+                            <div id="stats-station-chart-tabs" style="display: flex; gap: 5px; flex-wrap: wrap; align-items: center;">
+                                <!-- Dynamic tabs populated by JS -->
+                            </div>
+                        </div>
+                        <div style="height: 175px; position: relative; width: 100%;">
+                            <canvas id="stats-stations-chart"></canvas>
+                        </div>
                     </article>
                 </section>
 
                 <section class="stats-dashboard-grid stats-dashboard-grid-secondary">
                     <article class="stats-analytics-card stats-category-analysis-card">
-                        <div class="stats-card-heading"><div><span class="stats-section-kicker">Kategori Analizi</span><h3>Başarı ve Risk Oranı</h3><p>Her kategori için ortalama başarı ile uygunsuz cevap oranını karşılaştırır.</p></div><span class="stats-card-chip">En düşük başarı üstte</span></div>
+                        <div class="stats-card-heading"><div><h3>Başarı ve Risk Oranı</h3><p>Her kategori için ortalama başarı ile uygunsuz cevap oranını karşılaştırır.</p></div><span class="stats-card-chip">En düşük başarı üstte</span></div>
                         <div id="stats-category-scroll" class="stats-category-scroll">
                             <div id="stats-category-canvas-wrap" class="stats-category-canvas-wrap">
                                 <div class="stats-chart stats-category-chart"><canvas id="stats-category-chart"></canvas></div>
@@ -873,7 +903,7 @@
                         </div>
                     </article>
                     <article class="stats-analytics-card">
-                        <div class="stats-card-heading"><div><span class="stats-section-kicker">Denetçi Kıyaslaması</span><h3>Kalite ve Üretkenlik</h3><p>Kullanıcı adı, ortalama puan ve tamamlanan denetim adedi birlikte gösterilir.</p></div><span class="stats-card-chip">Değerler sürekli görünür</span></div>
+                        <div class="stats-card-heading"><div><h3>Kalite ve Üretkenlik</h3><p>Kullanıcı adı, ortalama puan ve tamamlanan denetim adedi birlikte gösterilir.</p></div><span class="stats-card-chip">Değerler sürekli görünür</span></div>
                         <div id="stats-auditor-scroll" class="stats-comparison-scroll">
                             <div id="stats-auditor-canvas-wrap" class="stats-comparison-canvas-wrap">
                                 <div class="stats-chart stats-comparison-chart"><canvas id="stats-auditor-chart"></canvas></div>
@@ -881,7 +911,7 @@
                         </div>
                     </article>
                     <article class="stats-analytics-card">
-                        <div class="stats-card-heading"><div><span class="stats-section-kicker">Risk Dağılımı</span><h3>Hat Bazlı Aksiyon Durumu</h3><p>Hat adı ve her durumdaki aksiyon adedi doğrudan grafik üzerinde gösterilir.</p></div><span class="stats-card-chip">Hat bazlı</span></div>
+                        <div class="stats-card-heading"><div><h3>Hat Bazlı Aksiyon Durumu</h3><p>Hat adı ve her durumdaki aksiyon adedi doğrudan grafik üzerinde gösterilir.</p></div><span class="stats-card-chip">Hat bazlı</span></div>
                         <div id="stats-line-nc-scroll" class="stats-comparison-scroll">
                             <div id="stats-line-nc-canvas-wrap" class="stats-comparison-canvas-wrap">
                                 <div class="stats-chart stats-comparison-chart"><canvas id="stats-line-nc-chart"></canvas></div>
@@ -889,7 +919,7 @@
                         </div>
                     </article>
                     <article class="stats-analytics-card">
-                        <div class="stats-card-heading"><div><span class="stats-section-kicker">Plan Disiplini</span><h3>Planlanan ve Gerçekleşen Denetim</h3><p>Plan tarihi, denetçi, hat ve istasyon kapsamına göre gerçekleşen denetimler hesaplanır.</p></div></div>
+                        <div class="stats-card-heading"><div><h3>Planlanan ve Gerçekleşen Denetim</h3><p>Plan tarihi, denetçi, hat ve istasyon kapsamına göre gerçekleşen denetimler hesaplanır.</p></div></div>
                         <div id="stats-plan-actual-scroll" class="stats-comparison-scroll">
                             <div id="stats-plan-actual-canvas-wrap" class="stats-comparison-canvas-wrap">
                                 <div class="stats-chart stats-comparison-chart"><canvas id="stats-plan-actual-chart"></canvas></div>
@@ -900,17 +930,17 @@
 
                 <section class="stats-dashboard-grid stats-dashboard-grid-tables">
                     <article class="stats-analytics-card">
-                        <div class="stats-card-heading"><div><span class="stats-section-kicker">Lokasyon Sıralaması</span><h3>İstasyon Performans Tablosu</h3><p>Denetim adedi, ortalama, medyan, uygunsuzluk yoğunluğu ve kapatma başarısı.</p></div><span class="stats-card-chip">7 kayıt görünür · Kaydırılabilir</span></div>
+                        <div class="stats-card-heading"><div><h3>İstasyon Performans Tablosu</h3><p>Denetim adedi, ortalama, medyan, uygunsuzluk yoğunluğu ve kapatma başarısı.</p></div><span class="stats-card-chip">7 kayıt görünür · Kaydırılabilir</span></div>
                         <div class="stats-table-wrap stats-seven-row-scroll"><table class="stats-pro-table"><thead><tr><th>İstasyon</th><th class="stats-number-col">Denetim</th><th class="stats-number-col">Ort.</th><th class="stats-number-col">Medyan</th><th class="stats-number-col">Uygunsuzluk / Denetim</th><th class="stats-number-col">Kapatma</th></tr></thead><tbody id="stats-station-ranking-body"></tbody></table></div>
                     </article>
                     <article class="stats-analytics-card">
-                        <div class="stats-card-heading"><div><span class="stats-section-kicker">Kök Neden Göstergesi</span><h3>En Riskli Sorular</h3><p>Tüm soru ve bulgular risk oranına göre sıralanır.</p></div><span class="stats-card-chip">7 kayıt görünür · Kaydırılabilir</span></div>
+                        <div class="stats-card-heading"><div><h3>En Riskli Sorular</h3><p>Tüm soru ve bulgular risk oranına göre sıralanır.</p></div><span class="stats-card-chip">7 kayıt görünür · Kaydırılabilir</span></div>
                         <div class="stats-table-wrap stats-seven-row-scroll"><table class="stats-pro-table"><thead><tr><th>Soru / Bulgu</th><th>Kategori</th><th class="stats-number-col">Örnek</th><th class="stats-number-col">Risk</th><th class="stats-number-col">Ort.</th></tr></thead><tbody id="stats-question-risk-body"></tbody></table></div>
                     </article>
                 </section>
 
                 <section class="stats-analytics-card stats-matrix-card">
-                    <div class="stats-card-heading"><div><span class="stats-section-kicker">Isı Matrisi</span><h3>Hat ve Kategori Başarı Matrisi</h3><p>Tüm hücreler gerçek soru cevaplarından hesaplanır; rastgele veya tahmini değer kullanılmaz.</p></div><span class="stats-card-chip">Cevap bazlı</span></div>
+                    <div class="stats-card-heading"><div><h3>Hat ve Kategori Başarı Matrisi</h3><p>Tüm hücreler gerçek soru cevaplarından hesaplanır; rastgele veya tahmini değer kullanılmaz.</p></div><span class="stats-card-chip">Cevap bazlı</span></div>
                     <div class="stats-table-wrap"><table class="stats-pro-table stats-heatmap-table"><thead id="stats-line-category-head"></thead><tbody id="stats-line-category-body"></tbody></table></div>
                 </section>
 

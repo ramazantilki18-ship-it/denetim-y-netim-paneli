@@ -372,7 +372,7 @@ const DEFAULT_SYSTEM_SETTINGS = {
 };
 
 // Charts
-let performanceChart, categoryChart, auditorChart, statsTrendChart, statsLineDistChart, statsNcStatusChart, statsCategorySuccessChart;
+let performanceChart, categoryChart, auditorChart, statsTrendChart, statsLineDistChart, statsNcStatusChart, statsCategorySuccessChart, dashboardStationsChart;
 
 // Unified Date Filter Configurations for Dashboard, Stats, Audits, and NC Pages
 const unifiedDateFilters = {
@@ -6731,6 +6731,7 @@ function renderProfessionalLinePerformance(audits, ncs, auditLookup) {
         },
         options
     });
+    renderCompactStationAudits(audits);
 }
 
 function renderProfessionalNcStatus(ncs) {
@@ -7845,7 +7846,340 @@ function renderLineDistChart(audits) {
         }
     });
 }
+function renderCompactStationAudits(audits) {
+    window.lastStationAudits = audits;
+    const tabContainer = document.getElementById('stats-station-chart-tabs');
+    const canvas = document.getElementById('stats-stations-chart');
+    if (!tabContainer || !canvas) return;
 
+    tabContainer.innerHTML = '';
+
+    const grouped = {};
+    audits.forEach(a => {
+        if (!a.line || !a.station) return;
+        if (!grouped[a.line]) grouped[a.line] = {};
+        grouped[a.line][a.station] = (grouped[a.line][a.station] || 0) + 1;
+    });
+
+    const lines = Object.keys(grouped).sort((a, b) => a.localeCompare(b, 'tr', { numeric: true }));
+    if (lines.length === 0) {
+        if (window.statsStationsChart instanceof Chart) window.statsStationsChart.destroy();
+        const ctx = canvas.getContext('2d');
+        if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+        tabContainer.innerHTML = '<span style="font-size: 0.75rem; color: var(--text-dim);">Veri bulunamadı.</span>';
+        return;
+    }
+
+    // Determine active line
+    if (!window.activeStationChartLine || !lines.includes(window.activeStationChartLine)) {
+        window.activeStationChartLine = lines[0];
+    }
+
+    // Render tabs
+    lines.forEach(line => {
+        const color = (appData && appData.lineColors && appData.lineColors[line]) || '#3b82f6';
+        const isActive = line === window.activeStationChartLine;
+        
+        const tab = document.createElement('button');
+        tab.textContent = line;
+        tab.style.padding = '3px 8px';
+        tab.style.borderRadius = '6px';
+        tab.style.fontSize = '0.7rem';
+        tab.style.fontWeight = '700';
+        tab.style.cursor = 'pointer';
+        tab.style.transition = 'all 0.2s ease';
+        tab.style.border = '1px solid ' + color;
+        
+        if (isActive) {
+            tab.style.background = color;
+            tab.style.color = '#ffffff';
+        } else {
+            tab.style.background = 'transparent';
+            tab.style.color = color;
+        }
+
+        tab.onmouseover = () => {
+            if (!isActive) {
+                tab.style.background = color + '22';
+            }
+        };
+        tab.onmouseout = () => {
+            if (!isActive) {
+                tab.style.background = 'transparent';
+            }
+        };
+
+        tab.onclick = () => {
+            window.activeStationChartLine = line;
+            renderCompactStationAudits(window.lastStationAudits);
+        };
+
+        tabContainer.appendChild(tab);
+    });
+
+    // Get active line data
+    const activeLine = window.activeStationChartLine;
+    const stations = grouped[activeLine];
+    const color = (appData && appData.lineColors && appData.lineColors[activeLine]) || '#3b82f6';
+    const stationNums = (appData && appData.stationNumbers && appData.stationNumbers[activeLine]) || {};
+
+    const sortedStations = Object.keys(stations).sort((a, b) => {
+        const noA = stationNums[a] ?? (DEFAULT_STATION_NUMBERS[activeLine] && DEFAULT_STATION_NUMBERS[activeLine][a]) ?? 999;
+        const noB = stationNums[b] ?? (DEFAULT_STATION_NUMBERS[activeLine] && DEFAULT_STATION_NUMBERS[activeLine][b]) ?? 999;
+        if (noA !== noB) return noA - noB;
+        return a.localeCompare(b, 'tr');
+    });
+
+    const labels = sortedStations.map(st => {
+        const seqNo = stationNums[st] ?? (DEFAULT_STATION_NUMBERS[activeLine] && DEFAULT_STATION_NUMBERS[activeLine][st]) ?? '';
+        return seqNo ? `${seqNo}. ${st}` : st;
+    });
+    const data = sortedStations.map(st => stations[st]);
+
+    // Render chart
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    if (window.statsStationsChart instanceof Chart) {
+        window.statsStationsChart.destroy();
+    }
+
+    const maxVal = Math.max(...data, 1);
+    const suggestedMax = Math.ceil(maxVal * 1.2);
+    const theme = statsChartTheme();
+
+    window.statsStationsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: color,
+                borderRadius: 5,
+                barThickness: sortedStations.length > 15 ? 12 : 20
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: {
+                padding: { top: 20, bottom: 5, left: 5, right: 5 }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `Denetim: ${context.parsed.y}`;
+                        }
+                    }
+                },
+                datalabels: {
+                    anchor: 'end',
+                    align: 'top',
+                    color: theme.text,
+                    font: {
+                        weight: 'bold',
+                        size: 9
+                    },
+                    formatter: (val) => val
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    suggestedMax: suggestedMax,
+                    grid: {
+                        color: theme.grid,
+                        borderColor: 'transparent'
+                    },
+                    ticks: {
+                        stepSize: 1,
+                        color: theme.dim,
+                        font: { size: 9 }
+                    }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: {
+                        color: theme.text,
+                        font: { size: 9 },
+                        maxRotation: 45,
+                        minRotation: 30,
+                        autoSkip: false
+                    }
+                }
+            }
+        }
+    });
+}
+function renderDashboardStationAudits(audits) {
+    window.lastDashboardStationAudits = audits;
+    const tabContainer = document.getElementById('dashboard-station-chart-tabs');
+    const canvas = document.getElementById('dashboard-stations-chart');
+    if (!tabContainer || !canvas) return;
+
+    tabContainer.innerHTML = '';
+
+    const grouped = {};
+    audits.forEach(a => {
+        if (!a.line || !a.station) return;
+        if (!grouped[a.line]) grouped[a.line] = {};
+        grouped[a.line][a.station] = (grouped[a.line][a.station] || 0) + 1;
+    });
+
+    const lines = Object.keys(grouped).sort((a, b) => a.localeCompare(b, 'tr', { numeric: true }));
+    if (lines.length === 0) {
+        if (window.dashboardStationsChart instanceof Chart) window.dashboardStationsChart.destroy();
+        const ctx = canvas.getContext('2d');
+        if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+        tabContainer.innerHTML = '<span style="font-size: 0.75rem; color: var(--text-dim);">Veri bulunamadı.</span>';
+        return;
+    }
+
+    // Determine active line
+    if (!window.activeDashboardStationChartLine || !lines.includes(window.activeDashboardStationChartLine)) {
+        window.activeDashboardStationChartLine = lines[0];
+    }
+
+    // Render tabs
+    lines.forEach(line => {
+        const color = (appData && appData.lineColors && appData.lineColors[line]) || '#3b82f6';
+        const isActive = line === window.activeDashboardStationChartLine;
+        
+        const tab = document.createElement('button');
+        tab.textContent = line;
+        tab.style.padding = '3px 8px';
+        tab.style.borderRadius = '6px';
+        tab.style.fontSize = '0.7rem';
+        tab.style.fontWeight = '700';
+        tab.style.cursor = 'pointer';
+        tab.style.transition = 'all 0.2s ease';
+        tab.style.border = '1px solid ' + color;
+        
+        if (isActive) {
+            tab.style.background = color;
+            tab.style.color = '#ffffff';
+        } else {
+            tab.style.background = 'transparent';
+            tab.style.color = color;
+        }
+
+        tab.onmouseover = () => {
+            if (!isActive) {
+                tab.style.background = color + '22';
+            }
+        };
+        tab.onmouseout = () => {
+            if (!isActive) {
+                tab.style.background = 'transparent';
+            }
+        };
+
+        tab.onclick = () => {
+            window.activeDashboardStationChartLine = line;
+            renderDashboardStationAudits(window.lastDashboardStationAudits);
+        };
+
+        tabContainer.appendChild(tab);
+    });
+
+    // Get active line data
+    const activeLine = window.activeDashboardStationChartLine;
+    const stations = grouped[activeLine];
+    const color = (appData && appData.lineColors && appData.lineColors[activeLine]) || '#3b82f6';
+    const stationNums = (appData && appData.stationNumbers && appData.stationNumbers[activeLine]) || {};
+
+    const sortedStations = Object.keys(stations).sort((a, b) => {
+        const noA = stationNums[a] ?? (DEFAULT_STATION_NUMBERS[activeLine] && DEFAULT_STATION_NUMBERS[activeLine][a]) ?? 999;
+        const noB = stationNums[b] ?? (DEFAULT_STATION_NUMBERS[activeLine] && DEFAULT_STATION_NUMBERS[activeLine][b]) ?? 999;
+        if (noA !== noB) return noA - noB;
+        return a.localeCompare(b, 'tr');
+    });
+
+    const labels = sortedStations.map(st => {
+        const seqNo = stationNums[st] ?? (DEFAULT_STATION_NUMBERS[activeLine] && DEFAULT_STATION_NUMBERS[activeLine][st]) ?? '';
+        return seqNo ? `${seqNo}. ${st}` : st;
+    });
+    const data = sortedStations.map(st => stations[st]);
+
+    // Render chart
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    if (window.dashboardStationsChart instanceof Chart) {
+        window.dashboardStationsChart.destroy();
+    }
+
+    const maxVal = Math.max(...data, 1);
+    const suggestedMax = Math.ceil(maxVal * 1.2);
+    const theme = statsChartTheme();
+
+    window.dashboardStationsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: color,
+                borderRadius: 5,
+                barThickness: sortedStations.length > 15 ? 12 : 20
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: {
+                padding: { top: 20, bottom: 5, left: 5, right: 5 }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `Denetim: ${context.parsed.y}`;
+                        }
+                    }
+                },
+                datalabels: {
+                    anchor: 'end',
+                    align: 'top',
+                    color: theme.text,
+                    font: {
+                        weight: 'bold',
+                        size: 9
+                    },
+                    formatter: (val) => val
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    suggestedMax: suggestedMax,
+                    grid: {
+                        color: theme.grid,
+                        borderColor: 'transparent'
+                    },
+                    ticks: {
+                        stepSize: 1,
+                        color: theme.dim,
+                        font: { size: 9 }
+                    }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: {
+                        color: theme.text,
+                        font: { size: 9 },
+                        maxRotation: 45,
+                        minRotation: 30,
+                        autoSkip: false
+                    }
+                }
+            }
+        }
+    });
+}
 function renderCategoryStatsChart(audits) {
     const canvas = document.getElementById('categoryChartStats');
     if (!canvas) return;
@@ -10651,6 +10985,9 @@ function updateCharts(data) {
     } else {
         if (categoryChart) categoryChart.destroy();
     }
+
+    // Dashboard - Station Audits Chart
+    renderDashboardStationAudits(filteredAudits);
 
     // Dashboard - Auditor Performance Horizontal List
     const auditorListContainer = document.getElementById('auditor-horizontal-list');
