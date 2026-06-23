@@ -342,7 +342,9 @@ let appData = {
     collapsedUsers: {},
     selectedAuditIds: new Set(),
     selectedNCIds: new Set(),
-    settings: {}
+    settings: {},
+    stationLocations: {},
+    stationNfcs: {}
 };
 
 const DEFAULT_SYSTEM_SETTINGS = {
@@ -16061,14 +16063,58 @@ async function runCoordinatesCorrection() {
         needsUpdate = true;
     }
 
+    // T1 Station Coordinates from user (skipping Güngören and Çemberlitaş to keep 150m and their specific locations)
+    const t1Coordinates = {
+        'T1_Bağcılar': { lat: 41.0332267356663, lng: 28.86075174821908 },
+        'T1_Güneştepe': { lat: 41.02906593475091, lng: 28.860923221203688 },
+        'T1_Yavuzselim': { lat: 41.023636451122954, lng: 28.86385507426098 },
+        'T1_Soğanlı': { lat: 41.02070119811211, lng: 28.867434165708943 },
+        'T1_Akıncılar': { lat: 41.01725429699289, lng: 28.871236481800022 },
+        'T1_Merter Tekstil Merkezi': { lat: 41.01175592985731, lng: 28.880736779282373 },
+        'T1_Mehmet Akif': { lat: 41.005927414314215, lng: 28.881652068306874 },
+        'T1_Zeytinburnu': { lat: 41.00212820966009, lng: 28.89023629213433 },
+        'T1_Mithatpaşa': { lat: 41.00351516417308, lng: 28.901124147741523 },
+        'T1_Seyitnizam-Akşemsettin': { lat: 41.004323264404185, lng: 28.907301919430246 },
+        'T1_Merkezefendi': { lat: 41.01052680114978, lng: 28.90951628947133 },
+        'T1_Cevizlibağ-AÖY': { lat: 41.016064599617174, lng: 28.911084065213647 },
+        'T1_Topkapı': { lat: 41.01925704146879, lng: 28.91897068075735 },
+        'T1_Pazartekke': { lat: 41.01839736436108, lng: 28.9270716394715 },
+        'T1_Çapa-Şehremini': { lat: 41.015516834351956, lng: 28.933305094217534 },
+        'T1_Fındıkzade': { lat: 41.01184067615755, lng: 28.940409497142873 },
+        'T1_Haseki': { lat: 41.0111445405717, lng: 28.943149712486207 },
+        'T1_Yusufpaşa': { lat: 41.01019379368678, lng: 28.946619268306964 },
+        'T1_Aksaray': { lat: 41.00956412745236, lng: 28.953835873394908 },
+        'T1_Laleli-İstanbul Ü.': { lat: 41.00976208262358, lng: 28.9598899714282 },
+        'T1_Beyazıt-Kapalıçarşı': { lat: 41.00921896597634, lng: 28.96675576738384 },
+        'T1_Sultanahmet': { lat: 41.008120869778416, lng: 28.97560557629691 },
+        'T1_Gülhane': { lat: 41.0121306760779, lng: 28.9784189370561 },
+        'T1_Sirkeci': { lat: 41.01518293832457, lng: 28.975888942107858 },
+        'T1_Eminönü': { lat: 41.01755117871563, lng: 28.97334639989167 },
+        'T1_Karaköy': { lat: 41.02212416922657, lng: 28.974633502467547 },
+        'T1_Tophane': { lat: 41.026739290815264, lng: 28.98020217339624 },
+        'T1_Fındıklı-Mimar Sinan Ü.': { lat: 41.03147579321286, lng: 28.98937874552154 },
+        'T1_Kabataş': { lat: 41.03435900850658, lng: 28.992709930053884 }
+    };
+
+    Object.entries(t1Coordinates).forEach(([key, coords]) => {
+        if (!updatedLocations[key]) {
+            updatedLocations[key] = {
+                latitude: coords.lat,
+                longitude: coords.lng,
+                radius: 50
+            };
+            needsUpdate = true;
+        }
+    });
+
     if (needsUpdate) {
         try {
             await db.collection('system_config').doc('lines_stations').update({
                 stationLocations: updatedLocations
             });
-            console.log('[AUTO-PATCH] Çemberlitaş ve Güngören koordinatları ve yarıçapları (150m) başarıyla güncellendi.');
+            console.log('[AUTO-PATCH] T1 hat konumları başarıyla güncellendi.');
         } catch (e) {
-            console.error('[AUTO-PATCH] Koordinat güncelleme hatası:', e);
+            console.error('[AUTO-PATCH] T1 hat konumları güncelleme hatası:', e);
         }
     }
 }
