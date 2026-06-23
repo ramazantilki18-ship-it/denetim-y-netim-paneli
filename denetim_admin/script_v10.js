@@ -12760,7 +12760,13 @@ function renderRoleComparisonChart(audits) {
 
 // Final web-panel overrides restored from the agreed admin UI state.
 function getUserDisplayName(user) {
-    return user.name || user.fullName || user.displayName || user.username || (user.email || 'Personel').split('@')[0];
+    if (!user) return 'Personel';
+    const nameVal = user.name || user.fullName || user.displayName;
+    if (nameVal) return nameVal;
+    if (user.firstName || user.lastName) {
+        return `${user.firstName || ''} ${user.lastName || ''}`.trim();
+    }
+    return user.username || (user.email || 'Personel').split('@')[0];
 }
 
 function getUserUsername(user) {
