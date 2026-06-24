@@ -16101,7 +16101,7 @@ async function runCoordinatesCorrection() {
             updatedLocations[key] = {
                 latitude: coords.lat,
                 longitude: coords.lng,
-                radius: 50
+                radius: 150
             };
             needsUpdate = true;
         }
