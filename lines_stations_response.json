@@ -1,0 +1,3367 @@
+{
+    "name": "projects/fir-denetim-c6abc/databases/(default)/documents/system_config/lines_stations",
+    "fields": {
+        "lineColors": {
+            "mapValue": {
+                "fields": {
+                    "T4": {
+                        "stringValue": "#F29100"
+                    },
+                    "M3": {
+                        "stringValue": "#009FE3"
+                    },
+                    "M6": {
+                        "stringValue": "#B9A15E"
+                    },
+                    "M8": {
+                        "stringValue": "#003D88"
+                    },
+                    "TF2": {
+                        "stringValue": "#795548"
+                    },
+                    "M4": {
+                        "stringValue": "#E91E63"
+                    },
+                    "M1": {
+                        "stringValue": "#E31E24"
+                    },
+                    "T1": {
+                        "stringValue": "#003D88"
+                    },
+                    "M7": {
+                        "stringValue": "#F29100"
+                    },
+                    "T5": {
+                        "stringValue": "#9C27B0"
+                    },
+                    "F1": {
+                        "stringValue": "#333333"
+                    },
+                    "M2": {
+                        "stringValue": "#009543"
+                    },
+                    "M9": {
+                        "stringValue": "#EDD500"
+                    },
+                    "M5": {
+                        "stringValue": "#9C27B0"
+                    },
+                    "TF1": {
+                        "stringValue": "#795548"
+                    }
+                }
+            }
+        },
+        "stationLocations": {
+            "mapValue": {
+                "fields": {
+                    "T5_Eminönü": {
+                        "mapValue": {
+                            "fields": {
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.970198939471565
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.018338759435586
+                                }
+                            }
+                        }
+                    },
+                    "T1_Çapa-Şehremini": {
+                        "mapValue": {
+                            "fields": {
+                                "longitude": {
+                                    "doubleValue": 28.933305094217534
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.015516834351956
+                                }
+                            }
+                        }
+                    },
+                    "T1_Mithatpaşa": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.00351516417308
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.901124147741523
+                                }
+                            }
+                        }
+                    },
+                    "T4_Cumhuriyet Mah.": {
+                        "mapValue": {
+                            "fields": {
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.872006
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.084172
+                                }
+                            }
+                        }
+                    },
+                    "T4_Hacı Şükrü": {
+                        "mapValue": {
+                            "fields": {
+                                "longitude": {
+                                    "doubleValue": 28.863981
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.093067
+                                }
+                            }
+                        }
+                    },
+                    "T1_Yusufpaşa": {
+                        "mapValue": {
+                            "fields": {
+                                "longitude": {
+                                    "doubleValue": 28.946619268306964
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.01019379368678
+                                }
+                            }
+                        }
+                    },
+                    "T4_Karadeniz": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.075392
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.882022
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Topçular": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.041583
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.919594
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Edirnekapı": {
+                        "mapValue": {
+                            "fields": {
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.934236
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.031094
+                                }
+                            }
+                        }
+                    },
+                    "T1_Sirkeci": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.01518293832457
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.975888942107858
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Demirkapı": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.036956
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.923439
+                                }
+                            }
+                        }
+                    },
+                    "T1_Fındıkzade": {
+                        "mapValue": {
+                            "fields": {
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.940409497142873
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.01184067615755
+                                }
+                            }
+                        }
+                    },
+                    "T4_50. Yıl-Baştabya": {
+                        "mapValue": {
+                            "fields": {
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.866597
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.087983
+                                }
+                            }
+                        }
+                    },
+                    "T1_Güngören": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.01528
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.8775
+                                }
+                            }
+                        }
+                    },
+                    "T1_Laleli-İstanbul Ü.": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.00976208262358
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.9598899714282
+                                }
+                            }
+                        }
+                    },
+                    "T1_Aksaray": {
+                        "mapValue": {
+                            "fields": {
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.953835873394908
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.00956412745236
+                                }
+                            }
+                        }
+                    },
+                    "T1_Sultanahmet": {
+                        "mapValue": {
+                            "fields": {
+                                "longitude": {
+                                    "doubleValue": 28.97560557629691
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.008120869778416
+                                }
+                            }
+                        }
+                    },
+                    "T4_Uluyol Bereç": {
+                        "mapValue": {
+                            "fields": {
+                                "longitude": {
+                                    "doubleValue": 28.910261
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.054114
+                                }
+                            }
+                        }
+                    },
+                    "T1_Zeytinburnu": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.00212820966009
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.89023629213433
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Kiptaş Venezia": {
+                        "mapValue": {
+                            "fields": {
+                                "longitude": {
+                                    "doubleValue": 28.874656
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.081303
+                                }
+                            }
+                        }
+                    },
+                    "T5_Ayvansaray": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.03967033284208
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.94389451304958
+                                }
+                            }
+                        }
+                    },
+                    "T1_Seyitnizam-Akşemsettin": {
+                        "mapValue": {
+                            "fields": {
+                                "longitude": {
+                                    "doubleValue": 28.907301919430246
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.004323264404185
+                                }
+                            }
+                        }
+                    },
+                    "T5_Feshane": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.04552902640626
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.937959012459164
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Mescid-i Selam": {
+                        "mapValue": {
+                            "fields": {
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.851136
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.116306
+                                }
+                            }
+                        }
+                    },
+                    "T4_Taşköprü": {
+                        "mapValue": {
+                            "fields": {
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.887633
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.072669
+                                }
+                            }
+                        }
+                    },
+                    "T5_Fener": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.02869593778945
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.954478066014218
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Fındıklı-Mimar Sinan Ü.": {
+                        "mapValue": {
+                            "fields": {
+                                "longitude": {
+                                    "doubleValue": 28.98937874552154
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.03147579321286
+                                }
+                            }
+                        }
+                    },
+                    "T5_Alibeyköy Metro": {
+                        "mapValue": {
+                            "fields": {
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.94953431132412
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.07847759188428
+                                }
+                            }
+                        }
+                    },
+                    "T5_Üniversite": {
+                        "mapValue": {
+                            "fields": {
+                                "longitude": {
+                                    "doubleValue": 28.942847587610306
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.06979910018718
+                                }
+                            }
+                        }
+                    },
+                    "T1_Eminönü": {
+                        "mapValue": {
+                            "fields": {
+                                "longitude": {
+                                    "doubleValue": 28.97334639989167
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.01755117871563
+                                }
+                            }
+                        }
+                    },
+                    "T1_Cevizlibağ-AÖY": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.016064599617174
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.911084065213647
+                                }
+                            }
+                        }
+                    },
+                    "T1_Akıncılar": {
+                        "mapValue": {
+                            "fields": {
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.871236481800022
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.01725429699289
+                                }
+                            }
+                        }
+                    },
+                    "T5_Küçükpazar": {
+                        "mapValue": {
+                            "fields": {
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.963156799032994
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.021010864951734
+                                }
+                            }
+                        }
+                    },
+                    "T1_Çemberlitaş": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.008611
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.971111
+                                }
+                            }
+                        }
+                    },
+                    "T1_Merkezefendi": {
+                        "mapValue": {
+                            "fields": {
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.90951628947133
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.01052680114978
+                                }
+                            }
+                        }
+                    },
+                    "T1_Merter Tekstil Merkezi": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.01175592985731
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.880736779282373
+                                }
+                            }
+                        }
+                    },
+                    "T4_Vatan": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.025614
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.929319
+                                }
+                            }
+                        }
+                    },
+                    "T1_Beyazıt-Kapalıçarşı": {
+                        "mapValue": {
+                            "fields": {
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.96675576738384
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.00921896597634
+                                }
+                            }
+                        }
+                    },
+                    "T4_Bosna-Çukurçeşme": {
+                        "mapValue": {
+                            "fields": {
+                                "longitude": {
+                                    "doubleValue": 28.902067
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.061831
+                                }
+                            }
+                        }
+                    },
+                    "T4_Yeni Mahalle": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.099361
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.863008
+                                }
+                            }
+                        }
+                    },
+                    "T5_Eyüpsultan Devlet Hast.": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.056733488167616
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.94110431218199
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Güneştepe": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.02906593475091
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.860923221203688
+                                }
+                            }
+                        }
+                    },
+                    "T1_Karaköy": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.02212416922657
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.974633502467547
+                                }
+                            }
+                        }
+                    },
+                    "T4_Topkapı": {
+                        "mapValue": {
+                            "fields": {
+                                "longitude": {
+                                    "doubleValue": 28.920856
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.019792
+                                }
+                            }
+                        }
+                    },
+                    "T1_Kabataş": {
+                        "mapValue": {
+                            "fields": {
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.992709930053884
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.03435900850658
+                                }
+                            }
+                        }
+                    },
+                    "T1_Bağcılar": {
+                        "mapValue": {
+                            "fields": {
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.86075174821908
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.0332267356663
+                                }
+                            }
+                        }
+                    },
+                    "T4_Habibler Yerleşke": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.122131
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.843833
+                                }
+                            }
+                        }
+                    },
+                    "T1_Haseki": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.0111445405717
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.943149712486207
+                                }
+                            }
+                        }
+                    },
+                    "T5_Alibeyköy Yerleşke": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.086203
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.946003
+                                }
+                            }
+                        }
+                    },
+                    "T1_Pazartekke": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.01839736436108
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.9270716394715
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Sultançiftliği": {
+                        "mapValue": {
+                            "fields": {
+                                "longitude": {
+                                    "doubleValue": 28.860758
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.105808
+                                }
+                            }
+                        }
+                    },
+                    "T5_Cibali": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.024276356681604
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.960366327632144
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Şehitlik": {
+                        "mapValue": {
+                            "fields": {
+                                "longitude": {
+                                    "doubleValue": 28.928144
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.034236
+                                }
+                            }
+                        }
+                    },
+                    "T1_Tophane": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.026739290815264
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.98020217339624
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Gülhane": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.0121306760779
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.9784189370561
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Mehmet Akif": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.005927414314215
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.881652068306874
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                }
+                            }
+                        }
+                    },
+                    "T5_Eyüpsultan Teleferik": {
+                        "mapValue": {
+                            "fields": {
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.935190085767527
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.05054805678017
+                                }
+                            }
+                        }
+                    },
+                    "T5_Silahtarağa": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.06477583581012
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.942889298966758
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Yavuzselim": {
+                        "mapValue": {
+                            "fields": {
+                                "longitude": {
+                                    "doubleValue": 28.86385507426098
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.023636451122954
+                                }
+                            }
+                        }
+                    },
+                    "T1_Topkapı": {
+                        "mapValue": {
+                            "fields": {
+                                "longitude": {
+                                    "doubleValue": 28.91897068075735
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.01925704146879
+                                }
+                            }
+                        }
+                    },
+                    "T4_Habibler Depo": {
+                        "mapValue": {
+                            "fields": {
+                                "longitude": {
+                                    "doubleValue": 28.844917
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.121622
+                                }
+                            }
+                        }
+                    },
+                    "M1_Yenikapı": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 40.999975
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.930342
+                                },
+                                "radius": {
+                                    "integerValue": "50"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Ali Fuat Başgil": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.068656
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.895353
+                                }
+                            }
+                        }
+                    },
+                    "T5_Balat": {
+                        "mapValue": {
+                            "fields": {
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.948025548404487
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.034148047427415
+                                }
+                            }
+                        }
+                    },
+                    "T4_Fetihkapı": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.021669
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.925147
+                                }
+                            }
+                        }
+                    },
+                    "T5_Alibeyköy Cep Otogarı": {
+                        "mapValue": {
+                            "fields": {
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.943855276802235
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.086984548658144
+                                }
+                            }
+                        }
+                    },
+                    "T1_Soğanlı": {
+                        "mapValue": {
+                            "fields": {
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.867434165708943
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.02070119811211
+                                }
+                            }
+                        }
+                    },
+                    "T4_Cebeci": {
+                        "mapValue": {
+                            "fields": {
+                                "longitude": {
+                                    "doubleValue": 28.85805
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.111419
+                                }
+                            }
+                        }
+                    },
+                    "T4_Rami": {
+                        "mapValue": {
+                            "fields": {
+                                "latitude": {
+                                    "doubleValue": 41.046439
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.915647
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                }
+                            }
+                        }
+                    },
+                    "T5_Alibeyköy Merkez": {
+                        "mapValue": {
+                            "fields": {
+                                "longitude": {
+                                    "doubleValue": 28.946033649096186
+                                },
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.0737455657967
+                                }
+                            }
+                        }
+                    },
+                    "T4_Sağmalcılar": {
+                        "mapValue": {
+                            "fields": {
+                                "radius": {
+                                    "integerValue": "150"
+                                },
+                                "longitude": {
+                                    "doubleValue": 28.906978
+                                },
+                                "latitude": {
+                                    "doubleValue": 41.057289
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "stationNfcs": {
+            "mapValue": {
+                "fields": {
+                    "T5_Fener": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "be5074c8"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Fındıklı-Mimar Sinan Ü.": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "664fe214"
+                                }
+                            }
+                        }
+                    },
+                    "T5_Üniversite": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "3e8a69c9"
+                                }
+                            }
+                        }
+                    },
+                    "T5_Alibeyköy Metro": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "ae1463c9"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Akıncılar": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "8e1767c9"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Cevizlibağ-AÖY": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "8e1463c9"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Eminönü": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "a650f914"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Seyitnizam-Akşemsettin": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "de8864c9"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Mescid-i Selam": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "9e4269c9"
+                                }
+                            }
+                        }
+                    },
+                    "T5_Feshane": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "2ec876c8"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Taşköprü": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "deb478c8"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Sultanahmet": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "3602f914"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Uluyol Bereç": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "5ea969c9"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Zeytinburnu": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "ee7d6cc9"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Kiptaş Venezia": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "6e0163c9"
+                                }
+                            }
+                        }
+                    },
+                    "T5_Ayvansaray": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "8e6a75c8"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Laleli-İstanbul Ü.": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "5e0d74c8"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Aksaray": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "be8865c9"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Fındıkzade": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "5ec374c8"
+                                }
+                            }
+                        }
+                    },
+                    "T4_50. Yıl-Baştabya": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "9631dc14"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Güngören": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "be1063c9"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Edirnekapı": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "c64ce314"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Demirkapı": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "565df714"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Sirkeci": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "6625df14"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Yusufpaşa": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "fe1d64c9"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Karadeniz": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "b6f4fb14"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Topçular": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "ce976ac9"
+                                }
+                            }
+                        }
+                    },
+                    "T5_Eminönü": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "9efb6bc9"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Çapa-Şehremini": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "1ef965c9"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Cumhuriyet Mah.": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "eeb26dc8"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Mithatpaşa": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "9e3375c8"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Hacı Şükrü": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "5e3b64c9"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Fetihkapı": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "7ea46bc9"
+                                }
+                            }
+                        }
+                    },
+                    "T5_Alibeyköy Cep Otogarı": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "7e8d64c9"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Soğanlı": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "8ed263c9"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Cebeci": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "deae78c8"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Rami": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "46764915"
+                                }
+                            }
+                        }
+                    },
+                    "T5_Alibeyköy Merkez": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "9eca65c9"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Sağmalcılar": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "3e3e5ec9"
+                                }
+                            }
+                        }
+                    },
+                    "T5_Eyüpsultan Teleferik": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "ae8369c9"
+                                }
+                            }
+                        }
+                    },
+                    "T5_Silahtarağa": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "be7567c9"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Ali Fuat Başgil": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "1e8e6ec8"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Habibler Depo": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": ""
+                                }
+                            }
+                        }
+                    },
+                    "T1_Yavuzselim": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "febc6dc8"
+                                }
+                            }
+                        }
+                    },
+                    "T5_Balat": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "ee586fc8"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Topkapı": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "9e9869c9"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Tophane": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "b6fbe314"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Gülhane": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "7649d914"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Mehmet Akif": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "2e2969c9"
+                                }
+                            }
+                        }
+                    },
+                    "T5_Cibali": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "5e3275c8"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Şehitlik": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "9eb568c9"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Karaköy": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "d657ff14"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Topkapı": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "ce1374c8"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Kabataş": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "a620db14"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Bağcılar": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "8e9363c9"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Habibler Yerleşke": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": ""
+                                }
+                            }
+                        }
+                    },
+                    "T1_Haseki": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "ae1678c8"
+                                }
+                            }
+                        }
+                    },
+                    "T5_Alibeyköy Yerleşke": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": ""
+                                }
+                            }
+                        }
+                    },
+                    "T1_Pazartekke": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "8ecb63c9"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Sultançiftliği": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "6eb768c9"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Beyazıt-Kapalıçarşı": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "9e8b64c9"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Bosna-Çukurçeşme": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "ce2164c9"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Yeni Mahalle": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "e6a6d814"
+                                }
+                            }
+                        }
+                    },
+                    "T5_Eyüpsultan Devlet Hast.": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "fe6878c8"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Güneştepe": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "2e6c75c8"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Çemberlitaş": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "d642fe14"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Merter Tekstil Merkezi": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "bead65c9"
+                                }
+                            }
+                        }
+                    },
+                    "T1_Merkezefendi": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "5e8464c9"
+                                }
+                            }
+                        }
+                    },
+                    "T4_Vatan": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "deaa6cc8"
+                                }
+                            }
+                        }
+                    },
+                    "T5_Küçükpazar": {
+                        "mapValue": {
+                            "fields": {
+                                "uid": {
+                                    "stringValue": "6e7467c9"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "stations": {
+            "mapValue": {
+                "fields": {
+                    "TF1": {
+                        "arrayValue": {
+                            "values": [
+                                {
+                                    "stringValue": "Maçka"
+                                },
+                                {
+                                    "stringValue": "Taşkışla"
+                                }
+                            ]
+                        }
+                    },
+                    "M9": {
+                        "arrayValue": {
+                            "values": [
+                                {
+                                    "stringValue": "Ataköy"
+                                },
+                                {
+                                    "stringValue": "Yenibosna"
+                                },
+                                {
+                                    "stringValue": "Çobançeşme"
+                                },
+                                {
+                                    "stringValue": "İhlas Yuva"
+                                },
+                                {
+                                    "stringValue": "Doğu Sanayi"
+                                },
+                                {
+                                    "stringValue": "Mimar Sinan"
+                                },
+                                {
+                                    "stringValue": "15 Temmuz"
+                                },
+                                {
+                                    "stringValue": "Halkalı Caddesi"
+                                },
+                                {
+                                    "stringValue": "Atatürk Mahallesi"
+                                },
+                                {
+                                    "stringValue": "Bahariye"
+                                },
+                                {
+                                    "stringValue": "Masko"
+                                },
+                                {
+                                    "stringValue": "İkitelli Sanayi"
+                                },
+                                {
+                                    "stringValue": "Ziya Gökalp Mahallesi"
+                                },
+                                {
+                                    "stringValue": "Olimpiyat"
+                                }
+                            ]
+                        }
+                    },
+                    "M5": {
+                        "arrayValue": {
+                            "values": [
+                                {
+                                    "stringValue": "Üsküdar"
+                                },
+                                {
+                                    "stringValue": "Fıstıkağacı"
+                                },
+                                {
+                                    "stringValue": "Bağlarbaşı"
+                                },
+                                {
+                                    "stringValue": "Altunizade"
+                                },
+                                {
+                                    "stringValue": "Kısıklı"
+                                },
+                                {
+                                    "stringValue": "Bulgurlu"
+                                },
+                                {
+                                    "stringValue": "Ümraniye"
+                                },
+                                {
+                                    "stringValue": "Çarşı"
+                                },
+                                {
+                                    "stringValue": "Yamanevler"
+                                },
+                                {
+                                    "stringValue": "Çakmak"
+                                },
+                                {
+                                    "stringValue": "Ihlamurkuyu"
+                                },
+                                {
+                                    "stringValue": "Altınşehir"
+                                },
+                                {
+                                    "stringValue": "İmam Hatip Lisesi"
+                                },
+                                {
+                                    "stringValue": "Dudullu"
+                                },
+                                {
+                                    "stringValue": "Necip Fazıl"
+                                },
+                                {
+                                    "stringValue": "Çekmeköy"
+                                },
+                                {
+                                    "stringValue": "Meclis"
+                                },
+                                {
+                                    "stringValue": "Sarıgazi"
+                                },
+                                {
+                                    "stringValue": "Sancaktepe"
+                                },
+                                {
+                                    "stringValue": "Sancaktepe Şehir Hastanesi"
+                                },
+                                {
+                                    "stringValue": "Samandıra Merkez"
+                                }
+                            ]
+                        }
+                    },
+                    "M7": {
+                        "arrayValue": {
+                            "values": [
+                                {
+                                    "stringValue": "Yıldız"
+                                },
+                                {
+                                    "stringValue": "Fulya"
+                                },
+                                {
+                                    "stringValue": "Mecidiyeköy"
+                                },
+                                {
+                                    "stringValue": "Çağlayan"
+                                },
+                                {
+                                    "stringValue": "Kağıthane"
+                                },
+                                {
+                                    "stringValue": "Nurtepe"
+                                },
+                                {
+                                    "stringValue": "Alibeyköy"
+                                },
+                                {
+                                    "stringValue": "Çırçır"
+                                },
+                                {
+                                    "stringValue": "Veysel Karani-Akşemsettin"
+                                },
+                                {
+                                    "stringValue": "Yeşilpınar"
+                                },
+                                {
+                                    "stringValue": "Kazım Karabekir"
+                                },
+                                {
+                                    "stringValue": "Yenimahalle"
+                                },
+                                {
+                                    "stringValue": "Karadeniz Mahallesi"
+                                },
+                                {
+                                    "stringValue": "Giyimkent-Tekstilkent"
+                                },
+                                {
+                                    "stringValue": "Oruç Reis"
+                                },
+                                {
+                                    "stringValue": "Göztepe Mahallesi"
+                                },
+                                {
+                                    "stringValue": "Mahmutbey"
+                                }
+                            ]
+                        }
+                    },
+                    "T5": {
+                        "arrayValue": {
+                            "values": [
+                                {
+                                    "stringValue": "Eminönü"
+                                },
+                                {
+                                    "stringValue": "Küçükpazar"
+                                },
+                                {
+                                    "stringValue": "Cibali"
+                                },
+                                {
+                                    "stringValue": "Fener"
+                                },
+                                {
+                                    "stringValue": "Balat"
+                                },
+                                {
+                                    "stringValue": "Ayvansaray"
+                                },
+                                {
+                                    "stringValue": "Feshane"
+                                },
+                                {
+                                    "stringValue": "Eyüpsultan Teleferik"
+                                },
+                                {
+                                    "stringValue": "Eyüpsultan Devlet Hast."
+                                },
+                                {
+                                    "stringValue": "Silahtarağa"
+                                },
+                                {
+                                    "stringValue": "Üniversite"
+                                },
+                                {
+                                    "stringValue": "Alibeyköy Merkez"
+                                },
+                                {
+                                    "stringValue": "Alibeyköy Metro"
+                                },
+                                {
+                                    "stringValue": "Alibeyköy Cep Otogarı"
+                                },
+                                {
+                                    "stringValue": "Alibeyköy Yerleşke"
+                                }
+                            ]
+                        }
+                    },
+                    "M2": {
+                        "arrayValue": {
+                            "values": [
+                                {
+                                    "stringValue": "Yenikapı"
+                                },
+                                {
+                                    "stringValue": "Vezneciler-İstanbul Ü."
+                                },
+                                {
+                                    "stringValue": "Haliç"
+                                },
+                                {
+                                    "stringValue": "Şişhane"
+                                },
+                                {
+                                    "stringValue": "Taksim"
+                                },
+                                {
+                                    "stringValue": "Osmanbey"
+                                },
+                                {
+                                    "stringValue": "Şişli-Mecidiyeköy"
+                                },
+                                {
+                                    "stringValue": "Gayrettepe"
+                                },
+                                {
+                                    "stringValue": "Levent"
+                                },
+                                {
+                                    "stringValue": "4.Levent"
+                                },
+                                {
+                                    "stringValue": "Sanayi Mahallesi"
+                                },
+                                {
+                                    "stringValue": "İTÜ-Ayazağa"
+                                },
+                                {
+                                    "stringValue": "Atatürk Oto Sanayi"
+                                },
+                                {
+                                    "stringValue": "Darüşşafaka"
+                                },
+                                {
+                                    "stringValue": "Hacıosman"
+                                },
+                                {
+                                    "stringValue": "Seyrantepe"
+                                }
+                            ]
+                        }
+                    },
+                    "F1": {
+                        "arrayValue": {
+                            "values": [
+                                {
+                                    "stringValue": "Taksim"
+                                },
+                                {
+                                    "stringValue": "Kabataş"
+                                }
+                            ]
+                        }
+                    },
+                    "TF2": {
+                        "arrayValue": {
+                            "values": [
+                                {
+                                    "stringValue": "Eyüp"
+                                },
+                                {
+                                    "stringValue": "Piyer Loti"
+                                }
+                            ]
+                        }
+                    },
+                    "M4": {
+                        "arrayValue": {
+                            "values": [
+                                {
+                                    "stringValue": "Kadıköy"
+                                },
+                                {
+                                    "stringValue": "Ayrılık Çeşmesi"
+                                },
+                                {
+                                    "stringValue": "Acıbadem"
+                                },
+                                {
+                                    "stringValue": "Ünalan"
+                                },
+                                {
+                                    "stringValue": "Göztepe"
+                                },
+                                {
+                                    "stringValue": "Yenisahra"
+                                },
+                                {
+                                    "stringValue": "Kozyatağı"
+                                },
+                                {
+                                    "stringValue": "Bostancı"
+                                },
+                                {
+                                    "stringValue": "Küçükyalı"
+                                },
+                                {
+                                    "stringValue": "Maltepe"
+                                },
+                                {
+                                    "stringValue": "Huzurevi"
+                                },
+                                {
+                                    "stringValue": "Gülsuyu"
+                                },
+                                {
+                                    "stringValue": "Esenkent"
+                                },
+                                {
+                                    "stringValue": "Hastane-Adliye"
+                                },
+                                {
+                                    "stringValue": "Soğanlık"
+                                },
+                                {
+                                    "stringValue": "Kartal"
+                                },
+                                {
+                                    "stringValue": "Yakacık-Adnan Kahveci"
+                                },
+                                {
+                                    "stringValue": "Pendik"
+                                },
+                                {
+                                    "stringValue": "Tavşantepe"
+                                },
+                                {
+                                    "stringValue": "Fevzi Çakmak-Hastane"
+                                },
+                                {
+                                    "stringValue": "Yayalar-Şeyhli"
+                                },
+                                {
+                                    "stringValue": "Kurtköy"
+                                },
+                                {
+                                    "stringValue": "Sabiha Gökçen Havalimanı"
+                                }
+                            ]
+                        }
+                    },
+                    "M1": {
+                        "arrayValue": {
+                            "values": [
+                                {
+                                    "stringValue": "Yenikapı"
+                                },
+                                {
+                                    "stringValue": "Aksaray"
+                                },
+                                {
+                                    "stringValue": "Emniyet-Fatih"
+                                },
+                                {
+                                    "stringValue": "Topkapı-Ulubatlı"
+                                },
+                                {
+                                    "stringValue": "Bayrampaşa-Maltepe"
+                                },
+                                {
+                                    "stringValue": "Sağmalcılar"
+                                },
+                                {
+                                    "stringValue": "Kocatepe"
+                                },
+                                {
+                                    "stringValue": "Otogar"
+                                },
+                                {
+                                    "stringValue": "Terazidere"
+                                },
+                                {
+                                    "stringValue": "Davutpaşa-YTÜ"
+                                },
+                                {
+                                    "stringValue": "Merter"
+                                },
+                                {
+                                    "stringValue": "Zeytinburnu"
+                                },
+                                {
+                                    "stringValue": "Bakırköy-İncirli"
+                                },
+                                {
+                                    "stringValue": "Bahçelievler"
+                                },
+                                {
+                                    "stringValue": "Ataköy-Şirinevler"
+                                },
+                                {
+                                    "stringValue": "Yenibosna"
+                                },
+                                {
+                                    "stringValue": "DTM-İstanbul Fuar Merkezi"
+                                },
+                                {
+                                    "stringValue": "Atatürk Havalimanı"
+                                },
+                                {
+                                    "stringValue": "Esenler"
+                                },
+                                {
+                                    "stringValue": "Menderes"
+                                },
+                                {
+                                    "stringValue": "Üçyüzlü"
+                                },
+                                {
+                                    "stringValue": "Bağcılar Meydan"
+                                },
+                                {
+                                    "stringValue": "Kirazlı"
+                                }
+                            ]
+                        }
+                    },
+                    "T1": {
+                        "arrayValue": {
+                            "values": [
+                                {
+                                    "stringValue": "Bağcılar"
+                                },
+                                {
+                                    "stringValue": "Güneştepe"
+                                },
+                                {
+                                    "stringValue": "Yavuzselim"
+                                },
+                                {
+                                    "stringValue": "Soğanlı"
+                                },
+                                {
+                                    "stringValue": "Akıncılar"
+                                },
+                                {
+                                    "stringValue": "Güngören"
+                                },
+                                {
+                                    "stringValue": "Merter Tekstil Merkezi"
+                                },
+                                {
+                                    "stringValue": "Mehmet Akif"
+                                },
+                                {
+                                    "stringValue": "Zeytinburnu"
+                                },
+                                {
+                                    "stringValue": "Mithatpaşa"
+                                },
+                                {
+                                    "stringValue": "Seyitnizam-Akşemsettin"
+                                },
+                                {
+                                    "stringValue": "Merkezefendi"
+                                },
+                                {
+                                    "stringValue": "Cevizlibağ-AÖY"
+                                },
+                                {
+                                    "stringValue": "Topkapı"
+                                },
+                                {
+                                    "stringValue": "Pazartekke"
+                                },
+                                {
+                                    "stringValue": "Çapa-Şehremini"
+                                },
+                                {
+                                    "stringValue": "Fındıkzade"
+                                },
+                                {
+                                    "stringValue": "Haseki"
+                                },
+                                {
+                                    "stringValue": "Yusufpaşa"
+                                },
+                                {
+                                    "stringValue": "Aksaray"
+                                },
+                                {
+                                    "stringValue": "Laleli-İstanbul Ü."
+                                },
+                                {
+                                    "stringValue": "Beyazıt-Kapalıçarşı"
+                                },
+                                {
+                                    "stringValue": "Çemberlitaş"
+                                },
+                                {
+                                    "stringValue": "Sultanahmet"
+                                },
+                                {
+                                    "stringValue": "Gülhane"
+                                },
+                                {
+                                    "stringValue": "Sirkeci"
+                                },
+                                {
+                                    "stringValue": "Eminönü"
+                                },
+                                {
+                                    "stringValue": "Karaköy"
+                                },
+                                {
+                                    "stringValue": "Tophane"
+                                },
+                                {
+                                    "stringValue": "Fındıklı-Mimar Sinan Ü."
+                                },
+                                {
+                                    "stringValue": "Kabataş"
+                                }
+                            ]
+                        }
+                    },
+                    "M8": {
+                        "arrayValue": {
+                            "values": [
+                                {
+                                    "stringValue": "Bostancı"
+                                },
+                                {
+                                    "stringValue": "Emin Ali Paşa"
+                                },
+                                {
+                                    "stringValue": "Ayşekadın"
+                                },
+                                {
+                                    "stringValue": "Kozyatağı"
+                                },
+                                {
+                                    "stringValue": "Küçükbakkalköy"
+                                },
+                                {
+                                    "stringValue": "İçerenköy"
+                                },
+                                {
+                                    "stringValue": "Kayışdağı"
+                                },
+                                {
+                                    "stringValue": "Mevlana"
+                                },
+                                {
+                                    "stringValue": "İMES"
+                                },
+                                {
+                                    "stringValue": "MODOKO-Keyap"
+                                },
+                                {
+                                    "stringValue": "Dudullu"
+                                },
+                                {
+                                    "stringValue": "Parseller"
+                                }
+                            ]
+                        }
+                    },
+                    "M6": {
+                        "arrayValue": {
+                            "values": [
+                                {
+                                    "stringValue": "Levent"
+                                },
+                                {
+                                    "stringValue": "Nispetiye"
+                                },
+                                {
+                                    "stringValue": "Etiler"
+                                },
+                                {
+                                    "stringValue": "Boğaziçi Üni./Hisarüstü"
+                                }
+                            ]
+                        }
+                    },
+                    "M3": {
+                        "arrayValue": {
+                            "values": [
+                                {
+                                    "stringValue": "Bakırköy Sahil"
+                                },
+                                {
+                                    "stringValue": "İncirli"
+                                },
+                                {
+                                    "stringValue": "Haznedar"
+                                },
+                                {
+                                    "stringValue": "İlkyuva"
+                                },
+                                {
+                                    "stringValue": "Yıldıztepe"
+                                },
+                                {
+                                    "stringValue": "Molla Gürani"
+                                },
+                                {
+                                    "stringValue": "Kirazlı"
+                                },
+                                {
+                                    "stringValue": "Yenimahalle"
+                                },
+                                {
+                                    "stringValue": "Mahmutbey"
+                                },
+                                {
+                                    "stringValue": "İSTOÇ"
+                                },
+                                {
+                                    "stringValue": "İkitelli Sanayi"
+                                },
+                                {
+                                    "stringValue": "Turgut Özal"
+                                },
+                                {
+                                    "stringValue": "Siteler"
+                                },
+                                {
+                                    "stringValue": "Başak Konutları"
+                                },
+                                {
+                                    "stringValue": "MetroKent"
+                                },
+                                {
+                                    "stringValue": "Onurkent"
+                                },
+                                {
+                                    "stringValue": "Şehir Hastanesi"
+                                },
+                                {
+                                    "stringValue": "Toplu Konutlar"
+                                },
+                                {
+                                    "stringValue": "Kayaşehir Merkez"
+                                }
+                            ]
+                        }
+                    },
+                    "T4": {
+                        "arrayValue": {
+                            "values": [
+                                {
+                                    "stringValue": "Topkapı"
+                                },
+                                {
+                                    "stringValue": "Fetihkapı"
+                                },
+                                {
+                                    "stringValue": "Vatan"
+                                },
+                                {
+                                    "stringValue": "Edirnekapı"
+                                },
+                                {
+                                    "stringValue": "Şehitlik"
+                                },
+                                {
+                                    "stringValue": "Demirkapı"
+                                },
+                                {
+                                    "stringValue": "Sağmalcılar"
+                                },
+                                {
+                                    "stringValue": "Bosna-Çukurçeşme"
+                                },
+                                {
+                                    "stringValue": "Ali Fuat Başgil"
+                                },
+                                {
+                                    "stringValue": "Taşköprü"
+                                },
+                                {
+                                    "stringValue": "Karadeniz"
+                                },
+                                {
+                                    "stringValue": "Cumhuriyet Mah."
+                                },
+                                {
+                                    "stringValue": "50. Yıl-Baştabya"
+                                },
+                                {
+                                    "stringValue": "Hacı Şükrü"
+                                },
+                                {
+                                    "stringValue": "Yeni Mahalle"
+                                },
+                                {
+                                    "stringValue": "Sultançiftliği"
+                                },
+                                {
+                                    "stringValue": "Cebeci"
+                                },
+                                {
+                                    "stringValue": "Mescid-i Selam"
+                                },
+                                {
+                                    "stringValue": "Kiptaş Venezia"
+                                },
+                                {
+                                    "stringValue": "Topçular"
+                                },
+                                {
+                                    "stringValue": "Rami"
+                                },
+                                {
+                                    "stringValue": "Uluyol Bereç"
+                                },
+                                {
+                                    "stringValue": "Habibler Yerleşke"
+                                },
+                                {
+                                    "stringValue": "Habibler Depo"
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "lines": {
+            "arrayValue": {
+                "values": [
+                    {
+                        "stringValue": "M1"
+                    },
+                    {
+                        "stringValue": "M2"
+                    },
+                    {
+                        "stringValue": "M3"
+                    },
+                    {
+                        "stringValue": "M4"
+                    },
+                    {
+                        "stringValue": "M5"
+                    },
+                    {
+                        "stringValue": "M6"
+                    },
+                    {
+                        "stringValue": "M7"
+                    },
+                    {
+                        "stringValue": "M8"
+                    },
+                    {
+                        "stringValue": "M9"
+                    },
+                    {
+                        "stringValue": "T1"
+                    },
+                    {
+                        "stringValue": "T4"
+                    },
+                    {
+                        "stringValue": "T5"
+                    },
+                    {
+                        "stringValue": "F1"
+                    },
+                    {
+                        "stringValue": "TF1"
+                    },
+                    {
+                        "stringValue": "TF2"
+                    }
+                ]
+            }
+        },
+        "stationNumbers": {
+            "mapValue": {
+                "fields": {
+                    "M6": {
+                        "mapValue": {
+                            "fields": {
+                                "Etiler": {
+                                    "integerValue": "3"
+                                },
+                                "Nispetiye": {
+                                    "integerValue": "2"
+                                },
+                                "Levent": {
+                                    "integerValue": "1"
+                                },
+                                "Boğaziçi Üni./Hisarüstü": {
+                                    "integerValue": "4"
+                                }
+                            }
+                        }
+                    },
+                    "T4": {
+                        "mapValue": {
+                            "fields": {
+                                "Şehitlik": {
+                                    "integerValue": "5"
+                                },
+                                "Cebeci": {
+                                    "integerValue": "21"
+                                },
+                                "Kiptaş Venezia": {
+                                    "integerValue": "15"
+                                },
+                                "Sağmalcılar": {
+                                    "integerValue": "10"
+                                },
+                                "Taşköprü": {
+                                    "integerValue": "13"
+                                },
+                                "Uluyol Bereç": {
+                                    "integerValue": "9"
+                                },
+                                "Sultançiftliği": {
+                                    "integerValue": "20"
+                                },
+                                "50. Yıl-Baştabya": {
+                                    "integerValue": "17"
+                                },
+                                "Edirnekapı": {
+                                    "integerValue": "4"
+                                },
+                                "Vatan": {
+                                    "integerValue": "3"
+                                },
+                                "Ali Fuat Başgil": {
+                                    "integerValue": "12"
+                                },
+                                "Demirkapı": {
+                                    "integerValue": "6"
+                                },
+                                "Topkapı": {
+                                    "integerValue": "1"
+                                },
+                                "Hacı Şükrü": {
+                                    "integerValue": "18"
+                                },
+                                "Metris": {
+                                    "integerValue": "15"
+                                },
+                                "Habibler Yerleşke": {
+                                    "integerValue": "23"
+                                },
+                                "Habibler Depo": {
+                                    "integerValue": "24"
+                                },
+                                "Fetihkapı": {
+                                    "integerValue": "2"
+                                },
+                                "Rami": {
+                                    "integerValue": "8"
+                                },
+                                "Mescid-i Selam": {
+                                    "integerValue": "22"
+                                },
+                                "Karadeniz": {
+                                    "integerValue": "14"
+                                },
+                                "Yeni Mahalle": {
+                                    "integerValue": "19"
+                                },
+                                "Cumhuriyet Mah.": {
+                                    "integerValue": "16"
+                                },
+                                "Bosna-Çukurçeşme": {
+                                    "integerValue": "11"
+                                },
+                                "Uluyol": {
+                                    "integerValue": "8"
+                                },
+                                "Topçular": {
+                                    "integerValue": "7"
+                                },
+                                "Bereç": {
+                                    "integerValue": "9"
+                                }
+                            }
+                        }
+                    },
+                    "M3": {
+                        "mapValue": {
+                            "fields": {
+                                "Mahmutbey": {
+                                    "integerValue": "9"
+                                },
+                                "Toplu Konutlar": {
+                                    "integerValue": "18"
+                                },
+                                "İkitelli Sanayi": {
+                                    "integerValue": "11"
+                                },
+                                "Molla Gürani": {
+                                    "integerValue": "6"
+                                },
+                                "Kayaşehir Merkez": {
+                                    "integerValue": "19"
+                                },
+                                "İncirli": {
+                                    "integerValue": "2"
+                                },
+                                "Siteler": {
+                                    "integerValue": "13"
+                                },
+                                "MetroKent": {
+                                    "integerValue": "15"
+                                },
+                                "Onurkent": {
+                                    "integerValue": "16"
+                                },
+                                "İlkyuva": {
+                                    "integerValue": "4"
+                                },
+                                "Bakırköy Sahil": {
+                                    "integerValue": "1"
+                                },
+                                "Kirazlı": {
+                                    "integerValue": "7"
+                                },
+                                "Haznedar": {
+                                    "integerValue": "3"
+                                },
+                                "Turgut Özal": {
+                                    "integerValue": "12"
+                                },
+                                "Yenimahalle": {
+                                    "integerValue": "8"
+                                },
+                                "İSTOÇ": {
+                                    "integerValue": "10"
+                                },
+                                "Başak Konutları": {
+                                    "integerValue": "14"
+                                },
+                                "Şehir Hastanesi": {
+                                    "integerValue": "17"
+                                },
+                                "Yıldıztepe": {
+                                    "integerValue": "5"
+                                }
+                            }
+                        }
+                    },
+                    "TF2": {
+                        "mapValue": {
+                            "fields": {
+                                "Piyer Loti": {
+                                    "integerValue": "2"
+                                },
+                                "Eyüp": {
+                                    "integerValue": "1"
+                                }
+                            }
+                        }
+                    },
+                    "M4": {
+                        "mapValue": {
+                            "fields": {
+                                "Hastane-Adliye": {
+                                    "integerValue": "14"
+                                },
+                                "Bostancı": {
+                                    "integerValue": "8"
+                                },
+                                "Kozyatağı": {
+                                    "integerValue": "7"
+                                },
+                                "Kurtköy": {
+                                    "integerValue": "22"
+                                },
+                                "Ayrılık Çeşmesi": {
+                                    "integerValue": "2"
+                                },
+                                "Sabiha Gökçen Havalimanı": {
+                                    "integerValue": "23"
+                                },
+                                "Pendik": {
+                                    "integerValue": "18"
+                                },
+                                "Huzurevi": {
+                                    "integerValue": "11"
+                                },
+                                "Yenisahra": {
+                                    "integerValue": "6"
+                                },
+                                "Gülsuyu": {
+                                    "integerValue": "12"
+                                },
+                                "Yakacık-Adnan Kahveci": {
+                                    "integerValue": "17"
+                                },
+                                "Küçükyalı": {
+                                    "integerValue": "9"
+                                },
+                                "Maltepe": {
+                                    "integerValue": "10"
+                                },
+                                "Ünalan": {
+                                    "integerValue": "4"
+                                },
+                                "Kadıköy": {
+                                    "integerValue": "1"
+                                },
+                                "Acıbadem": {
+                                    "integerValue": "3"
+                                },
+                                "Soğanlık": {
+                                    "integerValue": "15"
+                                },
+                                "Esenkent": {
+                                    "integerValue": "13"
+                                },
+                                "Fevzi Çakmak-Hastane": {
+                                    "integerValue": "20"
+                                },
+                                "Göztepe": {
+                                    "integerValue": "5"
+                                },
+                                "Kartal": {
+                                    "integerValue": "16"
+                                },
+                                "Yayalar-Şeyhli": {
+                                    "integerValue": "21"
+                                },
+                                "Tavşantepe": {
+                                    "integerValue": "19"
+                                }
+                            }
+                        }
+                    },
+                    "T1": {
+                        "mapValue": {
+                            "fields": {
+                                "Gülhane": {
+                                    "integerValue": "25"
+                                },
+                                "Yusufpaşa": {
+                                    "integerValue": "19"
+                                },
+                                "Sirkeci": {
+                                    "integerValue": "26"
+                                },
+                                "Fındıklı-Mimar Sinan Ü.": {
+                                    "integerValue": "30"
+                                },
+                                "Bağcılar": {
+                                    "integerValue": "1"
+                                },
+                                "Akıncılar": {
+                                    "integerValue": "5"
+                                },
+                                "Cevizlibağ-AÖY": {
+                                    "integerValue": "13"
+                                },
+                                "Güngören": {
+                                    "integerValue": "6"
+                                },
+                                "Haseki": {
+                                    "integerValue": "18"
+                                },
+                                "Tophane": {
+                                    "integerValue": "29"
+                                },
+                                "Karaköy": {
+                                    "integerValue": "28"
+                                },
+                                "Çapa-Şehremini": {
+                                    "integerValue": "16"
+                                },
+                                "Mithatpaşa": {
+                                    "integerValue": "10"
+                                },
+                                "Çemberlitaş": {
+                                    "integerValue": "23"
+                                },
+                                "Topkapı": {
+                                    "integerValue": "14"
+                                },
+                                "Seyitnizam-Akşemsettin": {
+                                    "integerValue": "11"
+                                },
+                                "Merkezefendi": {
+                                    "integerValue": "12"
+                                },
+                                "Pazartekke": {
+                                    "integerValue": "15"
+                                },
+                                "Kabataş": {
+                                    "integerValue": "31"
+                                },
+                                "Aksaray": {
+                                    "integerValue": "20"
+                                },
+                                "Sultanahmet": {
+                                    "integerValue": "24"
+                                },
+                                "Zeytinburnu": {
+                                    "integerValue": "9"
+                                },
+                                "Laleli-İstanbul Ü.": {
+                                    "integerValue": "21"
+                                },
+                                "Fındıkzade": {
+                                    "integerValue": "17"
+                                },
+                                "Soğanlı": {
+                                    "integerValue": "4"
+                                },
+                                "Mehmet Akif": {
+                                    "integerValue": "8"
+                                },
+                                "Güneştepe": {
+                                    "integerValue": "2"
+                                },
+                                "Merter Tekstil Merkezi": {
+                                    "integerValue": "7"
+                                },
+                                "Beyazıt-Kapalıçarşı": {
+                                    "integerValue": "22"
+                                },
+                                "Yavuzselim": {
+                                    "integerValue": "3"
+                                },
+                                "Eminönü": {
+                                    "integerValue": "27"
+                                }
+                            }
+                        }
+                    },
+                    "M1": {
+                        "mapValue": {
+                            "fields": {
+                                "Esenler": {
+                                    "integerValue": "19"
+                                },
+                                "Topkapı-Ulubatlı": {
+                                    "integerValue": "4"
+                                },
+                                "Davutpaşa-YTÜ": {
+                                    "integerValue": "10"
+                                },
+                                "Terazidere": {
+                                    "integerValue": "9"
+                                },
+                                "Bayrampaşa-Maltepe": {
+                                    "integerValue": "5"
+                                },
+                                "Aksaray": {
+                                    "integerValue": "2"
+                                },
+                                "Üçyüzlü": {
+                                    "integerValue": "21"
+                                },
+                                "Sağmalcılar": {
+                                    "integerValue": "6"
+                                },
+                                "Zeytinburnu": {
+                                    "integerValue": "12"
+                                },
+                                "Emniyet-Fatih": {
+                                    "integerValue": "3"
+                                },
+                                "Bakırköy-İncirli": {
+                                    "integerValue": "13"
+                                },
+                                "Kirazlı": {
+                                    "integerValue": "23"
+                                },
+                                "Kocatepe": {
+                                    "integerValue": "7"
+                                },
+                                "Yenikapı": {
+                                    "integerValue": "1"
+                                },
+                                "Bahçelievler": {
+                                    "integerValue": "14"
+                                },
+                                "Bağcılar Meydan": {
+                                    "integerValue": "22"
+                                },
+                                "Ataköy-Şirinevler": {
+                                    "integerValue": "15"
+                                },
+                                "DTM-İstanbul Fuar Merkezi": {
+                                    "integerValue": "17"
+                                },
+                                "Merter": {
+                                    "integerValue": "11"
+                                },
+                                "Otogar": {
+                                    "integerValue": "8"
+                                },
+                                "Atatürk Havalimanı": {
+                                    "integerValue": "18"
+                                },
+                                "Menderes": {
+                                    "integerValue": "20"
+                                },
+                                "Yenibosna": {
+                                    "integerValue": "16"
+                                }
+                            }
+                        }
+                    },
+                    "M8": {
+                        "mapValue": {
+                            "fields": {
+                                "İçerenköy": {
+                                    "integerValue": "6"
+                                },
+                                "Dudullu": {
+                                    "integerValue": "11"
+                                },
+                                "Kozyatağı": {
+                                    "integerValue": "4"
+                                },
+                                "İMES": {
+                                    "integerValue": "9"
+                                },
+                                "Küçükbakkalköy": {
+                                    "integerValue": "5"
+                                },
+                                "Mevlana": {
+                                    "integerValue": "8"
+                                },
+                                "Ayşekadın": {
+                                    "integerValue": "3"
+                                },
+                                "Emin Ali Paşa": {
+                                    "integerValue": "2"
+                                },
+                                "Bostancı": {
+                                    "integerValue": "1"
+                                },
+                                "Parseller": {
+                                    "integerValue": "12"
+                                },
+                                "Kayışdağı": {
+                                    "integerValue": "7"
+                                },
+                                "MODOKO-Keyap": {
+                                    "integerValue": "10"
+                                }
+                            }
+                        }
+                    },
+                    "M5": {
+                        "mapValue": {
+                            "fields": {
+                                "Üsküdar": {
+                                    "integerValue": "1"
+                                },
+                                "Sancaktepe": {
+                                    "integerValue": "19"
+                                },
+                                "Sancaktepe Şehir Hastanesi": {
+                                    "integerValue": "20"
+                                },
+                                "Altunizade": {
+                                    "integerValue": "4"
+                                },
+                                "Çarşı": {
+                                    "integerValue": "8"
+                                },
+                                "İmam Hatip Lisesi": {
+                                    "integerValue": "13"
+                                },
+                                "Yamanevler": {
+                                    "integerValue": "9"
+                                },
+                                "Meclis": {
+                                    "integerValue": "17"
+                                },
+                                "Samandıra Merkez": {
+                                    "integerValue": "21"
+                                },
+                                "Sarıgazi": {
+                                    "integerValue": "18"
+                                },
+                                "Bulgurlu": {
+                                    "integerValue": "6"
+                                },
+                                "Altınşehir": {
+                                    "integerValue": "12"
+                                },
+                                "Çakmak": {
+                                    "integerValue": "10"
+                                },
+                                "Ihlamurkuyu": {
+                                    "integerValue": "11"
+                                },
+                                "Çekmeköy": {
+                                    "integerValue": "16"
+                                },
+                                "Necip Fazıl": {
+                                    "integerValue": "15"
+                                },
+                                "Ümraniye": {
+                                    "integerValue": "7"
+                                },
+                                "Bağlarbaşı": {
+                                    "integerValue": "3"
+                                },
+                                "Fıstıkağacı": {
+                                    "integerValue": "2"
+                                },
+                                "Dudullu": {
+                                    "integerValue": "14"
+                                },
+                                "Kısıklı": {
+                                    "integerValue": "5"
+                                }
+                            }
+                        }
+                    },
+                    "M9": {
+                        "mapValue": {
+                            "fields": {
+                                "Ataköy": {
+                                    "integerValue": "1"
+                                },
+                                "Halkalı Caddesi": {
+                                    "integerValue": "8"
+                                },
+                                "Bahariye": {
+                                    "integerValue": "10"
+                                },
+                                "Mimar Sinan": {
+                                    "integerValue": "6"
+                                },
+                                "Yenibosna": {
+                                    "integerValue": "2"
+                                },
+                                "İhlas Yuva": {
+                                    "integerValue": "4"
+                                },
+                                "Olimpiyat": {
+                                    "integerValue": "14"
+                                },
+                                "Ziya Gökalp Mahallesi": {
+                                    "integerValue": "13"
+                                },
+                                "Masko": {
+                                    "integerValue": "11"
+                                },
+                                "15 Temmuz": {
+                                    "integerValue": "7"
+                                },
+                                "İkitelli Sanayi": {
+                                    "integerValue": "12"
+                                },
+                                "Doğu Sanayi": {
+                                    "integerValue": "5"
+                                },
+                                "Çobançeşme": {
+                                    "integerValue": "3"
+                                },
+                                "Atatürk Mahallesi": {
+                                    "integerValue": "9"
+                                }
+                            }
+                        }
+                    },
+                    "M7": {
+                        "mapValue": {
+                            "fields": {
+                                "Mecidiyeköy": {
+                                    "integerValue": "3"
+                                },
+                                "Karadeniz Mahallesi": {
+                                    "integerValue": "13"
+                                },
+                                "Yeşilpınar": {
+                                    "integerValue": "10"
+                                },
+                                "Mahmutbey": {
+                                    "integerValue": "17"
+                                },
+                                "Göztepe Mahallesi": {
+                                    "integerValue": "16"
+                                },
+                                "Yenimahalle": {
+                                    "integerValue": "12"
+                                },
+                                "Veysel Karani-Akşemsettin": {
+                                    "integerValue": "9"
+                                },
+                                "Fulya": {
+                                    "integerValue": "2"
+                                },
+                                "Nurtepe": {
+                                    "integerValue": "6"
+                                },
+                                "Giyimkent-Tekstilkent": {
+                                    "integerValue": "14"
+                                },
+                                "Oruç Reis": {
+                                    "integerValue": "15"
+                                },
+                                "Çağlayan": {
+                                    "integerValue": "4"
+                                },
+                                "Yıldız": {
+                                    "integerValue": "1"
+                                },
+                                "Alibeyköy": {
+                                    "integerValue": "7"
+                                },
+                                "Kağıthane": {
+                                    "integerValue": "5"
+                                },
+                                "Kazım Karabekir": {
+                                    "integerValue": "11"
+                                },
+                                "Çırçır": {
+                                    "integerValue": "8"
+                                }
+                            }
+                        }
+                    },
+                    "M2": {
+                        "mapValue": {
+                            "fields": {
+                                "Gayrettepe": {
+                                    "integerValue": "8"
+                                },
+                                "Hacıosman": {
+                                    "integerValue": "15"
+                                },
+                                "Atatürk Oto Sanayi": {
+                                    "integerValue": "13"
+                                },
+                                "İTÜ-Ayazağa": {
+                                    "integerValue": "12"
+                                },
+                                "4.Levent": {
+                                    "integerValue": "10"
+                                },
+                                "Şişli-Mecidiyeköy": {
+                                    "integerValue": "7"
+                                },
+                                "Şişhane": {
+                                    "integerValue": "4"
+                                },
+                                "Yenikapı": {
+                                    "integerValue": "1"
+                                },
+                                "Osmanbey": {
+                                    "integerValue": "6"
+                                },
+                                "Vezneciler-İstanbul Ü.": {
+                                    "integerValue": "2"
+                                },
+                                "Levent": {
+                                    "integerValue": "9"
+                                },
+                                "Sanayi Mahallesi": {
+                                    "integerValue": "11"
+                                },
+                                "Haliç": {
+                                    "integerValue": "3"
+                                },
+                                "Taksim": {
+                                    "integerValue": "5"
+                                },
+                                "Darüşşafaka": {
+                                    "integerValue": "14"
+                                },
+                                "Seyrantepe": {
+                                    "integerValue": "16"
+                                }
+                            }
+                        }
+                    },
+                    "F1": {
+                        "mapValue": {
+                            "fields": {
+                                "Kabataş": {
+                                    "integerValue": "2"
+                                },
+                                "Taksim": {
+                                    "integerValue": "1"
+                                }
+                            }
+                        }
+                    },
+                    "T5": {
+                        "mapValue": {
+                            "fields": {
+                                "Cibali": {
+                                    "integerValue": "3"
+                                },
+                                "Balat": {
+                                    "integerValue": "5"
+                                },
+                                "Alibeyköy Yerleşke": {
+                                    "integerValue": "15"
+                                },
+                                "Üniversite": {
+                                    "integerValue": "11"
+                                },
+                                "Alibeyköy Merkez": {
+                                    "integerValue": "12"
+                                },
+                                "Ayvansaray": {
+                                    "integerValue": "6"
+                                },
+                                "Alibeyköy Metro": {
+                                    "integerValue": "13"
+                                },
+                                "Küçükpazar": {
+                                    "integerValue": "2"
+                                },
+                                "Silahtarağa": {
+                                    "integerValue": "10"
+                                },
+                                "Feshane": {
+                                    "integerValue": "7"
+                                },
+                                "Eyüpsultan Teleferik": {
+                                    "integerValue": "8"
+                                },
+                                "Eyüpsultan Devlet Hast.": {
+                                    "integerValue": "9"
+                                },
+                                "Eminönü": {
+                                    "integerValue": "1"
+                                },
+                                "Alibeyköy Cep Otogarı": {
+                                    "integerValue": "14"
+                                },
+                                "Fener": {
+                                    "integerValue": "4"
+                                }
+                            }
+                        }
+                    },
+                    "TF1": {
+                        "mapValue": {
+                            "fields": {
+                                "Maçka": {
+                                    "integerValue": "1"
+                                },
+                                "Taşkışla": {
+                                    "integerValue": "2"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "createTime": "2026-05-15T06:54:55.643363Z",
+    "updateTime": "2026-06-25T06:33:34.772928Z"
+}
