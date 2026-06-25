@@ -24,13 +24,13 @@ if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
 
 // Enable offline persistence
 db.enablePersistence()
-  .catch(function(err) {
-      if (err.code == 'failed-precondition') {
-          console.warn('Multiple tabs open, persistence can only be enabled in one tab at a a time.');
-      } else if (err.code == 'unimplemented') {
-          console.warn('The current browser does not support all of the features required to enable persistence');
-      }
-  });
+    .catch(function (err) {
+        if (err.code == 'failed-precondition') {
+            console.warn('Multiple tabs open, persistence can only be enabled in one tab at a a time.');
+        } else if (err.code == 'unimplemented') {
+            console.warn('The current browser does not support all of the features required to enable persistence');
+        }
+    });
 
 const auth = firebase.auth();
 const SECONDARY_FIREBASE_APP_NAME = 'PersonnelAuthSecondary';
@@ -70,7 +70,7 @@ async function ensureFirebaseAuthUser(email, password) {
                 await secondaryAuth.signOut();
                 return uid;
             } catch (signInErr) {
-                await secondaryAuth.signOut().catch(() => {});
+                await secondaryAuth.signOut().catch(() => { });
                 throw new Error('Bu e-posta Firebase\'de kayıtlı ancak girilen şifre eşleşmiyor.');
             }
         }
@@ -390,7 +390,7 @@ function getISOWeekNumber(d) {
     date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
     const week1 = new Date(date.getFullYear(), 0, 4);
     return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000
-                          - 3 + (week1.getDay() + 6) % 7) / 7);
+        - 3 + (week1.getDay() + 6) % 7) / 7);
 }
 
 function getLocalDateString(dateStr) {
@@ -483,7 +483,7 @@ function renderUnifiedDateOptions(pageName = 'dashboard') {
     if (!container) return;
 
     const audits = getFilteredAudits() || [];
-    
+
     const yearsSet = new Set();
     const months = [
         { value: '1', text: 'Ocak' },
@@ -499,7 +499,7 @@ function renderUnifiedDateOptions(pageName = 'dashboard') {
         { value: '11', text: 'Kasım' },
         { value: '12', text: 'Aralık' }
     ];
-    
+
     const weeksSet = new Set();
     const daysSet = new Set();
 
@@ -507,13 +507,13 @@ function renderUnifiedDateOptions(pageName = 'dashboard') {
         if (!audit.date) return;
         const d = new Date(audit.date);
         if (isNaN(d.getTime())) return;
-        
+
         const y = d.getFullYear().toString();
         yearsSet.add(y);
-        
+
         const w = getISOWeekNumber(d);
         weeksSet.add(w);
-        
+
         const localDateStr = getLocalDateString(audit.date);
         if (localDateStr) daysSet.add(localDateStr);
     });
@@ -524,7 +524,7 @@ function renderUnifiedDateOptions(pageName = 'dashboard') {
 
     const activeTab = filter.activeTab || 'year';
     let listHtml = '';
-    
+
     if (activeTab === 'year') {
         if (years.length === 0) {
             listHtml = '<div style="color:var(--text-dim);font-size:0.75rem;padding:0.5rem;text-align:center;">Veri bulunamadı.</div>';
@@ -580,7 +580,7 @@ function renderUnifiedDateOptions(pageName = 'dashboard') {
             });
         }
     }
-    
+
     container.innerHTML = `
         <div style="display: flex; gap: 4px; border-bottom: 1px solid var(--border-main); margin-bottom: 0.6rem; padding-bottom: 0.4rem;">
             <button type="button" class="date-tab-btn" onclick="switchDateTab('${pageName}', 'year', event)" style="flex: 1; background: ${activeTab === 'year' ? 'rgba(249, 115, 22, 0.16)' : 'transparent'}; border: 1px solid ${activeTab === 'year' ? 'rgba(249, 115, 22, 0.3)' : 'transparent'}; color: ${activeTab === 'year' ? '#f97316' : 'var(--text-dim)'}; font-size: 0.75rem; font-weight: 700; cursor: pointer; padding: 0.35rem; border-radius: 6px; transition: all 0.2s;">Yıl</button>
@@ -639,8 +639,8 @@ function initAuthListener() {
             console.log('Aktif oturum bulundu:', user.email);
             await loadUserProfile(user);
             loginOverlay.style.display = 'none';
-        mainApp.style.display = 'flex';
-        pushDebug('loginOverlay hidden and mainApp flexed!');
+            mainApp.style.display = 'flex';
+            pushDebug('loginOverlay hidden and mainApp flexed!');
             pushDebug('Calling initRealtimeSync...');
             initRealtimeSync();
             pushDebug('initRealtimeSync returned!');
@@ -649,7 +649,7 @@ function initAuthListener() {
             loginOverlay.style.display = 'flex';
             mainApp.style.display = 'none';
             currentUser = null;
-            
+
             // Giriş butonunun yükleniyor durumunu sıfırla
             const loginBtn = document.querySelector('.login-btn');
             if (loginBtn) {
@@ -673,49 +673,72 @@ async function loadUserProfile(firebaseUser) {
             currentUser = await findExistingUserProfile(firebaseUser);
             pushDebug('findExistingUserProfile returned!');
             if (!currentUser) {
-            const isAdmin = firebaseUser.email && (
-                firebaseUser.email.toLowerCase().includes('admin') ||
-                firebaseUser.email === 'ramazan@test.com' ||
-                firebaseUser.email === 'ramazan.tilki@metro.istanbul'
-            );
-            let defaultRoleId = 'Field_Auditor_Action_Owner';
-            const emailLower = (firebaseUser.email || '').toLowerCase();
-            if (isAdmin) {
-                defaultRoleId = 'Super_Admin';
-            } else if (emailLower.includes('yonetici') || emailLower.includes('yönetici')) {
-                defaultRoleId = 'Executive_Viewer_Restricted';
-            } else if (emailLower.includes('onay') || emailLower.includes('approver') || emailLower.includes('koordinat')) {
-                defaultRoleId = 'Approver';
-            } else if (emailLower.includes('denetci') || emailLower.includes('denetçi') || emailLower.includes('auditor')) {
-                defaultRoleId = 'Field_Auditor';
-            }
-            const defaultRole = getRbacRoleById(defaultRoleId);
-            currentUser = {
-                id: firebaseUser.uid,
-                username: firebaseUser.email.split('@')[0],
-                email: firebaseUser.email,
-                roleId: defaultRoleId,
-                roleName: defaultRole.name,
-                title: defaultRole.name,
-                role: getLegacyRoleFromRbac(defaultRoleId),
-                scopeType: defaultRole.isGlobal ? 'global' : 'restricted',
-                isGlobalScope: defaultRole.isGlobal,
-                authorizedLines: [],
-                authorizedStations: [],
-                createdAt: new Date().toISOString()
-            };
-            // Otomatik olarak Firestore'a kaydet
-            pushDebug('Saving new user doc...');
-            await db.collection('users').doc(firebaseUser.uid).set(currentUser);
-            pushDebug('New user doc saved!');
-            console.log('Yeni kullanıcı profili otomatik oluşturuldu.');
+                const isAdmin = firebaseUser.email && (
+                    firebaseUser.email.toLowerCase().includes('admin') ||
+                    firebaseUser.email === 'ramazan@test.com' ||
+                    firebaseUser.email === 'ramazan.tilki@metro.istanbul'
+                );
+                let defaultRoleId = 'Field_Auditor_Action_Owner';
+                const emailLower = (firebaseUser.email || '').toLowerCase();
+                if (isAdmin) {
+                    defaultRoleId = 'Super_Admin';
+                } else if (emailLower.includes('yonetici') || emailLower.includes('yönetici')) {
+                    defaultRoleId = 'Executive_Viewer_Restricted';
+                } else if (emailLower.includes('onay') || emailLower.includes('approver') || emailLower.includes('koordinat')) {
+                    defaultRoleId = 'Approver';
+                } else if (emailLower.includes('denetci') || emailLower.includes('denetçi') || emailLower.includes('auditor')) {
+                    defaultRoleId = 'Field_Auditor';
+                }
+                const defaultRole = getRbacRoleById(defaultRoleId);
+                currentUser = {
+                    id: firebaseUser.uid,
+                    username: firebaseUser.email.split('@')[0],
+                    email: firebaseUser.email,
+                    roleId: defaultRoleId,
+                    roleName: defaultRole.name,
+                    title: defaultRole.name,
+                    role: getLegacyRoleFromRbac(defaultRoleId),
+                    scopeType: defaultRole.isGlobal ? 'global' : 'restricted',
+                    isGlobalScope: defaultRole.isGlobal,
+                    authorizedLines: [],
+                    authorizedStations: [],
+                    createdAt: new Date().toISOString()
+                };
+                // Otomatik olarak Firestore'a kaydet
+                pushDebug('Saving new user doc...');
+                await db.collection('users').doc(firebaseUser.uid).set(currentUser);
+                pushDebug('New user doc saved!');
+                console.log('Yeni kullanıcı profili otomatik oluşturuldu.');
             }
         }
 
         // UI Güncelleme
-        const name = currentUser.username || currentUser.name || 'K';
-        document.getElementById('user-display-name').textContent = name;
-        document.getElementById('user-display-role').textContent = getRbacRoleDisplayName(currentUser);
+        const displayName = String(currentUser.name || currentUser.displayName || currentUser.username || 'K');
+
+        // Ünvanı bulmak için son derece dayanıklı ve çökmez (crash-proof) çözüm:
+        let displayTitle = '';
+        if (currentUser.title !== null && currentUser.title !== undefined) {
+            displayTitle = String(currentUser.title);
+        } else if (currentUser.jobTitle !== null && currentUser.jobTitle !== undefined) {
+            displayTitle = String(currentUser.jobTitle);
+        }
+
+        if (displayTitle.trim() === '') {
+            // Eğer özel bir ünvan (title/jobTitle) yoksa, kullanıcının rol ismini ünvan olarak göster
+            const roleKey = inferRbacRoleId(currentUser);
+            const rbacRole = getRbacRoleById(roleKey);
+            displayTitle = String((rbacRole ? rbacRole.name : null) || currentUser.roleName || roleKey || 'Kullanıcı');
+        }
+
+        console.log('DEBUG [User Header] resolvedName: "' + displayName + '", resolvedTitle: "' + displayTitle + '", title: "' + currentUser.title + '", jobTitle: "' + currentUser.jobTitle + '", role: "' + currentUser.role + '", roleId: "' + currentUser.roleId + '"');
+
+        document.getElementById('user-display-name').textContent = displayName;
+
+        const roleEl = document.getElementById('user-display-role');
+        if (roleEl) {
+            roleEl.textContent = displayTitle;
+            roleEl.style.display = 'inline-flex';
+        }
         document.getElementById('user-display-lines').textContent = getUserLineSummary(currentUser);
         renderUserLineLogos(currentUser);
         pushDebug('updatePermissionGatedUI called...');
@@ -751,7 +774,7 @@ function inferRbacRoleId(user) {
 
 function hasGlobalScope(user) {
     if (!user) return false;
-    
+
     // Explicitly restrict these roles from having global scope regardless of legacy fields
     if (['Approver', 'Field_Auditor', 'Field_Auditor_Action_Owner', 'Executive_Viewer_Restricted'].includes(user.roleId)) {
         return false;
@@ -1046,8 +1069,8 @@ function initRealtimeSync() {
 
     // Automatically clean up old duplicate 'audit-type-5s' document if it exists in Firestore
     db.collection('auditTypes').doc('audit-type-5s').delete()
-      .then(() => console.log('Successfully deleted old duplicate audit-type-5s document'))
-      .catch(err => console.warn('Failed to delete old duplicate audit-type-5s document:', err));
+        .then(() => console.log('Successfully deleted old duplicate audit-type-5s document'))
+        .catch(err => console.warn('Failed to delete old duplicate audit-type-5s document:', err));
 
     // Audits Listener
     db.collection('audits').orderBy('date', 'desc').onSnapshot(snapshot => {
@@ -1108,7 +1131,7 @@ function initRealtimeSync() {
             if (data.stationNumbers) appData.stationNumbers = data.stationNumbers;
             if (data.stationNfcs) appData.stationNfcs = data.stationNfcs;
             if (data.stationLocations) appData.stationLocations = data.stationLocations;
-            
+
             runM1Migration();
             runCoordinatesCorrection();
         } else {
@@ -1848,26 +1871,26 @@ function renderNfcList() {
     let matchCount = 0;
 
     const lines = lineFilter === 'all' ? (appData.lines || []) : [lineFilter];
-    
+
     lines.forEach(line => {
         const stations = appData.stations?.[line] || [];
         stations.forEach(station => {
             const nfcKey = `${line}_${station}`;
             const nfcData = appData.stationNfcs?.[nfcKey];
             const nfcUid = (nfcData && nfcData.uid) ? nfcData.uid : '';
-            
-            const matchesSearch = !query || 
-                station.toLowerCase().includes(query) || 
-                nfcUid.toLowerCase().includes(query) || 
+
+            const matchesSearch = !query ||
+                station.toLowerCase().includes(query) ||
+                nfcUid.toLowerCase().includes(query) ||
                 line.toLowerCase().includes(query);
 
             if (matchesSearch) {
                 matchCount++;
                 const color = appData.lineColors?.[line] || '#64748b';
-                const badgeHtml = nfcUid 
+                const badgeHtml = nfcUid
                     ? `<span style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-size: 0.75rem; padding: 4px 8px; border-radius: 6px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-check-circle"></i> Tanımlı</span>`
                     : `<span style="background: rgba(239, 68, 68, 0.15); color: #ef4444; font-size: 0.75rem; padding: 4px 8px; border-radius: 6px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-exclamation-triangle"></i> Tanımsız</span>`;
-                
+
                 const escapedLine = escapeAttr(line).replace(/'/g, "\\'");
                 const escapedStation = escapeAttr(station).replace(/'/g, "\\'");
                 const escapedUid = escapeAttr(nfcUid).replace(/'/g, "\\'");
@@ -1906,7 +1929,7 @@ function downloadNfcTemplate() {
 
         const lineFilter = document.getElementById('nfc-filter-line')?.value || 'all';
         const lines = lineFilter === 'all' ? (appData.lines || []) : [lineFilter];
-        
+
         // Excel Başlıkları
         const header = [
             "Hat",
@@ -1915,7 +1938,7 @@ function downloadNfcTemplate() {
         ];
 
         const data = [header];
-        
+
         lines.forEach(line => {
             const stations = [...(appData.stations?.[line] || [])];
             // İstasyonları durak sıralarına göre dizelim
@@ -1939,7 +1962,7 @@ function downloadNfcTemplate() {
         const worksheet = XLSX.utils.aoa_to_sheet(data);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "NFC Şablonu");
-        
+
         // Kolon genişlikleri ayarla
         worksheet['!cols'] = [
             { wch: 10 }, // Hat
@@ -1964,16 +1987,16 @@ function exportNfcsToExcel() {
 
     const lineFilter = document.getElementById('nfc-filter-line')?.value || 'all';
     const lines = lineFilter === 'all' ? (appData.lines || []) : [lineFilter];
-    
+
     const excelData = [];
-    
+
     lines.forEach(line => {
         const stations = appData.stations?.[line] || [];
         stations.forEach(station => {
             const nfcKey = `${line}_${station}`;
             const nfcData = appData.stationNfcs?.[nfcKey];
             const nfcUid = (nfcData && nfcData.uid) ? nfcData.uid : '';
-            
+
             excelData.push({
                 'Hat': line,
                 'İstasyon': station,
@@ -2000,7 +2023,7 @@ function exportNfcsToExcel() {
     ];
     worksheet['!cols'] = max_widths;
 
-    XLSX.writeFile(workbook, `Metro_Istanbul_NFC_Listesi_${new Date().toISOString().slice(0,10)}.xlsx`);
+    XLSX.writeFile(workbook, `Metro_Istanbul_NFC_Listesi_${new Date().toISOString().slice(0, 10)}.xlsx`);
     showToast('Excel raporu başarıyla indirildi.');
 }
 
@@ -2066,7 +2089,7 @@ async function importNfcsFromExcel(event) {
     }
 
     const reader = new FileReader();
-    reader.onload = async function(e) {
+    reader.onload = async function (e) {
         try {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
@@ -2140,7 +2163,7 @@ function renderLocationList() {
     let matchCount = 0;
 
     const lines = lineFilter === 'all' ? (appData.lines || []) : [lineFilter];
-    
+
     lines.forEach(line => {
         const stations = [...(appData.stations?.[line] || [])];
         const stationNums = appData.stationNumbers?.[line] || {};
@@ -2159,9 +2182,9 @@ function renderLocationList() {
             const lat = (locData && locData.latitude) ? locData.latitude : '';
             const lng = (locData && locData.longitude) ? locData.longitude : '';
             const radius = (locData && locData.radius) ? locData.radius : '';
-            
-            const matchesSearch = !query || 
-                station.toLowerCase().includes(query) || 
+
+            const matchesSearch = !query ||
+                station.toLowerCase().includes(query) ||
                 line.toLowerCase().includes(query) ||
                 lat.toString().includes(query) ||
                 lng.toString().includes(query);
@@ -2170,10 +2193,10 @@ function renderLocationList() {
                 matchCount++;
                 const color = appData.lineColors?.[line] || '#64748b';
                 const hasLoc = lat && lng;
-                const badgeHtml = hasLoc 
+                const badgeHtml = hasLoc
                     ? `<span style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-size: 0.75rem; padding: 4px 8px; border-radius: 6px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-check-circle"></i> Tanımlı</span>`
                     : `<span style="background: rgba(239, 68, 68, 0.15); color: #ef4444; font-size: 0.75rem; padding: 4px 8px; border-radius: 6px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-exclamation-triangle"></i> Tanımsız</span>`;
-                
+
                 const escapedLine = escapeAttr(line).replace(/'/g, "\\'");
                 const escapedStation = escapeAttr(station).replace(/'/g, "\\'");
 
@@ -2279,14 +2302,14 @@ function dmsToDecimal(dmsStr) {
         const minutes = parseFloat(match[2]);
         const seconds = parseFloat(match[3]);
         const direction = match[4].toUpperCase();
-        
+
         let decimal = degrees + (minutes / 60) + (seconds / 3600);
         if (direction === 'S' || direction === 'W') {
             decimal = -decimal;
         }
         return parseFloat(decimal.toFixed(6));
     }
-    
+
     // Eğer sadece decimal ise
     const cleanStr = dmsStr.replace(',', '.');
     const decVal = parseFloat(cleanStr);
@@ -2297,12 +2320,12 @@ function dmsToDecimal(dmsStr) {
 function handleQuickPaste(event) {
     const val = event.target.value.trim();
     if (!val) return;
-    
+
     // Komple yapıştırma durumlarını yakalayalım:
     // Örnek 1: 41°01'11.25"N 28°55'15.08"E (DMS)
     // Örnek 2: 41.012345, 28.956789 (Ondalık Virgüllü)
     // Örnek 3: 41.012345 28.956789 (Ondalık Boşluklu)
-    
+
     const doubleDmsRegex = /(\d+°\s*\d+'\s*[\d.]+"\s*[NSns])\s+[,;\s]*\s*(\d+°\s*\d+'\s*[\d.]+"\s*[EWew])/i;
     const doubleDecRegex = /^(-?\d+\.?\d*)\s*[,;\s]\s*(-?\d+\.?\d*)$/;
 
@@ -2333,7 +2356,7 @@ function parseLocationInput(inputId) {
     if (!input) return;
     const val = input.value.trim();
     if (!val) return;
-    
+
     const dec = dmsToDecimal(val);
     if (!isNaN(dec)) {
         input.value = dec;
@@ -2349,7 +2372,7 @@ function downloadLocationTemplate() {
 
         const lineFilter = document.getElementById('location-filter-line')?.value || 'all';
         const lines = lineFilter === 'all' ? (appData.lines || []) : [lineFilter];
-        
+
         // Excel Başlıkları (Enlem ve Boylam formülleri tamamen kaldırıldı, sistem arka planda parse edecek)
         const header = [
             "Hat",
@@ -2359,7 +2382,7 @@ function downloadLocationTemplate() {
         ];
 
         const data = [header];
-        
+
         lines.forEach(line => {
             const stations = [...(appData.stations?.[line] || [])];
             // İstasyonları sıralayalım
@@ -2384,7 +2407,7 @@ function downloadLocationTemplate() {
         const worksheet = XLSX.utils.aoa_to_sheet(data);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Konum Şablonu");
-        
+
         // Kolon genişlikleri ayarla
         worksheet['!cols'] = [
             { wch: 10 }, // Hat
@@ -2410,9 +2433,9 @@ function exportLocationsToExcel() {
 
     const lineFilter = document.getElementById('location-filter-line')?.value || 'all';
     const lines = lineFilter === 'all' ? (appData.lines || []) : [lineFilter];
-    
+
     const excelData = [];
-    
+
     lines.forEach(line => {
         const stations = appData.stations?.[line] || [];
         stations.forEach(station => {
@@ -2421,7 +2444,7 @@ function exportLocationsToExcel() {
             const lat = (locData && locData.latitude) ? locData.latitude : '';
             const lng = (locData && locData.longitude) ? locData.longitude : '';
             const radius = (locData && locData.radius) ? locData.radius : '';
-            
+
             excelData.push({
                 'Hat': line,
                 'İstasyon': station,
@@ -2452,7 +2475,7 @@ function exportLocationsToExcel() {
     ];
     worksheet['!cols'] = max_widths;
 
-    XLSX.writeFile(workbook, `Metro_Istanbul_Konum_Listesi_${new Date().toISOString().slice(0,10)}.xlsx`);
+    XLSX.writeFile(workbook, `Metro_Istanbul_Konum_Listesi_${new Date().toISOString().slice(0, 10)}.xlsx`);
     showToast('Excel raporu başarıyla indirildi.');
 }
 
@@ -2467,7 +2490,7 @@ async function importLocationsFromExcel(event) {
     }
 
     const reader = new FileReader();
-    reader.onload = async function(e) {
+    reader.onload = async function (e) {
         try {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
@@ -2486,7 +2509,7 @@ async function importLocationsFromExcel(event) {
             jsonData.forEach(row => {
                 const line = (row['Hat'] || row['line'] || '').toString().trim();
                 const station = (row['İstasyon'] || row['istasyon'] || row['station'] || '').toString().trim();
-                
+
                 const rawLat = row['Enlem (Latitude)'] || row['Enlem'] || row['Latitude'] || row['lat'] || row['latitude'] || '';
                 const rawLng = row['Boylam (Longitude)'] || row['Boylam'] || row['Longitude'] || row['lng'] || row['longitude'] || row['lon'] || '';
                 const rawRadius = row['Yarıçap (Radius)'] || row['Yarıçap'] || row['Radius'] || row['radius'] || row['range'] || '';
@@ -2642,8 +2665,8 @@ function userMatchesLineScope(user, line) {
 
 function isAuditTypeActive(typeId, typeName) {
     if (!appData.auditTypes) return true;
-    const type = appData.auditTypes.find(t => 
-        (typeId && String(t.id) === String(typeId)) || 
+    const type = appData.auditTypes.find(t =>
+        (typeId && String(t.id) === String(typeId)) ||
         (!typeId && typeName && (String(t.title) === String(typeName) || String(t.name) === String(typeName)))
     );
     if (!type) return true;
@@ -2842,7 +2865,7 @@ function renderTablePagination(containerId, currentPage, totalPages, onPageChang
         pContainer.id = containerId;
         pContainer.className = 'table-pagination-container';
         pContainer.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 1rem; margin-top: 1rem; border-top: 1px solid var(--border-main); flex-wrap: wrap; gap: 1rem;';
-        
+
         // Tablonun responsive sarmalayıcısının yanına yerleştir
         const table = document.getElementById(containerId.replace('-pagination', ''));
         if (table) {
@@ -2854,14 +2877,14 @@ function renderTablePagination(containerId, currentPage, totalPages, onPageChang
             }
         }
     }
-    
+
     if (totalPages <= 1) {
         pContainer.innerHTML = '';
         pContainer.style.display = 'none';
         return;
     }
     pContainer.style.display = 'flex';
-    
+
     let html = `
         <div style="font-size: 0.78rem; color: var(--text-dim); font-weight: 600;">
             Sayfa ${currentPage} / ${totalPages}
@@ -2871,14 +2894,14 @@ function renderTablePagination(containerId, currentPage, totalPages, onPageChang
                 <i class="fas fa-chevron-left"></i> Önceki
             </button>
     `;
-    
+
     const startPage = Math.max(1, currentPage - 2);
     const endPage = Math.min(totalPages, startPage + 4);
-    
+
     for (let i = startPage; i <= endPage; i++) {
         const isCurrent = i === currentPage;
-        const btnStyle = isCurrent 
-            ? 'background: linear-gradient(135deg, var(--primary), #7c3aed); color: white; border: none;' 
+        const btnStyle = isCurrent
+            ? 'background: linear-gradient(135deg, var(--primary), #7c3aed); color: white; border: none;'
             : '';
         html += `
             <button class="${isCurrent ? 'btn-primary' : 'btn-secondary'}" style="padding: 0.35rem 0.75rem; font-size: 0.72rem; min-width: 32px; border-radius: 8px; ${btnStyle}" onclick="${onPageChange}(${i})">
@@ -2886,7 +2909,7 @@ function renderTablePagination(containerId, currentPage, totalPages, onPageChang
             </button>
         `;
     }
-    
+
     html += `
             <button class="btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.72rem; border-radius: 8px;" ${currentPage === totalPages ? 'disabled style="opacity: 0.45; cursor: not-allowed;"' : `onclick="${onPageChange}(${currentPage + 1})"`}>
                 Sonraki <i class="fas fa-chevron-right"></i>
@@ -2896,12 +2919,12 @@ function renderTablePagination(containerId, currentPage, totalPages, onPageChang
     pContainer.innerHTML = html;
 }
 
-window.changeNcPage = function(page) {
+window.changeNcPage = function (page) {
     ncCurrentPage = page;
     renderNCs();
 };
 
-window.changeAuditsPage = function(page) {
+window.changeAuditsPage = function (page) {
     auditsCurrentPage = page;
     renderAllAuditsTable();
 };
@@ -2956,7 +2979,7 @@ function resetSortHeader(headerId, iconId) {
     }
 }
 
-window.toggleAuditDateSort = function() {
+window.toggleAuditDateSort = function () {
     auditDateSortDirection = auditDateSortDirection === 'desc' ? 'asc' : 'desc';
     auditScoreSortDirection = null;
     auditsCurrentPage = 1;
@@ -2965,7 +2988,7 @@ window.toggleAuditDateSort = function() {
     renderAllAuditsTable();
 };
 
-window.toggleAuditScoreSort = function() {
+window.toggleAuditScoreSort = function () {
     if (auditScoreSortDirection === null) {
         auditScoreSortDirection = 'desc';
     } else {
@@ -2984,7 +3007,7 @@ window.toggleAuditScoreSort = function() {
     renderAllAuditsTable();
 };
 
-window.toggleNcDateSort = function() {
+window.toggleNcDateSort = function () {
     ncDateSortDirection = ncDateSortDirection === 'desc' ? 'asc' : 'desc';
     ncCurrentPage = 1;
     updateDateSortHeader('nc-date-sort-header', 'nc-date-sort-icon', ncDateSortDirection);
@@ -3184,7 +3207,7 @@ function renderNCs(filter) {
                 </div>
             `;
         } else if (nc.status === 'completed') {
-             actionBtns = `
+            actionBtns = `
                 <div class="nc-row-actions">
                     <button class="btn-outline" style="padding: 4px 8px; font-size: 0.7rem;" onclick="shareNC('${nc.id}')" title="PDF İndir"><i class="fas fa-download"></i></button>
                 </div>
@@ -3199,12 +3222,12 @@ function renderNCs(filter) {
         const owner = getNcResponsibleTitle(nc, audit);
         const auditorComment = String(nc.auditorComment || '').trim();
         const closureComment = String(nc.closureComment || '').trim();
-        
+
         const closedByName = nc.closedByName ? (getAuditorDisplayName(nc.closedByName) || '-') : '-';
         const approvedByName = (nc.approvedByName && nc.approvedByName !== '-')
             ? nc.approvedByName
             : (nc.status === 'completed' ? 'Ramazan Tilki' : '-');
-        
+
         let closureMetaHtml = '';
         if (nc.status === 'completed' || nc.status === 'waitingControl') {
             closureMetaHtml = `
@@ -3279,13 +3302,13 @@ function drawNCPdfHero(doc, nc, audit, y) {
     const statusText = isClosed ? 'KAPALI' : 'AÇIK';
     const statusColorHex = isClosed ? '#10b981' : '#f59e0b';
     const statusRgb = hexToRgb(statusColorHex);
-    
+
     doc.setFillColor(248, 250, 252);
     doc.setDrawColor(226, 232, 240);
     doc.roundedRect(margin, y, pageW - margin * 2, 22, 2, 2, 'FD');
     doc.setFillColor(statusRgb[0], statusRgb[1], statusRgb[2]);
     doc.rect(margin, y, 3, 22, 'F');
-    
+
     const lineLabel = (audit.line || nc.line || '');
     const shortLineLabel = lineLabel.length > 3 ? lineLabel.substring(0, 3) : lineLabel;
     const lineColorHex = (typeof appData !== 'undefined' && appData.lineColors && appData.lineColors[lineLabel]) ? appData.lineColors[lineLabel] : '#0f172a';
@@ -3294,7 +3317,7 @@ function drawNCPdfHero(doc, nc, audit, y) {
     const circleSize = 18;
     const circleX = margin + 6;
     const circleY = y + 2;
-    
+
     if (shortLineLabel) {
         doc.setFillColor(lineRgb[0], lineRgb[1], lineRgb[2]);
         doc.circle(circleX + circleSize / 2, circleY + circleSize / 2, circleSize / 2, 'F');
@@ -3309,13 +3332,13 @@ function drawNCPdfHero(doc, nc, audit, y) {
     setAuditPdfRgb(doc, [15, 23, 42]);
     const stationX = shortLineLabel ? (circleX + circleSize + 3) : (margin + 6);
     auditPdfText(doc, audit.station || nc.station || 'Istasyon Yok', stationX, y + 10);
-    
+
     setAuditPdfFont(doc, 'normal');
     doc.setFontSize(8);
     setAuditPdfRgb(doc, [100, 116, 139]);
     const ncDateStr = nc.detectionDate || nc.date || audit.date;
     auditPdfText(doc, `${nc.category || 'Kategori Yok'} | Tespit: ${formatAuditPdfDate(ncDateStr)}`, stationX, y + 16);
-    
+
     doc.setFillColor(statusRgb[0], statusRgb[1], statusRgb[2]);
     doc.roundedRect(pageW - margin - 30, y + 7, 24, 8, 1, 1, 'F');
     setAuditPdfFont(doc, 'bold');
@@ -3370,9 +3393,9 @@ function drawNCPdfDetailBlock(doc, nc, categoryName, questionText, loadedPhotos,
     const hasResolution = Boolean(closureNote || closurePhotos.length > 0);
     const closureBlockH = hasResolution
         ? 12
-            + (closureLines.length > 0 ? closureLines.length * 4 + 3 : 0)
-            + photoGroupHeight(closurePhotos, resolutionImage)
-            + 3
+        + (closureLines.length > 0 ? closureLines.length * 4 + 3 : 0)
+        + photoGroupHeight(closurePhotos, resolutionImage)
+        + 3
         : 0;
     if (hasResolution) bodyH += closureBlockH + 4;
 
@@ -3453,7 +3476,7 @@ function drawNCPdfDetailBlock(doc, nc, categoryName, questionText, loadedPhotos,
                     imgY + layout.height + 3,
                     { align: 'center' }
                 );
-            } catch (e) {}
+            } catch (e) { }
         });
 
         return imageStartY
@@ -3513,7 +3536,7 @@ async function renderNCDetailsToPdf(doc, nc, audit, imageCache, startY = 20, isB
     const margin = 15;
     const pageW = 210;
 
-    doc.setFillColor(227, 30, 36); 
+    doc.setFillColor(227, 30, 36);
     doc.rect(0, 0, 210, 3, 'F');
 
     try {
@@ -3521,34 +3544,34 @@ async function renderNCDetailsToPdf(doc, nc, audit, imageCache, startY = 20, isB
         if (logoData) {
             doc.addImage(logoData, 'PNG', margin, y - 8, 15, 12);
         }
-    } catch(e) {}
+    } catch (e) { }
 
     setAuditPdfFont(doc, 'bold');
     doc.setFontSize(18);
     setAuditPdfRgb(doc, [11, 42, 74]);
     auditPdfText(doc, 'UYGUNSUZLUK RAPORU', margin + 20, y);
-    
+
     setAuditPdfFont(doc, 'normal');
     doc.setFontSize(8);
-    auditPdfText(doc, 'Kayit ID: ' + String(nc.id).substring(0,8), pageW - margin, y - 3, { align: 'right' });
+    auditPdfText(doc, 'Kayit ID: ' + String(nc.id).substring(0, 8), pageW - margin, y - 3, { align: 'right' });
     const ncDateStr = nc.detectionDate || nc.date || audit.date;
     const ncPdfWeekNum = ncDateStr ? getISOWeekNumber(new Date(ncDateStr)) : '-';
     const ncPdfWeekText = ncPdfWeekNum !== '-' ? ` (${ncPdfWeekNum}. Hafta)` : '';
     auditPdfText(doc, 'Tarih: ' + formatAuditPdfDate(ncDateStr) + ncPdfWeekText, pageW - margin, y + 2, { align: 'right' });
-    
+
     if (isBulk) {
         doc.setFontSize(7);
         auditPdfText(doc, `Kayit ${pageIndex} / ${totalPages}`, pageW - margin, y + 6, { align: 'right' });
     }
-    
+
     doc.setDrawColor(227, 30, 36);
     doc.setLineWidth(0.5);
     doc.line(margin, y + 8, pageW - margin, y + 8);
-    
+
     y += 16;
     y = drawNCPdfHero(doc, nc, audit, y);
     y += 10;
-    
+
     setAuditPdfFont(doc, 'bold');
     doc.setFontSize(12);
     setAuditPdfRgb(doc, [11, 42, 74]);
@@ -3563,7 +3586,7 @@ async function renderNCDetailsToPdf(doc, nc, audit, imageCache, startY = 20, isB
     const questionText = nc.questionText || nc.detail || 'Soru metni bulunamadi';
     const categoryName = nc.category || 'Kategori Yok';
     const loadedPhotos = imageCache[nc.id] || [];
-    
+
     y = drawNCPdfDetailBlock(doc, nc, categoryName, questionText, loadedPhotos, y);
 }
 
@@ -3887,8 +3910,8 @@ function inspectNC(id, parentAuditId = null) {
                     </div>
 
                     ${nc.closureComment
-                        ? `<div class="nc-detail-resolution-text" style="margin-bottom: 12px;">${escapeAttr(nc.closureComment)}</div>`
-                        : ''}
+                ? `<div class="nc-detail-resolution-text" style="margin-bottom: 12px;">${escapeAttr(nc.closureComment)}</div>`
+                : ''}
                     <div class="nc-detail-resolution-evidence">
                         <span class="nc-detail-resolution-label"><i class="fas fa-images"></i> Çözüm Kanıtları</span>
                         ${renderImageGallery(nc.closurePhotoPaths || [])}
@@ -3932,7 +3955,7 @@ function renderImageGallery(paths) {
     return `
         <div class="nc-image-gallery">
             ${validPaths.map(resolved => {
-                return `
+        return `
                     <button type="button" class="nc-image-item" onclick="openImagePreview('${escapeAttr(jsArg(resolved))}')" title="Görseli büyüt">
                         <img src="${escapeAttr(resolved)}" alt="Uygunsuzluk kanıt görseli" loading="lazy"
                             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
@@ -3940,7 +3963,7 @@ function renderImageGallery(paths) {
                         <span class="nc-image-zoom"><i class="fas fa-magnifying-glass-plus"></i></span>
                     </button>
                 `;
-            }).join('')}
+    }).join('')}
         </div>
     `;
 }
@@ -3950,15 +3973,15 @@ let selectedClosePhotos = [];
 function openNCCloseModal(id) {
     document.getElementById('nc-close-id').value = id;
     document.getElementById('nc-close-comment').value = '';
-    
+
     // Reset photo selection
     selectedClosePhotos = [];
     const input = document.getElementById('nc-photo-input');
     if (input) input.value = '';
-    
+
     const previews = document.getElementById('nc-photo-previews');
     if (previews) previews.innerHTML = '';
-    
+
     const btn = document.getElementById('nc-photo-btn');
     if (btn) {
         btn.innerHTML = '<i class="fas fa-camera" style="font-size: 1.5rem; margin-bottom: 0.5rem;"></i><span style="font-size: 0.8rem; font-weight: 600;">Kanıt Fotoğrafı Ekle</span>';
@@ -4322,9 +4345,9 @@ function renderPermissions() {
                     <small>${RBAC_PERMISSION_MODULES.length} erişim kuralı</small>
                 </th>
                 ${RBAC_ROLES.map((role, index) => {
-                    const info = RBAC_ROLE_SCOPE_INFO[role.id] || {};
-                    const color = getPermissionRoleColor(role, index);
-                    return `
+                const info = RBAC_ROLE_SCOPE_INFO[role.id] || {};
+                const color = getPermissionRoleColor(role, index);
+                return `
                         <th class="permission-role-column" style="--role-color:${color};">
                             <div class="permission-role-heading">
                                 <span class="permission-role-heading-icon"><i class="fas ${info.icon || 'fa-user'}"></i></span>
@@ -4333,7 +4356,7 @@ function renderPermissions() {
                             </div>
                         </th>
                     `;
-                }).join('')}
+            }).join('')}
             `;
         }
 
@@ -4515,7 +4538,7 @@ function seedDefaultGeneralQuestions() {
         { id: 'q4', groupId: 'g1', categoryName: 'SINIFLANDIRMA', questionText: 'İşlevini Yitirmiş Malzeme/Ekipman/Doküman/İlk Yardım Çan. var mı?', orderIndex: 4, maxScore: 5 },
         { id: 'q5', groupId: 'g1', categoryName: 'SINIFLANDIRMA', questionText: 'Ulaşılamayan oda, bölge veya alan var mı? (Kilitli odalar için kilitler Sor odasında bulunuyor mu?)', orderIndex: 5, maxScore: 5 },
         { id: 'q6', groupId: 'g1', categoryName: 'SINIFLANDIRMA', questionText: 'Karantina alanına ihtiyaç var mı? Karantina alanı mevcut mu? Gereksiz/Fazla Malzeme ve ekipmanın kaydı tutulmuş mu?', orderIndex: 6, maxScore: 5 },
-        
+
         { id: 'q7', groupId: 'g1', categoryName: 'SIRALAMA', questionText: 'Yeri belli olmayan malzeme ekipman vb. var mı?', orderIndex: 7, maxScore: 5 },
         { id: 'q8', groupId: 'g1', categoryName: 'SIRALAMA', questionText: 'Yeri uygun olmayan malzeme ekipman vb. var mı?', orderIndex: 8, maxScore: 5 },
         { id: 'q9', groupId: 'g1', categoryName: 'SIRALAMA', questionText: 'Dekota / etiket çalışması yapılmış mı?', orderIndex: 9, maxScore: 5 },
@@ -4585,11 +4608,11 @@ async function deleteCategory() {
 
     const catList = categories.map((c, i) => `${i + 1}- ${c}`).join('\\n');
     const input = prompt(`Silmek istediğiniz kategorinin numarasını veya adını tam olarak yazın:\n\n${catList}`);
-    
+
     if (!input) return;
-    
+
     let targetCat = input.trim();
-    
+
     // Eğer numara girildiyse
     const idx = parseInt(targetCat);
     if (!isNaN(idx) && idx > 0 && idx <= categories.length) {
@@ -4640,12 +4663,12 @@ function renderPlanning() {
     const container = document.getElementById('planning-cards-container');
     if (!container) return;
     container.innerHTML = '';
-    
+
     let plans = appData.plans || [];
     if (!isPrivilegedPlanningUser()) {
         plans = plans.filter(isPlanAssignedToCurrentUser);
     }
-    
+
     // Filter based on tab
     if (appData.currentPlanTab === 'monthly') {
         plans = plans.filter(p => p.id && p.id.startsWith('MT-'));
@@ -4683,7 +4706,7 @@ function renderPlanning() {
         const userName = user ? (user.name || user.username) : (userId === 'unassigned' ? 'Atanmamış Denetçi' : 'Bilinmeyen');
         const userTitle = user ? (user.title || 'Denetçi') : (userId === 'unassigned' ? 'Kullanıcı Belirtilmemiş' : 'Sistem Kullanıcısı');
         const isCollapsed = appData.collapsedUsers[userId] === false ? false : true; // Collapsed by default
-        
+
         const card = document.createElement('div');
         card.className = 'planning-premium-card';
         card.style.background = 'var(--bg-card)';
@@ -4698,17 +4721,17 @@ function renderPlanning() {
 
         // Header: User Profile
         const initial = userName.substring(0, 1).toUpperCase();
-        
+
         let tasksHtml = '';
         if (!isCollapsed) {
             tasksHtml = groupedPlans[userId].map(p => {
                 const type = getActiveAuditTypesForFilters().find(t => String(t.id) === String(p.auditTypeId));
                 const auditTypeName = p.title || type?.title || type?.name || 'Genel Denetim';
                 const lineColor = appData.lineColors[p.targetLine] || '#2563eb';
-                
+
                 const startDateStr = p.startDate ? new Date(p.startDate).toLocaleDateString('tr-TR') : 'N/A';
                 const dueDateStr = p.dueDate ? new Date(p.dueDate).toLocaleDateString('tr-TR') : 'N/A';
-                
+
                 const canDelete = canDeletePlan(p);
                 const deleteBtnHtml = canDelete ? `
                     <button class="btn-outline" onclick="deletePlan('${p.id}')" title="Görevi Sil" style="padding: 3px 6px; font-size: 0.65rem; border-color: rgba(239, 68, 68, 0.2); color: #ef4444; background: transparent; cursor: pointer; transition: 0.2s;">
@@ -4809,7 +4832,7 @@ function toggleUserGroup(userId) {
 // Modal Functions for Plans
 function switchPlanTab(type, btn) {
     appData.currentPlanTab = type;
-    
+
     // Update UI
     const container = btn.parentElement;
     container.querySelectorAll('.tab-btn').forEach(b => {
@@ -4817,21 +4840,21 @@ function switchPlanTab(type, btn) {
         b.style.background = 'transparent';
         b.style.color = 'var(--text-secondary)';
     });
-    
+
     btn.classList.add('active');
     btn.style.background = 'var(--primary)';
     btn.style.color = 'white';
-    
+
     renderPlanning();
 }
 
 function togglePlanPeriodFields() {
     const type = document.getElementById('plan-period-type').value;
-    
+
     document.getElementById('manual-date-fields').style.display = type === 'manual' ? 'grid' : 'none';
     document.getElementById('monthly-date-fields').style.display = type === 'monthly' ? 'block' : 'none';
     document.getElementById('yearly-date-fields').style.display = (type === 'yearly' || type === 'yearly_weekly') ? 'block' : 'none';
-    
+
     document.getElementById('standard-station-selection').style.display = (type === 'yearly' || type === 'monthly' || type === 'yearly_weekly') ? 'none' : 'block';
     document.getElementById('yearly-station-distribution').style.display = type === 'yearly' ? 'block' : 'none';
     document.getElementById('yearly-weekly-station-distribution').style.display = type === 'yearly_weekly' ? 'block' : 'none';
@@ -4859,14 +4882,14 @@ function renderMonthlyWeeks() {
     const line = document.getElementById('plan-line').value;
     const stations = appData.stations[line] || [];
     container.innerHTML = '';
-    
+
     for (let week = 1; week <= 4; week++) {
         const wDiv = document.createElement('div');
         wDiv.style.background = 'var(--bg-input)';
         wDiv.style.borderRadius = '12px';
         wDiv.style.padding = '1rem';
         wDiv.style.border = '1px solid var(--glass-border)';
-        
+
         wDiv.innerHTML = `
             <div style="font-weight: 700; margin-bottom: 0.75rem; font-size: 0.85rem; color: var(--primary); display: flex; align-items: center; justify-content: space-between;">
                 <span>${week}. Hafta</span>
@@ -4887,16 +4910,16 @@ function renderYearlyMonths() {
     const line = document.getElementById('plan-line').value;
     const stations = appData.stations[line] || [];
     container.innerHTML = '';
-    
+
     const yearSelect = document.getElementById('plan-year-only');
     const selectedYear = yearSelect ? parseInt(yearSelect.value) : new Date().getFullYear();
-    
+
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
     const currentMonthIndex = currentDate.getMonth(); // 0-11
-    
+
     const monthNames = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
-    
+
     monthNames.forEach((month, index) => {
         const isPastMonth = (selectedYear === currentYear && index < currentMonthIndex) || (selectedYear < currentYear);
         const mDiv = document.createElement('div');
@@ -4908,7 +4931,7 @@ function renderYearlyMonths() {
             mDiv.style.opacity = '0.5';
             mDiv.style.pointerEvents = 'none';
         }
-        
+
         mDiv.innerHTML = `
             <div style="font-weight: 700; margin-bottom: 0.75rem; font-size: 0.85rem; color: ${isPastMonth ? 'var(--text-dim)' : 'var(--primary)'}; display: flex; align-items: center; justify-content: space-between;">
                 <span>${month} ${isPastMonth ? '<span style="font-size: 0.7rem; font-weight: 500; color: var(--text-dim); margin-left: 6px;">(Geçmiş Ay)</span>' : ''}</span>
@@ -4935,7 +4958,7 @@ function toggleMiniChip(chip) {
         chip.style.color = 'var(--text-primary)';
         chip.style.borderColor = 'var(--border-main)';
     }
-    
+
     // Update count
     const parent = chip.closest('.month-stations-grid').parentElement;
     const count = parent.querySelectorAll('.mini-chip.active').length;
@@ -4947,16 +4970,16 @@ function renderYearlyWeeklyMonths() {
     const line = document.getElementById('plan-line').value;
     const stations = appData.stations[line] || [];
     container.innerHTML = '';
-    
+
     const yearSelect = document.getElementById('plan-year-only');
     const selectedYear = yearSelect ? parseInt(yearSelect.value) : new Date().getFullYear();
-    
+
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
     const currentMonthIndex = currentDate.getMonth(); // 0-11
-    
+
     const monthNames = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
-    
+
     monthNames.forEach((month, index) => {
         const isPastMonth = (selectedYear === currentYear && index < currentMonthIndex) || (selectedYear < currentYear);
         const mDiv = document.createElement('div');
@@ -4969,7 +4992,7 @@ function renderYearlyWeeklyMonths() {
             mDiv.style.opacity = '0.5';
             mDiv.style.pointerEvents = 'none';
         }
-        
+
         let weeksHtml = '';
         if (!isPastMonth) {
             for (let week = 1; week <= 4; week++) {
@@ -4988,7 +5011,7 @@ function renderYearlyWeeklyMonths() {
                 `;
             }
         }
-        
+
         mDiv.innerHTML = `
             <div style="font-weight: 700; font-size: 0.85rem; color: ${isPastMonth ? 'var(--text-dim)' : 'var(--primary)'}; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-main); padding-bottom: 0.5rem;">
                 <span>${month} ${isPastMonth ? '<span style="font-size: 0.7rem; font-weight: 500; color: var(--text-dim); margin-left: 6px;">(Geçmiş Ay)</span>' : ''}</span>
@@ -5013,12 +5036,12 @@ function toggleMiniChipYearlyWeekly(chip) {
         chip.style.color = 'var(--text-primary)';
         chip.style.borderColor = 'var(--border-main)';
     }
-    
+
     // Update week count
     const weekGrid = chip.closest('.yearly-weekly-stations-grid');
     const weekCount = weekGrid.querySelectorAll('.mini-chip.active').length;
     weekGrid.previousElementSibling.querySelector('.station-count-week').innerText = `${weekCount} Seçili`;
-    
+
     // Update month total count
     const monthDiv = chip.closest('.month-weeks-wrapper').parentElement;
     const totalCount = monthDiv.querySelectorAll('.mini-chip.active').length;
@@ -5042,15 +5065,15 @@ function updatePlanLinesDropdown() {
         allowedLines = appData.lines || [];
     } else {
         // If limited scope user, allow only their authorizedLines
-        allowedLines = Array.isArray(selectedUser?.authorizedLines) 
-            ? selectedUser.authorizedLines.filter(line => appData.lines.includes(line)) 
+        allowedLines = Array.isArray(selectedUser?.authorizedLines)
+            ? selectedUser.authorizedLines.filter(line => appData.lines.includes(line))
             : [];
     }
 
     // Populate dropdown
     const previousSelectedLine = lineSelect.value;
     lineSelect.innerHTML = '';
-    
+
     if (allowedLines.length === 0) {
         const opt = document.createElement('option');
         opt.value = '';
@@ -5164,7 +5187,7 @@ async function processNewPlan() {
     const line = document.getElementById('plan-line').value;
     const auditorId = document.getElementById('plan-auditor').value;
     const taskType = document.getElementById('plan-task-type').value;
-    
+
     const auditType = getActiveAuditTypesForFilters().find(type => String(type.id) === String(auditTypeId));
     const selectedUser = appData.users.find(u => u.id === auditorId);
     const assignedTitle = selectedUser ? selectedUser.title : 'Saha Denetçisi';
@@ -5224,7 +5247,7 @@ async function processNewPlan() {
                     const startDate = new Date(year, month - 1, (week - 1) * 7 + 1);
                     const endDate = new Date(year, month - 1, week * 7);
                     const id = `MT-${Date.now()}-${week}`;
-                    
+
                     const task = {
                         id,
                         title: `${auditTitle} - ${week}. Hafta`,
@@ -5255,7 +5278,7 @@ async function processNewPlan() {
         } else if (periodType === 'yearly') {
             const year = parseInt(document.getElementById('plan-year-only').value);
             const monthsGrid = document.querySelectorAll('.month-stations-grid');
-            
+
             let hasSelection = false;
             let taskCount = 0;
 
@@ -5388,7 +5411,7 @@ async function deletePlansForAuditor(userId) {
         return;
     }
     let plansToDelete = appData.plans || [];
-    
+
     // Filter based on tab first so we only delete what's currently viewed!
     if (appData.currentPlanTab === 'monthly') {
         plansToDelete = plansToDelete.filter(p => p.id && p.id.startsWith('MT-'));
@@ -5399,7 +5422,7 @@ async function deletePlansForAuditor(userId) {
     } else if (appData.currentPlanTab === 'manual') {
         plansToDelete = plansToDelete.filter(p => !p.id || (!p.id.startsWith('MT-') && !p.id.startsWith('YT-') && !p.id.startsWith('YWT-')));
     }
-    
+
     // Then filter by the specific auditor!
     plansToDelete = plansToDelete.filter(p => {
         const planUserId = p.assignedUserId || 'unassigned';
@@ -5434,7 +5457,7 @@ async function deleteAllPlansInActiveTab() {
         return;
     }
     let plansToDelete = appData.plans || [];
-    
+
     // Filter based on active tab first so we only delete what's currently viewed!
     if (appData.currentPlanTab === 'monthly') {
         plansToDelete = plansToDelete.filter(p => p.id && p.id.startsWith('MT-'));
@@ -5443,7 +5466,7 @@ async function deleteAllPlansInActiveTab() {
     } else if (appData.currentPlanTab === 'manual') {
         plansToDelete = plansToDelete.filter(p => !p.id || (!p.id.startsWith('MT-') && !p.id.startsWith('YT-')));
     }
-    
+
     plansToDelete = plansToDelete.filter(plan => canDeletePlan(plan));
 
     if (plansToDelete.length === 0) {
@@ -5653,14 +5676,14 @@ function exportAuditsToExcel() {
             const metrics = buildAuditDetailMetrics(audit);
             const overallScore = getAuditDisplayScore(audit);
             const dateStr = audit.date ? new Date(audit.date).toLocaleDateString('tr-TR') : 'N/A';
-            
+
             const type = (appData.auditTypes || []).find(t => String(t.id) === String(audit.auditTypeId));
             const typeName = type ? (type.name || type.title) : (audit.title || 'Genel Denetim');
-            
+
             const answers = metrics.rows || [];
             const conformantCount = answers.filter(r => !r.isNonconformity).length;
             const nonConformantCount = answers.filter(r => r.isNonconformity).length;
-            
+
             const statusText = overallScore > 80 ? 'Tamamlandı' : (overallScore > 50 ? 'İnceleniyor' : 'Kritik');
 
             return {
@@ -5680,7 +5703,7 @@ function exportAuditsToExcel() {
 
         // Create worksheet
         const ws = XLSX.utils.json_to_sheet(data);
-        
+
         // Auto column width
         ws['!cols'] = [
             { wch: 18 }, // Denetim ID
@@ -5747,7 +5770,7 @@ function generateMonthlyPerformanceReport() {
             const avgScore = scores.reduce((sum, s) => sum + s, 0) / scores.length;
             const minScore = Math.min(...scores);
             const maxScore = Math.max(...scores);
-            
+
             // Total NC count
             let totalNC = 0;
             g.audits.forEach(a => {
@@ -5771,7 +5794,7 @@ function generateMonthlyPerformanceReport() {
 
         // Create worksheet
         const ws = XLSX.utils.json_to_sheet(data);
-        
+
         // Auto column width
         ws['!cols'] = [
             { wch: 18 }, // Ay / Dönem
@@ -5824,7 +5847,7 @@ function generateCriticalNCReport() {
             const station = audit.station || nc.station || 'N/A';
             const dateStr = nc.detectionDate || nc.date || audit.date ? new Date(nc.detectionDate || nc.date || audit.date).toLocaleDateString('tr-TR') : 'N/A';
             const dueDateStr = nc.dueDate ? new Date(nc.dueDate).toLocaleDateString('tr-TR') : 'N/A';
-            
+
             // Calculate remaining days
             let remainingText = '-';
             if (nc.dueDate) {
@@ -6097,7 +6120,7 @@ function updateStats() {
 
     const totalAudits = audits.length;
     const avgScore = totalAudits > 0 ? audits.reduce((sum, a) => sum + (a.score || 0), 0) / totalAudits : 0;
-    
+
     const openNCLen = ncs.filter(nc => !isNcClosed(nc)).length; // all non-closed ones
     const delayedNCLen = ncs.filter(isNcOverdue).length;
     const controlNCLen = ncs.filter(isNcWaitingControl).length;
@@ -6107,7 +6130,7 @@ function updateStats() {
 
     if (document.getElementById('stat-total-audits')) document.getElementById('stat-total-audits').innerText = totalAudits + ' Adet';
     if (document.getElementById('stat-avg-score')) document.getElementById('stat-avg-score').innerText = '%' + Math.round(avgScore);
-    
+
     if (document.getElementById('stat-open-nc')) document.getElementById('stat-open-nc').innerText = openNCLen;
     if (document.getElementById('stat-delayed-nc')) document.getElementById('stat-delayed-nc').innerText = delayedNCLen;
     if (document.getElementById('stat-control-nc')) document.getElementById('stat-control-nc').innerText = controlNCLen;
@@ -6257,13 +6280,13 @@ function getProfessionalStatsData() {
         audits,
         ncs,
         auditLookup,
-        filters: { 
-            typeFilters, 
-            lineFilters, 
-            stationFilters, 
-            userFilters, 
-            yearFilters: uYears, 
-            monthFilters: uMonths 
+        filters: {
+            typeFilters,
+            lineFilters,
+            stationFilters,
+            userFilters,
+            yearFilters: uYears,
+            monthFilters: uMonths
         }
     };
 }
@@ -6745,10 +6768,10 @@ function renderProfessionalNcStatus(ncs) {
     ];
     const theme = statsChartTheme();
     const options = statsBaseOptions();
-    
+
     // Hide the legend because category labels are displayed on the X axis
     options.plugins.legend.display = false;
-    
+
     // Configure datalabels to show counts cleanly on top of the bars
     options.plugins.datalabels.color = theme.text;
     options.plugins.datalabels.backgroundColor = 'transparent';
@@ -6759,18 +6782,18 @@ function renderProfessionalNcStatus(ncs) {
     options.plugins.datalabels.anchor = 'end';
     options.plugins.datalabels.align = 'top';
     options.plugins.datalabels.offset = 2;
-    
+
     // Configure tooltip to match standard formats and include percentages
     options.plugins.tooltip.callbacks.label = (context) => {
         const total = context.dataset.data.reduce((sum, item) => sum + Number(item || 0), 0);
         const percentage = total ? (Number(context.raw) / total) * 100 : 0;
         return ` ${context.label}: ${statsFormatChartValue(percentage, 'percentage')} (${statsFormatChartValue(context.raw, 'count')} adet)`;
     };
-    
+
     // Standard scales for the vertical bar chart
     options.scales.x.grid = { display: false };
     options.scales.x.ticks = { color: theme.text, font: { weight: '800', size: 10 } };
-    
+
     options.scales.y.beginAtZero = true;
     options.scales.y.ticks = { color: theme.dim, precision: 0, font: { weight: '800', size: 10 } };
     options.scales.y.grid = { color: theme.grid };
@@ -6936,12 +6959,12 @@ function openScoreDistributionModal(binLabel, audits) {
                     </thead>
                     <tbody>
                         ${sortedAudits.map(audit => {
-                            const score = getAuditDisplayScore(audit);
-                            const date = statsAuditDate(audit);
-                            const dateStr = date ? date.toLocaleDateString('tr-TR') : '-';
-                            const color = appData.lineColors?.[audit.line] || '#64748b';
-                            const scoreColor = getHeatmapColor(score);
-                            return `
+            const score = getAuditDisplayScore(audit);
+            const date = statsAuditDate(audit);
+            const dateStr = date ? date.toLocaleDateString('tr-TR') : '-';
+            const color = appData.lineColors?.[audit.line] || '#64748b';
+            const scoreColor = getHeatmapColor(score);
+            return `
                                 <tr style="border-bottom: 1px solid var(--border-main); font-size: 0.85rem; color: var(--text-primary); cursor: pointer;" onclick="closeScoreDistributionModal(); openAuditModal('${jsArg(audit.id)}')">
                                     <td style="padding: 0.75rem 0.5rem 0.75rem 0; font-weight: 700; color: var(--primary);">${escapeAttr(audit.station || 'Belirtilmedi')}</td>
                                     <td style="padding: 0.75rem 0.5rem;">
@@ -6952,7 +6975,7 @@ function openScoreDistributionModal(binLabel, audits) {
                                     <td style="padding: 0.75rem 0 0.75rem 0.5rem; text-align: right; font-weight: 800; color: ${scoreColor};">%${score.toFixed(0)}</td>
                                 </tr>
                             `;
-                        }).join('')}
+        }).join('')}
                     </tbody>
                 </table>
             </div>
@@ -7000,7 +7023,7 @@ function renderProfessionalScoreDistribution(audits) {
     options.scales.x.title = { display: true, text: 'Puan Aralığı', color: statsChartTheme().dim, font: { size: 10, weight: '800' } };
     options.scales.y.ticks.precision = 0;
     options.scales.y.title = { display: true, text: 'Denetim Adedi', color: statsChartTheme().dim, font: { size: 10, weight: '800' } };
-    
+
     // Add click handler to open the modal with station details
     options.onClick = (event, elements) => {
         if (elements && elements.length > 0) {
@@ -7345,7 +7368,7 @@ function renderProfessionalInsights(audits, ncs, auditLookup, comparison) {
     });
     const lines = [...lineGroups.entries()].map(([line, scores]) => ({ line, average: statsMean(scores), count: scores.length })).filter(row => row.count >= 2);
     const bestLine = [...lines].sort((a, b) => b.average - a.average)[0];
-    
+
     // Calculate most improved station
     let mostImprovedStation = null;
     const stationDeltas = [];
@@ -7608,15 +7631,15 @@ function renderLineMatrix(audits) {
         const color = appData.lineColors[line] || '#64748b';
         const row = document.createElement('tr');
         row.style.borderTop = '1px solid var(--glass-border)';
-        
+
         let cells = `
             <td style="padding: 12px; font-weight: 700; font-size: 0.8rem; color: var(--text-primary);">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <div style="width: 24px; height: 24px; border-radius: 50%; background: ${color}; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 800;">${line.substring(0,2)}</div>
+                    <div style="width: 24px; height: 24px; border-radius: 50%; background: ${color}; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 800;">${line.substring(0, 2)}</div>
                     ${line}
                 </div>
             </td>`;
-        
+
         const lineCategoryScores = new Map();
         audits.filter(audit => audit.line === line).forEach(audit => {
             buildAuditDetailMetrics(audit).rows.forEach(metric => {
@@ -7631,10 +7654,10 @@ function renderLineMatrix(audits) {
             lineScores.push(...scores);
             cells += `<td style="text-align: center;">${scores.length ? `<div style="background: ${getHeatmapColor(catScore)}; color: white; padding: 4px; border-radius: 6px; font-size: 0.75rem; font-weight: 700;">%${catScore.toFixed(0)}</div>` : '-'}</td>`;
         });
-        
+
         const avg = statsMean(lineScores);
         cells += `<td style="text-align: center; font-weight: 800; color: var(--primary);">%${avg.toFixed(1)}</td>`;
-        
+
         row.innerHTML = cells;
         body.appendChild(row);
     });
@@ -7663,17 +7686,17 @@ function renderStatsStationMatrix(audits, typeFilter = 'general') {
         const stAudits = audits.filter(a => a.station === st);
         const row = document.createElement('tr');
         row.style.borderTop = '1px solid var(--glass-border)';
-        
+
         let cells = `<td style="padding: 12px; font-weight: 600; font-size: 0.75rem; color: var(--text-secondary);">${st}</td>`;
-        
+
         const avg = stAudits.length ? stAudits.reduce((sum, a) => sum + (Number(a.score) || 0), 0) / stAudits.length : 0;
         categories.forEach(() => {
             const catScore = avg;
             cells += `<td style="text-align: center;"><div style="background: ${getHeatmapColor(catScore)}; color: white; padding: 4px; border-radius: 6px; font-size: 0.75rem; font-weight: 700;">%${catScore.toFixed(0)}</div></td>`;
         });
-        
+
         cells += `<td style="text-align: center; font-weight: 800; color: var(--primary);">%${avg.toFixed(1)}</td>`;
-        
+
         row.innerHTML = cells;
         body.appendChild(row);
     });
@@ -7692,11 +7715,11 @@ function renderTrendChart(audits) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
+
     // Group by month
     const monthlyScores = {};
     const monthOrder = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
-    
+
     audits.forEach(a => {
         const date = new Date(a.date || a.detectionDate);
         if (isNaN(date.getTime())) return;
@@ -7727,13 +7750,13 @@ function renderTrendChart(audits) {
                 borderWidth: 0
             }]
         },
-        options: { 
-            responsive: true, 
+        options: {
+            responsive: true,
             maintainAspectRatio: false,
             layout: {
                 padding: { top: 30, bottom: 10 }
             },
-            plugins: { 
+            plugins: {
                 legend: { display: false },
                 datalabels: {
                     anchor: 'end',
@@ -7744,9 +7767,9 @@ function renderTrendChart(audits) {
                     color: 'var(--text-primary)'
                 }
             },
-            scales: { 
+            scales: {
                 y: { beginAtZero: true, max: 120, display: false },
-                x: { 
+                x: {
                     grid: { display: false },
                     ticks: { font: { weight: '700' } }
                 }
@@ -7760,7 +7783,7 @@ function renderLineDistChart(audits) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
+
     const lineCounts = {};
     audits.forEach(a => {
         if (a.line) lineCounts[a.line] = (lineCounts[a.line] || 0) + 1;
@@ -7774,7 +7797,7 @@ function renderLineDistChart(audits) {
     }
 
     if (window.lineDistChartStats instanceof Chart) window.lineDistChartStats.destroy();
-    
+
     // Custom plugin to draw line logos
     const lineLogoPlugin = {
         id: 'lineLogoPlugin',
@@ -7816,13 +7839,13 @@ function renderLineDistChart(audits) {
                 barThickness: 25
             }]
         },
-        options: { 
-            responsive: true, 
+        options: {
+            responsive: true,
             maintainAspectRatio: false,
             layout: {
                 padding: { top: 30, bottom: 40 } // Increased bottom padding for logos
             },
-            plugins: { 
+            plugins: {
                 legend: { display: false },
                 datalabels: {
                     anchor: 'end',
@@ -7832,17 +7855,17 @@ function renderLineDistChart(audits) {
                     color: (ctx) => ctx.dataset.backgroundColor[ctx.dataIndex]
                 }
             },
-            scales: { 
-                y: { 
-                    beginAtZero: true, 
+            scales: {
+                y: {
+                    beginAtZero: true,
                     display: false,
                     suggestedMax: Math.max(...Object.values(lineCounts)) * 1.3
                 },
-                x: { 
+                x: {
                     grid: { display: false },
                     ticks: {
                         display: false // Hide text ticks, we use logos
-                    } 
+                    }
                 }
             }
         }
@@ -7881,7 +7904,7 @@ function renderCompactStationAudits(audits) {
     lines.forEach(line => {
         const color = (appData && appData.lineColors && appData.lineColors[line]) || '#3b82f6';
         const isActive = line === window.activeStationChartLine;
-        
+
         const tab = document.createElement('button');
         tab.textContent = line;
         tab.style.padding = '3px 8px';
@@ -7891,7 +7914,7 @@ function renderCompactStationAudits(audits) {
         tab.style.cursor = 'pointer';
         tab.style.transition = 'all 0.2s ease';
         tab.style.border = '1px solid ' + color;
-        
+
         if (isActive) {
             tab.style.background = color;
             tab.style.color = '#ffffff';
@@ -7971,7 +7994,7 @@ function renderCompactStationAudits(audits) {
                 legend: { display: false },
                 tooltip: {
                     callbacks: {
-                        label: function(context) {
+                        label: function (context) {
                             return `Denetim: ${context.parsed.y}`;
                         }
                     }
@@ -8048,7 +8071,7 @@ function renderDashboardStationAudits(audits) {
     lines.forEach(line => {
         const color = (appData && appData.lineColors && appData.lineColors[line]) || '#3b82f6';
         const isActive = line === window.activeDashboardStationChartLine;
-        
+
         const tab = document.createElement('button');
         tab.textContent = line;
         tab.style.padding = '3px 8px';
@@ -8058,7 +8081,7 @@ function renderDashboardStationAudits(audits) {
         tab.style.cursor = 'pointer';
         tab.style.transition = 'all 0.2s ease';
         tab.style.border = '1px solid ' + color;
-        
+
         if (isActive) {
             tab.style.background = color;
             tab.style.color = '#ffffff';
@@ -8138,7 +8161,7 @@ function renderDashboardStationAudits(audits) {
                 legend: { display: false },
                 tooltip: {
                     callbacks: {
-                        label: function(context) {
+                        label: function (context) {
                             return `Denetim: ${context.parsed.y}`;
                         }
                     }
@@ -8209,13 +8232,13 @@ function renderCategoryStatsChart(audits) {
                 barThickness: 40
             }]
         },
-        options: { 
-            responsive: true, 
+        options: {
+            responsive: true,
             maintainAspectRatio: false,
             layout: {
                 padding: { top: 30, bottom: 10 }
             },
-            plugins: { 
+            plugins: {
                 legend: { display: false },
                 datalabels: {
                     anchor: 'end',
@@ -8226,9 +8249,9 @@ function renderCategoryStatsChart(audits) {
                     color: 'var(--text-primary)'
                 }
             },
-            scales: { 
+            scales: {
                 y: { beginAtZero: true, max: 125, display: false },
-                x: { 
+                x: {
                     grid: { display: false },
                     ticks: { font: { weight: '700' } }
                 }
@@ -8268,13 +8291,13 @@ function renderNCStatusChart(ncs, typeFilter = 'all') {
                 barThickness: 60
             }]
         },
-        options: { 
-            responsive: true, 
+        options: {
+            responsive: true,
             maintainAspectRatio: false,
             layout: {
                 padding: { top: 30, bottom: 10 }
             },
-            plugins: { 
+            plugins: {
                 legend: { display: false },
                 datalabels: {
                     anchor: 'end',
@@ -8284,13 +8307,13 @@ function renderNCStatusChart(ncs, typeFilter = 'all') {
                     color: (ctx) => ctx.dataset.backgroundColor[ctx.dataIndex]
                 }
             },
-            scales: { 
-                y: { 
-                    beginAtZero: true, 
+            scales: {
+                y: {
+                    beginAtZero: true,
                     display: false,
                     suggestedMax: Math.max(...vals) * 1.4
                 },
-                x: { 
+                x: {
                     grid: { display: false },
                     ticks: { font: { weight: '700' } }
                 }
@@ -8353,8 +8376,8 @@ function renderTimelinessChart(audits, plans) {
             maintainAspectRatio: false,
             layout: { padding: { top: 30, bottom: 10 } },
             plugins: {
-                legend: { 
-                    display: true, 
+                legend: {
+                    display: true,
                     position: 'bottom',
                     labels: { font: { size: 10, weight: 'bold' } }
                 },
@@ -8367,17 +8390,17 @@ function renderTimelinessChart(audits, plans) {
                 }
             },
             scales: {
-                y: { 
-                    beginAtZero: true, 
-                    display: false, 
-                    suggestedMax: Math.max(...labels.map(l => Math.max(plannedData[l] || 0, realizedData[l] || 0))) * 1.4 
+                y: {
+                    beginAtZero: true,
+                    display: false,
+                    suggestedMax: Math.max(...labels.map(l => Math.max(plannedData[l] || 0, realizedData[l] || 0))) * 1.4
                 },
-                x: { 
-                    grid: { display: false }, 
-                    ticks: { 
+                x: {
+                    grid: { display: false },
+                    ticks: {
                         font: { weight: '700', size: 10 },
                         autoSkip: false
-                    } 
+                    }
                 }
             }
         }
@@ -8650,7 +8673,7 @@ async function deleteAudit(id) {
 
 function openAuditModal(id) {
     console.log('Opening audit modal for ID:', id);
-    currentAuditId = id; 
+    currentAuditId = id;
     const audit = getAccessibleAuditById(id);
     if (!audit) {
         console.error('Audit not found for ID:', id);
@@ -8786,10 +8809,10 @@ function openAuditModal(id) {
 
                 <!-- UYGUNSUZLUKLAR Section -->
                 ${scores.some((sVal, idx) => {
-                    const row = metrics.rows[idx];
-                    const ans = row?.ans || ((audit.answers && Array.isArray(audit.answers)) ? audit.answers[idx] : null);
-                    return row ? row.isNonconformity : ((ans && ans.isNonconformity !== undefined) ? (ans.isNonconformity === true) : (sVal <= 3));
-                }) ? `
+            const row = metrics.rows[idx];
+            const ans = row?.ans || ((audit.answers && Array.isArray(audit.answers)) ? audit.answers[idx] : null);
+            return row ? row.isNonconformity : ((ans && ans.isNonconformity !== undefined) ? (ans.isNonconformity === true) : (sVal <= 3));
+        }) ? `
                 <div style="margin-bottom: 20px;">
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
                         <div style="width: 4px; height: 14px; background: ${ncSectionColor}; border-radius: 2px;"></div>
@@ -8802,12 +8825,12 @@ function openAuditModal(id) {
             const isNC = row ? row.isNonconformity : ((ans && ans.isNonconformity !== undefined) ? (ans.isNonconformity === true) : (sVal <= 3));
             const displayScore = row ? row.displayScore : sVal;
             if (!isNC) return '';
-            
+
             const nc = findNcForAuditAnswer(audit, ans, cat, questions[i]);
             const isResolved = nc && isNcClosed(nc);
             const cardStatusColor = isResolved ? '#16A34A' : '#E11D48';
 
-            const comment = ans ? [ (ans.comment || ans.detail || '').trim(), ...(Array.isArray(ans.additionalComments) ? ans.additionalComments : []) ].filter(Boolean).join('<br/><br/>') : '';
+            const comment = ans ? [(ans.comment || ans.detail || '').trim(), ...(Array.isArray(ans.additionalComments) ? ans.additionalComments : [])].filter(Boolean).join('<br/><br/>') : '';
 
             return `
                         <div onclick="goToNCFromAudit('${audit.id}', '${cat}', '${nc ? nc.id : ''}')" class="audit-nc-card${isResolved ? ' is-resolved' : ''}">
@@ -8818,8 +8841,8 @@ function openAuditModal(id) {
                                 <div style="display: flex; justify-content: space-between;">
                                     <div style="font-size: 0.7rem; color: #94a3b8; font-weight: 800; margin-bottom: 2px;">${cat.toUpperCase()}</div>
                                     ${isResolved
-                                        ? `<span style="padding: 3px 8px; border-radius: 999px; background: #dcfce7; color: #15803d; font-size: 0.62rem; font-weight: 900;">\u00c7\u00d6Z\u00dcLD\u00dc</span>`
-                                        : '<i class="fas fa-arrow-right" style="font-size: 0.7rem; color: #94a3b8;"></i>'}
+                    ? `<span style="padding: 3px 8px; border-radius: 999px; background: #dcfce7; color: #15803d; font-size: 0.62rem; font-weight: 900;">\u00c7\u00d6Z\u00dcLD\u00dc</span>`
+                    : '<i class="fas fa-arrow-right" style="font-size: 0.7rem; color: #94a3b8;"></i>'}
                                 </div>
                                 <div class="audit-nc-title">${questions[i] || '-'}</div>
                                 ${comment ? `<div class="audit-nc-comment"><strong>Açıklama:</strong> ${comment}</div>` : ''}
@@ -8832,21 +8855,21 @@ function openAuditModal(id) {
                                     
                                     <!-- Embedded Mini Gallery -->
                                     ${(() => {
-                                        if (nc && nc.auditorPhotoPaths && nc.auditorPhotoPaths.length > 0) {
-                                            return `
+                    if (nc && nc.auditorPhotoPaths && nc.auditorPhotoPaths.length > 0) {
+                        return `
                                                 <div style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px;">
                                                      ${nc.auditorPhotoPaths.slice(0, 3).map(p => {
-                                                         const resolved = resolveImagePath(p);
-                                                         return `
+                            const resolved = resolveImagePath(p);
+                            return `
                                                              <img src="${resolved}" class="audit-nc-thumb" onclick="openImagePreview('${resolved}'); event.stopPropagation();" title="Görseli büyük aç">
                                                          `;
-                                                     }).join('')}
+                        }).join('')}
                                                     ${nc.auditorPhotoPaths.length > 3 ? `<div style="width: 40px; height: 40px; border-radius: 6px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: #64748b; font-weight: 700;">+${nc.auditorPhotoPaths.length - 3}</div>` : ''}
                                                 </div>
                                             `;
-                                        }
-                                        return '';
-                                    })()}
+                    }
+                    return '';
+                })()}
                                 </div>
                             </div>
                         </div>
@@ -8862,36 +8885,36 @@ function openAuditModal(id) {
                         <h4 style="margin: 0; font-size: 0.75rem; font-weight: 900; color: #64748b; letter-spacing: 1px;">DENETİM SORU DÖKÜMÜ</h4>
                     </div>
                     ${(() => {
-                        const groupedQuestions = {};
-                        categories.forEach((cat, i) => {
-                            const catKey = cat.trim().toUpperCase();
-                            if (!groupedQuestions[catKey]) {
-                                groupedQuestions[catKey] = [];
-                            }
-                            const sVal = scores[i];
-                            const row = metrics.rows[i];
-                            const ans = row?.ans || ((audit.answers && Array.isArray(audit.answers)) ? audit.answers[i] : null);
-                            const isNC = row ? row.isNonconformity : ((ans && ans.isNonconformity !== undefined) ? (ans.isNonconformity === true) : (sVal <= 3));
-                            const scorePercent = row ? row.percent : clampAuditPercent(sVal * 20);
-                            const displayScore = row ? row.displayScore : sVal;
-                            const color = isNC ? '#E11D48' : (scorePercent >= 80 ? '#16A34A' : '#EA580C');
-                            const ansComment = ans ? [ (ans.comment || ans.detail || '').trim(), ...(Array.isArray(ans.additionalComments) ? ans.additionalComments : []) ].filter(Boolean).join('<br/><br/>') : '';
-                            const ansPhotos = ans ? collectAuditAnswerPhotoPaths(audit, ans) : [];
+                const groupedQuestions = {};
+                categories.forEach((cat, i) => {
+                    const catKey = cat.trim().toUpperCase();
+                    if (!groupedQuestions[catKey]) {
+                        groupedQuestions[catKey] = [];
+                    }
+                    const sVal = scores[i];
+                    const row = metrics.rows[i];
+                    const ans = row?.ans || ((audit.answers && Array.isArray(audit.answers)) ? audit.answers[i] : null);
+                    const isNC = row ? row.isNonconformity : ((ans && ans.isNonconformity !== undefined) ? (ans.isNonconformity === true) : (sVal <= 3));
+                    const scorePercent = row ? row.percent : clampAuditPercent(sVal * 20);
+                    const displayScore = row ? row.displayScore : sVal;
+                    const color = isNC ? '#E11D48' : (scorePercent >= 80 ? '#16A34A' : '#EA580C');
+                    const ansComment = ans ? [(ans.comment || ans.detail || '').trim(), ...(Array.isArray(ans.additionalComments) ? ans.additionalComments : [])].filter(Boolean).join('<br/><br/>') : '';
+                    const ansPhotos = ans ? collectAuditAnswerPhotoPaths(audit, ans) : [];
 
-                            groupedQuestions[catKey].push({
-                                originalIndex: i,
-                                questionText: questions[i] || '-',
-                                displayScore,
-                                color,
-                                ansComment,
-                                ansPhotos
-                            });
-                        });
+                    groupedQuestions[catKey].push({
+                        originalIndex: i,
+                        questionText: questions[i] || '-',
+                        displayScore,
+                        color,
+                        ansComment,
+                        ansPhotos
+                    });
+                });
 
-                        return Object.keys(groupedQuestions).map(catName => {
-                            const listItems = groupedQuestions[catName].map((qObj, index) => {
-                                const questionNumber = index + 1;
-                                return `
+                return Object.keys(groupedQuestions).map(catName => {
+                    const listItems = groupedQuestions[catName].map((qObj, index) => {
+                        const questionNumber = index + 1;
+                        return `
                                             <div class="audit-question-row">
                                                 <div style="display: flex; justify-content: space-between; align-items: center;">
                                                     <div style="flex: 1; padding-right: 12px;">
@@ -8905,77 +8928,77 @@ function openAuditModal(id) {
                                                 ${qObj.ansPhotos.length > 0 ? `
                                                     <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap;">
                                                         ${qObj.ansPhotos.map(p => {
-                                                            const r = resolveImagePath(p);
-                                                            if (r) {
-                                                                return '<div style="width:48px;height:48px;border-radius:10px;overflow:hidden;border:1px solid #e2e8f0;background:#f8fafc;cursor:pointer;display:flex;align-items:center;justify-content:center;" onclick="openImagePreview(\'' + r + '\')"><img src="' + r + '" style="width:100%;height:100%;object-fit:contain;" onerror="this.parentElement.style.display=\'none\'"></div>';
-                                                            }
-                                                            return '<div data-audit-photo-path="' + encodeURIComponent(p) + '" style="width:48px;height:48px;border-radius:10px;overflow:hidden;border:1px solid #e2e8f0;background:#f8fafc;"></div>';
-                                                        }).join('')}
+                            const r = resolveImagePath(p);
+                            if (r) {
+                                return '<div style="width:48px;height:48px;border-radius:10px;overflow:hidden;border:1px solid #e2e8f0;background:#f8fafc;cursor:pointer;display:flex;align-items:center;justify-content:center;" onclick="openImagePreview(\'' + r + '\')"><img src="' + r + '" style="width:100%;height:100%;object-fit:contain;" onerror="this.parentElement.style.display=\'none\'"></div>';
+                            }
+                            return '<div data-audit-photo-path="' + encodeURIComponent(p) + '" style="width:48px;height:48px;border-radius:10px;overflow:hidden;border:1px solid #e2e8f0;background:#f8fafc;"></div>';
+                        }).join('')}
                                                     </div>
                                                 ` : ''}
                                             </div>
                                 `;
-                            }).join('');
+                    }).join('');
 
-                            // Kategoriye özel ikon ve renk konfigürasyonu
-                            const catIcons = {
-                                'SINIFLANDIRMA': { icon: 'fa-filter', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)' },
-                                'SIRALAMA': { icon: 'fa-sort-amount-down', color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' },
-                                'SİLME': { icon: 'fa-broom', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
-                                'SILME': { icon: 'fa-broom', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
-                                'STANDARTLAŞTIRMA': { icon: 'fa-check-double', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.1)' },
-                                'STANDARTLASTIRMA': { icon: 'fa-check-double', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.1)' },
-                                'SAHİPLENME': { icon: 'fa-shield-alt', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.1)' },
-                                'SAHIPLENME': { icon: 'fa-shield-alt', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.1)' },
-                                'AYIKLAMA': { icon: 'fa-filter', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)' },
-                                'DÜZEN': { icon: 'fa-sort-amount-down', color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' },
-                                'DUZEN': { icon: 'fa-sort-amount-down', color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' },
-                                'TEMİZLİK': { icon: 'fa-broom', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
-                                'TEMIZLIK': { icon: 'fa-broom', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
-                                'DİSİPLİN': { icon: 'fa-shield-alt', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.1)' },
-                                'DISIPLIN': { icon: 'fa-shield-alt', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.1)' }
-                            };
+                    // Kategoriye özel ikon ve renk konfigürasyonu
+                    const catIcons = {
+                        'SINIFLANDIRMA': { icon: 'fa-filter', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)' },
+                        'SIRALAMA': { icon: 'fa-sort-amount-down', color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' },
+                        'SİLME': { icon: 'fa-broom', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
+                        'SILME': { icon: 'fa-broom', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
+                        'STANDARTLAŞTIRMA': { icon: 'fa-check-double', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.1)' },
+                        'STANDARTLASTIRMA': { icon: 'fa-check-double', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.1)' },
+                        'SAHİPLENME': { icon: 'fa-shield-alt', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.1)' },
+                        'SAHIPLENME': { icon: 'fa-shield-alt', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.1)' },
+                        'AYIKLAMA': { icon: 'fa-filter', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)' },
+                        'DÜZEN': { icon: 'fa-sort-amount-down', color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' },
+                        'DUZEN': { icon: 'fa-sort-amount-down', color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' },
+                        'TEMİZLİK': { icon: 'fa-broom', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
+                        'TEMIZLIK': { icon: 'fa-broom', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
+                        'DİSİPLİN': { icon: 'fa-shield-alt', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.1)' },
+                        'DISIPLIN': { icon: 'fa-shield-alt', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.1)' }
+                    };
 
-                            const catIndex = Object.keys(groupedQuestions).indexOf(catName);
-                            const catUpper = toTurkishUpperCase(catName).trim();
-                            let config = { icon: 'fa-folder', color: '#64748b', bg: 'rgba(100, 116, 139, 0.08)' };
+                    const catIndex = Object.keys(groupedQuestions).indexOf(catName);
+                    const catUpper = toTurkishUpperCase(catName).trim();
+                    let config = { icon: 'fa-folder', color: '#64748b', bg: 'rgba(100, 116, 139, 0.08)' };
 
-                            if (catUpper.includes('AYI') || catUpper.includes('SINIF') || catUpper.includes('AY') || catUpper.includes('AYÝ')) {
-                                config = catIcons['AYIKLAMA'] || catIcons['SINIFLANDIRMA'];
-                            } else if (catUpper.includes('DÜZ') || catUpper.includes('SIRAL') || catUpper.includes('DZ') || catUpper.includes('DUZ') || catUpper.includes('DÝZ')) {
-                                config = catIcons['DÜZEN'] || catIcons['SIRALAMA'];
-                            } else if (catUpper.includes('TEMİZ') || catUpper.includes('TEMIZ') || catUpper.includes('SİL') || catUpper.includes('SIL') || catUpper.includes('SL') || catUpper.includes('SÝL')) {
-                                config = catIcons['TEMİZLİK'] || catIcons['SİLME'];
-                            } else if (catUpper.includes('STAND') || catUpper.includes('STAN')) {
-                                config = catIcons['STANDARTLAŞTIRMA'];
-                            } else if (catUpper.includes('DİS') || catUpper.includes('DIS') || catUpper.includes('SAH') || catUpper.includes('SAHÝ')) {
-                                config = catIcons['DİSİPLİN'] || catIcons['SAHİPLENME'];
-                            } else {
-                                // List sırasına göre index fallback (0->Mavi, 1->Yeşil, 2->Turuncu, 3->Mor, 4->Pembe)
-                                const fallbackConfigs = [
-                                    catIcons['AYIKLAMA'] || catIcons['SINIFLANDIRMA'],
-                                    catIcons['DÜZEN'] || catIcons['SIRALAMA'],
-                                    catIcons['TEMİZLİK'] || catIcons['SİLME'],
-                                    catIcons['STANDARTLAŞTIRMA'],
-                                    catIcons['DİSİPLİN'] || catIcons['SAHİPLENME']
-                                ];
-                                if (catIndex >= 0 && catIndex < fallbackConfigs.length) {
-                                    config = fallbackConfigs[catIndex];
-                                } else {
-                                    // Fallback loop
-                                    for (const key in catIcons) {
-                                        if (catUpper.includes(key)) {
-                                            config = catIcons[key];
-                                            break;
-                                        }
-                                    }
+                    if (catUpper.includes('AYI') || catUpper.includes('SINIF') || catUpper.includes('AY') || catUpper.includes('AYÝ')) {
+                        config = catIcons['AYIKLAMA'] || catIcons['SINIFLANDIRMA'];
+                    } else if (catUpper.includes('DÜZ') || catUpper.includes('SIRAL') || catUpper.includes('DZ') || catUpper.includes('DUZ') || catUpper.includes('DÝZ')) {
+                        config = catIcons['DÜZEN'] || catIcons['SIRALAMA'];
+                    } else if (catUpper.includes('TEMİZ') || catUpper.includes('TEMIZ') || catUpper.includes('SİL') || catUpper.includes('SIL') || catUpper.includes('SL') || catUpper.includes('SÝL')) {
+                        config = catIcons['TEMİZLİK'] || catIcons['SİLME'];
+                    } else if (catUpper.includes('STAND') || catUpper.includes('STAN')) {
+                        config = catIcons['STANDARTLAŞTIRMA'];
+                    } else if (catUpper.includes('DİS') || catUpper.includes('DIS') || catUpper.includes('SAH') || catUpper.includes('SAHÝ')) {
+                        config = catIcons['DİSİPLİN'] || catIcons['SAHİPLENME'];
+                    } else {
+                        // List sırasına göre index fallback (0->Mavi, 1->Yeşil, 2->Turuncu, 3->Mor, 4->Pembe)
+                        const fallbackConfigs = [
+                            catIcons['AYIKLAMA'] || catIcons['SINIFLANDIRMA'],
+                            catIcons['DÜZEN'] || catIcons['SIRALAMA'],
+                            catIcons['TEMİZLİK'] || catIcons['SİLME'],
+                            catIcons['STANDARTLAŞTIRMA'],
+                            catIcons['DİSİPLİN'] || catIcons['SAHİPLENME']
+                        ];
+                        if (catIndex >= 0 && catIndex < fallbackConfigs.length) {
+                            config = fallbackConfigs[catIndex];
+                        } else {
+                            // Fallback loop
+                            for (const key in catIcons) {
+                                if (catUpper.includes(key)) {
+                                    config = catIcons[key];
+                                    break;
                                 }
                             }
+                        }
+                    }
 
-                            const typeObj = getAuditTypeForAudit(audit) || {};
-                            const catObj = (typeObj.categories || []).find(c => String(c.id) === String(catName) || String(c.name).toUpperCase() === String(catName).toUpperCase());
-                            const weightStr = catObj && catObj.weight !== undefined ? ` (Ağırlık: ${catObj.weight})` : '';
-                            return `
+                    const typeObj = getAuditTypeForAudit(audit) || {};
+                    const catObj = (typeObj.categories || []).find(c => String(c.id) === String(catName) || String(c.name).toUpperCase() === String(catName).toUpperCase());
+                    const weightStr = catObj && catObj.weight !== undefined ? ` (Ağırlık: ${catObj.weight})` : '';
+                    return `
                                 <div class="audit-question-category-group" style="margin-bottom: 10px;">
                                     <div style="background: linear-gradient(90deg, ${config.bg}, transparent); border-left: 4px solid ${config.color}; padding: 6px 12px; font-size: 0.72rem; font-weight: 900; color: ${config.color}; letter-spacing: 0.8px; border-radius: 0 8px 8px 0; margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
                                         <i class="fas ${config.icon}" style="font-size: 0.8rem; color: ${config.color};"></i>
@@ -8986,8 +9009,8 @@ function openAuditModal(id) {
                                     </div>
                                 </div>
                             `;
-                        }).join('');
-                    })()}
+                }).join('');
+            })()}
                 </div>
             </div>
         `;
@@ -9015,7 +9038,7 @@ function openAuditModal(id) {
 
                 categories.forEach((cat, idx) => {
                     let catUpper = cat.toUpperCase().trim();
-                    
+
                     // Unified mapping to User Preferred Terms
                     if (catUpper.includes('AYIKLA') || catUpper.includes('SINIF')) catUpper = 'SINIFLANDIRMA';
                     if (catUpper.includes('DÜZEN') || catUpper.includes('SIRALA')) catUpper = 'SIRALAMA';
@@ -9057,7 +9080,7 @@ function openAuditModal(id) {
                         indexAxis: 'y',
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: { 
+                        plugins: {
                             legend: { display: false },
                             datalabels: {
                                 anchor: 'end',
@@ -9075,7 +9098,7 @@ function openAuditModal(id) {
                                 max: 100
                             },
                             y: {
-                                ticks: { 
+                                ticks: {
                                     font: { size: 10, weight: 'bold' },
                                     color: '#ffffff'
                                 },
@@ -9170,7 +9193,7 @@ function toTurkishUpperCase(value) {
     if (!value) return '';
     let valStr = String(value);
     valStr = valStr.replace(/kozyata1/ig, 'Kozyatağı');
-    
+
     return valStr
         .replace(/i/g, 'İ')
         .replace(/ı/g, 'I')
@@ -9314,10 +9337,10 @@ function isBooleanAuditAnswer(audit = {}, ans = {}) {
         auditType?.scoringStrategy
     ].filter(Boolean).map(normalize).join(' ');
 
-    if (textToSearch.includes('istasyon') || 
-        textToSearch.includes('station') || 
-        textToSearch.includes('bool') || 
-        textToSearch.includes('yes') || 
+    if (textToSearch.includes('istasyon') ||
+        textToSearch.includes('station') ||
+        textToSearch.includes('bool') ||
+        textToSearch.includes('yes') ||
         textToSearch.includes('evet') ||
         textToSearch.includes('hayir') ||
         textToSearch.includes('hayır')) {
@@ -9365,9 +9388,9 @@ function scoreAuditAnswer(audit = {}, ans = {}) {
     const primary = getAuditAnswerPrimaryValue(ans);
     const raw = Number(ans.score ?? primary ?? 0);
     const score = Number.isFinite(raw) ? Math.max(0, Math.min(5, raw)) : 0;
-    
+
     const percent = clampAuditPercent(mapScore6ToPercent(score));
-    
+
     return {
         rawScore: score,
         percent,
@@ -9638,12 +9661,12 @@ function drawAuditPdfCategoryChart(doc, audit, y) {
     if (!chartData || chartData.length === 0) return y;
 
     y = auditPdfEnsureSpace(doc, y, 30);
-    
+
     // Premium Corporate Header Box
     const headerH = 7;
     doc.setFillColor(11, 42, 74);
     drawAuditPdfRoundedRect(doc, margin, y, contentW, headerH, 1, 1, 'F');
-    
+
     setAuditPdfFont(doc, 'bold');
     doc.setFontSize(8);
     setAuditPdfRgb(doc, [255, 255, 255]);
@@ -9655,61 +9678,61 @@ function drawAuditPdfCategoryChart(doc, audit, y) {
     const colW = contentW / cols;
     const itemH = 9;
     const paddingX = 4;
-    
+
     const rows = Math.ceil(chartData.length / cols);
     const boxH = rows * itemH + 4;
-    
+
     // Main Body Box
     doc.setFillColor(252, 253, 255);
     doc.setDrawColor(226, 232, 240);
     doc.setLineWidth(0.3);
     doc.rect(margin, y, contentW, boxH, 'FD');
-    
+
     let currentY = y + 3;
-    
+
     for (let i = 0; i < chartData.length; i++) {
         const item = chartData[i];
         const row = Math.floor(i / cols);
         const col = i % cols;
-        
+
         const startX = margin + (col * colW) + paddingX;
         const startY = currentY + (row * itemH);
-        
+
         // Category Name
         setAuditPdfFont(doc, 'bold');
         doc.setFontSize(6.5);
         setAuditPdfRgb(doc, [51, 65, 85]);
         const catName = item.category.length > 21 ? item.category.substring(0, 19) + '..' : item.category;
         auditPdfText(doc, catName, startX, startY + 3.5);
-        
+
         // Percentage Text (Right aligned within the column)
         setAuditPdfRgb(doc, [15, 23, 42]);
         const scoreText = `%${Math.round(item.avgPercent)}`;
         const scoreW = doc.getTextWidth(scoreText);
         auditPdfText(doc, scoreText, startX + colW - paddingX * 2 - scoreW, startY + 3.5);
-        
+
         // Micro Progress Bar
         const barY = startY + 5.5;
         const maxBarW = colW - paddingX * 2;
         const actualBarW = Math.max(0.5, (item.avgPercent / 100) * maxBarW);
         const barColor = getAuditChartBarColor(item.avgPercent);
-        
+
         // Bar Background Track
         doc.setFillColor(241, 245, 249);
         drawAuditPdfRoundedRect(doc, startX, barY, maxBarW, 1.5, 0.75, 0.75, 'F');
-        
+
         // Bar Fill
         doc.setFillColor(barColor[0], barColor[1], barColor[2]);
         drawAuditPdfRoundedRect(doc, startX, barY, actualBarW, 1.5, 0.75, 0.75, 'F');
     }
-    
+
     // Elegant Vertical Separators
     doc.setDrawColor(241, 245, 249);
     doc.setLineWidth(0.2);
     for (let c = 1; c < cols; c++) {
         doc.line(margin + c * colW, y + 2, margin + c * colW, y + boxH - 2);
     }
-    
+
     return y + boxH + 4;
 }
 
@@ -9729,7 +9752,7 @@ function estimateAuditQuestionBlockHeight(doc, audit, ans, questionText, loadedP
     const contentW = 180;
     const scoredAnswer = ans ? scoreAuditAnswer(audit, ans) : null;
     const scoreLabel = scoredAnswer ? scoredAnswer.displayScore : '0';
-    const comment = ans ? [ (ans.comment || ans.detail || '').trim(), ...(Array.isArray(ans.additionalComments) ? ans.additionalComments : []) ].filter(Boolean).join('\n\n') : '';
+    const comment = ans ? [(ans.comment || ans.detail || '').trim(), ...(Array.isArray(ans.additionalComments) ? ans.additionalComments : [])].filter(Boolean).join('\n\n') : '';
     const noteText = String(comment).trim();
     const resolution = getAuditPdfResolutionData(audit, ans, questionText, loadedPhotos);
     const is5S = String(audit?.auditType || '').toUpperCase().includes('5S');
@@ -9764,7 +9787,7 @@ function drawAuditPdfQuestionBlock(doc, audit, index, ans, categoryName, questio
     const scoredAnswer = ans ? scoreAuditAnswer(audit, ans) : null;
     const isNc = scoredAnswer ? scoredAnswer.isNonconformity : false;
     const scoreLabel = scoredAnswer ? scoredAnswer.displayScore : '0';
-    const comment = ans ? [ (ans.comment || ans.detail || '').trim(), ...(Array.isArray(ans.additionalComments) ? ans.additionalComments : []) ].filter(Boolean).join('\n\n') : '';
+    const comment = ans ? [(ans.comment || ans.detail || '').trim(), ...(Array.isArray(ans.additionalComments) ? ans.additionalComments : [])].filter(Boolean).join('\n\n') : '';
     const noteText = String(comment).trim();
     const resolution = getAuditPdfResolutionData(audit, ans, questionText, loadedPhotos, categoryName);
     const statusColorRgb = resolution.isResolved ? [34, 197, 94] : (isNc ? [227, 30, 36] : [34, 197, 94]);
@@ -9859,7 +9882,7 @@ function drawAuditPdfQuestionBlock(doc, audit, index, ans, categoryName, questio
                 doc.addImage(photo.dataUrl, 'JPEG', imgX, imgY, 38, 18);
                 doc.setDrawColor(147, 197, 253);
                 doc.rect(imgX, imgY, 38, 18);
-            } catch (e) {}
+            } catch (e) { }
         });
     }
 
@@ -9912,7 +9935,7 @@ function drawAuditPdfQuestionBlock(doc, audit, index, ans, categoryName, questio
                     doc.setFontSize(6);
                     setAuditPdfRgb(doc, [21, 128, 61]);
                     auditPdfText(doc, `\u00c7\u00f6z\u00fcm ${photoIndex + 1}`, imgX + 39, imgY + 45, { align: 'center' });
-                } catch (e) {}
+                } catch (e) { }
             });
         }
         currentY += resolutionH;
@@ -9943,7 +9966,7 @@ async function renderAuditDetailsToPdf(doc, audit, imageCache) {
     doc.setFontSize(18);
     setAuditPdfRgb(doc, [11, 42, 74]); // Corporate Dark Blue
     auditPdfText(doc, 'DENETİM RAPORU', margin, y);
-    
+
     setAuditPdfFont(doc, 'normal');
     doc.setFontSize(8);
     const auditPdfWeekNum = audit.date ? getISOWeekNumber(new Date(audit.date)) : '-';
@@ -9952,7 +9975,7 @@ async function renderAuditDetailsToPdf(doc, audit, imageCache) {
     doc.setDrawColor(227, 30, 36); // Red underline
     doc.setLineWidth(0.5);
     doc.line(margin, y + 3, margin + 75, y + 3);
-    
+
     y += 12;
 
     y = drawAuditPdfHero(doc, audit, y);
@@ -9990,16 +10013,16 @@ async function renderAuditDetailsToPdf(doc, audit, imageCache) {
                 const loadedPhotos = imageCache[cacheKey] || [];
                 firstBlockH = estimateAuditQuestionBlockHeight(doc, audit, firstAns, firstQText, loadedPhotos);
             }
-            
+
             y += 3;
             y = auditPdfEnsureSpace(doc, y, 11 + firstBlockH);
-            
+
             // Highlighted Category Header using Audit Type Color
             doc.setFillColor(typeColorRgb[0], typeColorRgb[1], typeColorRgb[2]);
             doc.rect(margin, y - 5, pageW - margin * 2, 10, 'F');
             doc.setFillColor(227, 30, 36);
             doc.rect(margin, y - 5, 2.5, 10, 'F');
-            
+
             setAuditPdfFont(doc, 'bold');
             doc.setFontSize(9.5);
             setAuditPdfRgb(doc, [255, 255, 255]);
@@ -10109,7 +10132,7 @@ function drawAuditPdfHero(doc, audit, y) {
     const typeGap = 3;
     const typeBoxH = 8;
     const typeY = badgeY + badgeH + typeGap;
-    
+
     // Type specific color for Audit Type badge
     setAuditPdfFill(doc, typeColorRgb);
     drawAuditPdfRoundedRect(doc, badgeX, typeY, badgeW, typeBoxH, 2, 2, 'F');
@@ -10208,23 +10231,23 @@ async function handleBulkPdfOutput(doc, fileName, title, action) {
 function addBulkPdfTitle(doc, title, subtitle) {
     const margin = 14;
     const pageW = 210;
-    
+
     doc.setFillColor(15, 23, 42);
     drawAuditPdfRoundedRect(doc, margin, 15, pageW - margin * 2, 20, 2, 2, 'F');
-    
+
     doc.setFillColor(227, 30, 36);
     drawAuditPdfRoundedRect(doc, margin, 15, 3, 20, 2, 0, 'F');
-    
+
     doc.setFont('DejaVuSans', 'bold');
     doc.setFontSize(14);
     doc.setTextColor(255, 255, 255);
     doc.text(toTurkishUpperCase(title), margin + 8, 23);
-    
+
     doc.setFont('DejaVuSans', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(203, 213, 225);
     doc.text(toTurkishUpperCase(subtitle), margin + 8, 30);
-    
+
     doc.setFontSize(7);
     doc.text(toTurkishUpperCase(new Date().toLocaleDateString('tr-TR')), pageW - margin - 15, 30, { align: 'right' });
 }
@@ -10263,7 +10286,7 @@ async function generateBulkAuditPDFs(action = 'download') {
                 styles: { font: 'DejaVuSans', fontStyle: 'normal', fontSize: 8.5, cellPadding: 4, valign: 'middle', textColor: [51, 65, 85] },
                 headStyles: { font: 'DejaVuSans', fontStyle: 'bold', fillColor: [15, 23, 42], textColor: [255, 255, 255] },
                 alternateRowStyles: { fillColor: [248, 250, 252] },
-                didParseCell: function(data) {
+                didParseCell: function (data) {
                     if (data.section === 'body' && data.column.index === 6) {
                         const score = parseFloat(data.cell.raw);
                         const color = getAuditScoreBadgeColor(score);
@@ -10276,20 +10299,20 @@ async function generateBulkAuditPDFs(action = 'download') {
                         data.cell.text = '';
                     }
                 },
-                didDrawCell: function(data) {
+                didDrawCell: function (data) {
                     if (data.section === 'body' && data.column.index === 3) {
                         const lineLabel = data.cell.raw || '';
                         if (lineLabel && lineLabel !== '-') {
-                            const shortLabel = lineLabel.length > 3 ? lineLabel.substring(0,3) : lineLabel;
+                            const shortLabel = lineLabel.length > 3 ? lineLabel.substring(0, 3) : lineLabel;
                             const lineColorHex = (typeof appData !== 'undefined' && appData.lineColors && appData.lineColors[lineLabel]) ? appData.lineColors[lineLabel] : '#0f172a';
                             const rgb = hexToRgb(lineColorHex);
                             const radius = 3.5;
                             const cx = data.cell.x + data.cell.width / 2;
                             const cy = data.cell.y + data.cell.height / 2;
-                            
+
                             doc.setFillColor(rgb[0], rgb[1], rgb[2]);
                             doc.circle(cx, cy, radius, 'F');
-                            
+
                             doc.setFont('DejaVuSans', 'bold');
                             doc.setFontSize(6);
                             doc.setTextColor(255, 255, 255);
@@ -10388,7 +10411,7 @@ async function generateBulkNCPDFs(action = 'download') {
                     7: { cellWidth: 35 }
                 },
                 alternateRowStyles: { fillColor: [254, 242, 242] },
-                didParseCell: function(data) {
+                didParseCell: function (data) {
                     if (data.section === 'body' && data.column.index === 6) {
                         const statusStr = data.cell.raw;
                         if (statusStr === 'AÇIK') {
@@ -10403,20 +10426,20 @@ async function generateBulkNCPDFs(action = 'download') {
                         data.cell.text = '';
                     }
                 },
-                didDrawCell: function(data) {
+                didDrawCell: function (data) {
                     if (data.section === 'body' && data.column.index === 3) {
                         const lineLabel = data.cell.raw || '';
                         if (lineLabel && lineLabel !== '-') {
-                            const shortLabel = lineLabel.length > 3 ? lineLabel.substring(0,3) : lineLabel;
+                            const shortLabel = lineLabel.length > 3 ? lineLabel.substring(0, 3) : lineLabel;
                             const lineColorHex = (typeof appData !== 'undefined' && appData.lineColors && appData.lineColors[lineLabel]) ? appData.lineColors[lineLabel] : '#0f172a';
                             const rgb = hexToRgb(lineColorHex);
                             const radius = 3.5;
                             const cx = data.cell.x + data.cell.width / 2;
                             const cy = data.cell.y + data.cell.height / 2;
-                            
+
                             doc.setFillColor(rgb[0], rgb[1], rgb[2]);
                             doc.circle(cx, cy, radius, 'F');
-                            
+
                             doc.setFont('DejaVuSans', 'bold');
                             doc.setFontSize(6);
                             doc.setTextColor(255, 255, 255);
@@ -10680,7 +10703,7 @@ function renderStationMatrix() {
 
     for (const [typeName, typeAudits] of Object.entries(auditsByType)) {
         const categories = [];
-        
+
         typeAudits.forEach(a => {
             const metrics = buildAuditDetailMetrics(a);
             if (metrics.categoryAverages.length) {
@@ -10690,7 +10713,7 @@ function renderStationMatrix() {
                 });
                 return;
             }
-            
+
             const aType = getAuditTypeForAudit(a);
             (aType?.categories || []).forEach(cat => {
                 const cName = cat.name || cat.title || 'Genel';
@@ -10737,7 +10760,7 @@ function renderStationMatrix() {
             const overallScore = metrics.categoryAverages.length
                 ? clampAuditPercent(metrics.overallPercent)
                 : clampAuditPercent(Number(a.score) || 0);
-            
+
             const line = a.line || '-';
             const station = a.station || '-';
             const lineColor = appData.lineColors[line] || '#64748b';
@@ -10751,13 +10774,13 @@ function renderStationMatrix() {
                         <span style="font-weight: 750; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; display: inline-block;" title="${escapeAttr(station)}">${escapeAttr(station)}</span>
                     </td>
                     ${visibleCategories.map((c, index) => {
-                        const score = categoryMap.has(c) ? categoryMap.get(c) : fallbackScores[index];
-                        if (score === undefined || score === null || Number.isNaN(Number(score))) {
-                            return '<td style="padding: 4px 6px; color: var(--text-dim); font-weight: 600; vertical-align: middle;">-</td>';
-                        }
-                        const percent = clampAuditPercent(Number(score));
-                        return `<td style="padding: 4px 6px; text-align: center; vertical-align: middle;"><div style="background:${getHeatmapColor(percent)};color:white;padding:2px 4px;border-radius:4px;font-size:0.68rem;font-weight:800;display:inline-block;min-width: 26px;text-align:center;">%${percent.toFixed(0)}</div></td>`;
-                    }).join('')}
+                const score = categoryMap.has(c) ? categoryMap.get(c) : fallbackScores[index];
+                if (score === undefined || score === null || Number.isNaN(Number(score))) {
+                    return '<td style="padding: 4px 6px; color: var(--text-dim); font-weight: 600; vertical-align: middle;">-</td>';
+                }
+                const percent = clampAuditPercent(Number(score));
+                return `<td style="padding: 4px 6px; text-align: center; vertical-align: middle;"><div style="background:${getHeatmapColor(percent)};color:white;padding:2px 4px;border-radius:4px;font-size:0.68rem;font-weight:800;display:inline-block;min-width: 26px;text-align:center;">%${percent.toFixed(0)}</div></td>`;
+            }).join('')}
                     <td style="padding: 4px 8px; text-align: center; vertical-align: middle;">
                         <strong style="color: ${overallScore > 80 ? '#16a34a' : (overallScore > 50 ? '#f59e0b' : '#ef4444')}; font-size: 0.8rem; font-weight: 900;">%${overallScore.toFixed(0)}</strong>
                     </td>
@@ -10997,7 +11020,7 @@ function updateCharts(data) {
         if (auditorChart) auditorChart.destroy(); // in case it existed before
 
         const auditorStats = {};
-        
+
         filteredAudits.forEach(a => {
             const name = a.auditorName || 'Bilinmeyen';
             if (!auditorStats[name]) {
@@ -11030,11 +11053,11 @@ function updateCharts(data) {
             };
         }).sort((a, b) => b.count - a.count); // Sort descending by count
 
-        auditorListContainer.innerHTML = sortedAuditors.length === 0 
-            ? '<div style="color: var(--text-dim); padding: 1rem;">Veri bulunamadı.</div>' 
+        auditorListContainer.innerHTML = sortedAuditors.length === 0
+            ? '<div style="color: var(--text-dim); padding: 1rem;">Veri bulunamadı.</div>'
             : sortedAuditors.map((item, idx) => {
                 const isPremium = idx < 3;
-                
+
                 return `
                     <div style="background: var(--bg-card); border: 1px solid ${isPremium ? 'rgba(255, 215, 0, 0.4)' : 'var(--border-main)'}; border-radius: 8px; padding: 0.5rem 0.6rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; transition: background 0.2s;" onmouseover="this.style.background='var(--bg-main)'" onmouseout="this.style.background='var(--bg-card)'">
                         <div style="display: flex; align-items: center; gap: 0.6rem; overflow: hidden; flex: 1;">
@@ -11243,7 +11266,7 @@ function getReportData(metric, group) {
                 audit.answers.forEach(ans => {
                     const q = resolveAuditAnswerQuestion(audit, ans);
                     let c = (q ? q.categoryName : 'DİĞER').toUpperCase();
-                    
+
                     // Unified Mapping to User Preferred Terms
                     if (c.includes('AYIKLA') || c.includes('SINIF')) c = 'SINIFLANDIRMA';
                     if (c.includes('DÜZEN') || c.includes('SIRALA')) c = 'SIRALAMA';
@@ -11542,7 +11565,7 @@ function renderSettings() {
     const settings = getSystemSettings();
     const localDarkMode = localStorage.getItem('darkMode');
     const darkMode = localDarkMode !== null ? (localDarkMode === 'true') : (settings.themePreferenceSaved ? Boolean(settings.darkMode) : true);
-    
+
     // Auto-fix: if global settings in Firestore is false, but default is true, and the admin logs in, update DB to true
     if (settings.darkMode === false && hasPermission('settings')) {
         db.collection('system_config').doc('settings').set({
@@ -11640,7 +11663,7 @@ function loadSettingsPage() {
         try {
             const bytes = new Blob([JSON.stringify(appData)]).size;
             dsEl.textContent = bytes > 1048576 ? (bytes / 1048576).toFixed(1) + ' MB' : (bytes / 1024).toFixed(0) + ' KB';
-        } catch(e) { dsEl.textContent = '-'; }
+        } catch (e) { dsEl.textContent = '-'; }
     }
 }
 
@@ -11655,7 +11678,7 @@ function handleSettingsDarkMode(el) {
         localStorage.setItem('darkMode', 'false');
         showToast('Aydınlık mod aktif');
     }
-    
+
     // Save globally if user has settings permission
     if (hasPermission('settings')) {
         db.collection('system_config').doc('settings').set({
@@ -11665,7 +11688,7 @@ function handleSettingsDarkMode(el) {
             console.error('Global theme save error:', err);
         });
     }
-    
+
     setTimeout(() => { renderAll(); }, 100);
 }
 
@@ -11687,11 +11710,11 @@ function toggleSidebarCompact() {
     if (!sidebar) return;
     const isCompactNow = sidebar.classList.toggle('compact');
     localStorage.setItem('compactSidebar', isCompactNow ? 'true' : 'false');
-    
+
     // Sync settings checkbox if present
     const csEl = document.getElementById('settings-compact-sidebar');
     if (csEl) csEl.checked = isCompactNow;
-    
+
     updateSidebarToggleIcon(isCompactNow);
 }
 
@@ -11739,7 +11762,7 @@ function exportAllDataJSON() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `denetim_sistemi_yedek_${new Date().toISOString().slice(0,10)}.json`;
+    link.download = `denetim_sistemi_yedek_${new Date().toISOString().slice(0, 10)}.json`;
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -11751,7 +11774,7 @@ function importAllDataJSON(input) {
     const file = input.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
         try {
             const data = JSON.parse(e.target.result);
             if (!confirm('Bu işlem mevcut tüm verilerin üzerine yazacaktır. Devam edilsin mi?')) return;
@@ -11772,7 +11795,7 @@ function importAllDataJSON(input) {
             loadSettingsPage();
             showToast('Veri başarıyla içe aktarıldı! Sayfa yenileniyor...');
             setTimeout(() => location.reload(), 1500);
-        } catch(err) {
+        } catch (err) {
             console.error('Import error:', err);
             showToast('JSON dosyası okunamadı!');
         }
@@ -11810,7 +11833,7 @@ function toggleDarkMode() {
     const dmEl = document.getElementById('settings-dark-mode');
     if (dmEl) dmEl.checked = nextDark;
     updateThemeIcon();
-    
+
     // Save globally if user has settings permission
     if (hasPermission('settings')) {
         db.collection('system_config').doc('settings').set({
@@ -11893,10 +11916,10 @@ function openAddLineModal() {
     document.getElementById('line-modal').style.display = 'flex';
 
     // Sync color picker <-> hex input
-    document.getElementById('line-color-input').oninput = function() {
+    document.getElementById('line-color-input').oninput = function () {
         document.getElementById('line-color-hex').value = this.value;
     };
-    document.getElementById('line-color-hex').oninput = function() {
+    document.getElementById('line-color-hex').oninput = function () {
         if (/^#[0-9A-Fa-f]{6}$/.test(this.value)) {
             document.getElementById('line-color-input').value = this.value;
         }
@@ -11913,10 +11936,10 @@ function openEditLineModal(lineName) {
     document.getElementById('line-color-hex').value = color;
     document.getElementById('line-modal').style.display = 'flex';
 
-    document.getElementById('line-color-input').oninput = function() {
+    document.getElementById('line-color-input').oninput = function () {
         document.getElementById('line-color-hex').value = this.value;
     };
-    document.getElementById('line-color-hex').oninput = function() {
+    document.getElementById('line-color-hex').oninput = function () {
         if (/^#[0-9A-Fa-f]{6}$/.test(this.value)) {
             document.getElementById('line-color-input').value = this.value;
         }
@@ -12232,26 +12255,26 @@ function closeCustomStationModal() {
 
 function openStationFormModal(lineName, oldName = '', oldNo = 1, callback) {
     closeCustomStationModal();
-    
+
     const color = appData.lineColors?.[lineName] || '#2563eb';
     const isEdit = oldName !== '';
-    
+
     // Retrieve NFC data
     const nfcKey = `${lineName}_${oldName}`;
     const nfcData = (appData.stationNfcs && appData.stationNfcs[nfcKey]) || { uid: '' };
     const oldNfcUid = nfcData.uid || '';
-    
+
     const modalDiv = document.createElement('div');
     modalDiv.id = 'custom-station-modal';
     modalDiv.className = 'modal-overlay station-form-modal';
     modalDiv.style.display = 'flex';
-    
+
     // Generate options for station numbers 1 to 99
     let optionsHtml = '';
     for (let i = 1; i <= 99; i++) {
         optionsHtml += `<option value="${i}" ${i === oldNo ? 'selected' : ''}>${i}</option>`;
     }
-    
+
     modalDiv.innerHTML = `
         <div class="modal-content station-form-dialog" style="max-width: 400px; padding: 0; border-radius: 20px;">
             <div class="modal-header station-form-header" style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-main);">
@@ -12292,19 +12315,19 @@ function openStationFormModal(lineName, oldName = '', oldNo = 1, callback) {
             </div>
         </div>
     `;
-    
+
     document.body.appendChild(modalDiv);
-    
+
     // Focus on the name input
     const nameInput = document.getElementById('station-form-name');
     if (nameInput) nameInput.focus();
-    
+
     // Submit button handler
     document.getElementById('station-form-submit-btn').onclick = () => {
         const noVal = parseInt(document.getElementById('station-form-no').value, 10);
         const nameVal = document.getElementById('station-form-name').value.trim();
         const nfcUidVal = document.getElementById('station-form-nfc-uid').value.trim();
-        
+
         if (Number.isNaN(noVal) || noVal < 1) {
             showToast('Lütfen geçerli bir istasyon numarası giriniz.');
             return;
@@ -12313,7 +12336,7 @@ function openStationFormModal(lineName, oldName = '', oldNo = 1, callback) {
             showToast('Lütfen istasyon adı giriniz.');
             return;
         }
-        
+
         callback(nameVal, noVal, nfcUidVal);
         closeCustomStationModal();
     };
@@ -12322,7 +12345,7 @@ function openStationFormModal(lineName, oldName = '', oldNo = 1, callback) {
 function addStationToLine(lineName) {
     if (!appData.stations[lineName]) appData.stations[lineName] = [];
     appData.stations[lineName] = appData.stations[lineName].map(getLineStationName).filter(Boolean);
-    
+
     // Suggest the next number in sequence
     let nextNo = 1;
     const stationNums = appData.stationNumbers?.[lineName] || {};
@@ -12356,7 +12379,7 @@ function addStationToLine(lineName) {
 async function editStationInLine(lineName, stationName) {
     if (!appData.stations[lineName]) return;
     appData.stations[lineName] = appData.stations[lineName].map(getLineStationName).filter(Boolean);
-    
+
     const currentNo = appData.stationNumbers?.[lineName]?.[stationName] ?? 1;
 
     openStationFormModal(lineName, stationName, currentNo, async (name, no, nfcUid) => {
@@ -12405,7 +12428,7 @@ async function editStationInLine(lineName, stationName) {
             for (const colName of collectionsToMigrate) {
                 try {
                     const snapshot = await db.collection(colName)
-                         .where('line', '==', lineName)
+                        .where('line', '==', lineName)
                         .where('station', '==', stationName)
                         .get();
                     for (const doc of snapshot.docs) {
@@ -12483,7 +12506,7 @@ function handleClosePhotoSelect(event) {
 function removeClosePhoto(index) {
     selectedClosePhotos.splice(index, 1);
     renderClosePhotoPreviews();
-    
+
     // Also reset input so that the same files can be re-selected if deleted
     const input = document.getElementById('nc-photo-input');
     if (input) input.value = '';
@@ -12538,19 +12561,19 @@ function dedupeVisibleQuestionGroups(groups) {
         .slice()
         .sort((a, b) => getQuestionCountForGroup(b.id) - getQuestionCountForGroup(a.id))
         .filter(group => {
-        const name = String(group.name || group.title || '').trim();
-        const upperName = name.toLocaleUpperCase('tr-TR');
-        const isMigrated5SCategory = String(group.id || '').startsWith('5s-group-') || String(group.id || '').startsWith('virtual-5s-');
+            const name = String(group.name || group.title || '').trim();
+            const upperName = name.toLocaleUpperCase('tr-TR');
+            const isMigrated5SCategory = String(group.id || '').startsWith('5s-group-') || String(group.id || '').startsWith('virtual-5s-');
 
-        if (is5SType && hasAll5SCategories && upperName.includes('5S') && !isMigrated5SCategory) {
-            return false;
-        }
+            if (is5SType && hasAll5SCategories && upperName.includes('5S') && !isMigrated5SCategory) {
+                return false;
+            }
 
-        const key = is5SType ? upperName : String(group.id || upperName);
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-    })
+            const key = is5SType ? upperName : String(group.id || upperName);
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        })
         .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
 }
 
@@ -12630,32 +12653,32 @@ async function deleteQuestionGroup(id) {
         showToast('Soru grubu silme yetkiniz bulunmamaktadır.');
         return;
     }
-    if(!confirm('Bu soru grubunu silmek istediğinize emin misiniz? (İçindeki tüm sorular da silinecektir)')) return;
-    
+    if (!confirm('Bu soru grubunu silmek istediğinize emin misiniz? (İçindeki tüm sorular da silinecektir)')) return;
+
     try {
         // Soft delete embedded category in auditTypes
         const auditTypeId = await deleteEmbeddedAuditTypeCategory(id);
-        
+
         // Delete group from compatibility collections
         await db.collection('question_groups').doc(id).delete();
         await db.collection('auditQuestionGroups').doc(id).delete();
-        
+
         // Delete nested questions
         const nested = (appData.questions || []).filter(q => q.groupId === id);
-        for(let q of nested) {
+        for (let q of nested) {
             await db.collection('questions').doc(q.id).delete();
             await db.collection('auditQuestions').doc(q.id).delete();
         }
-        
+
         if (appData.selectedGroupId === id) {
             appData.selectedGroupId = null;
             document.getElementById('selected-group-questions').style.display = 'none';
         }
-        
+
         // Refresh local data & render
         deriveCompatibilityCollectionsFromAuditTypes();
         renderQuestionGroups();
-        
+
         showToast('Grup silindi.');
 
         if (auditTypeId) {
@@ -12672,7 +12695,7 @@ async function deleteQuestion(id) {
         showToast('Soru silme yetkiniz bulunmamaktadır.');
         return;
     }
-    if(!confirm('Bu soruyu silmek istediğinize emin misiniz?')) return;
+    if (!confirm('Bu soruyu silmek istediğinize emin misiniz?')) return;
     try {
         await deleteEmbeddedAuditTypeQuestion(id);
         await db.collection('questions').doc(id).delete();
@@ -12701,7 +12724,7 @@ function renderRoleComparisonChart(audits) {
     // We filter for a specific station if selected, otherwise show an example
     const lineFilters = getMultiSelectValues('filter-stats-line');
     const stationFilters = getMultiSelectValues('filter-stats-station');
-    
+
     let targetStation = stationFilters.length ? stationFilters[0] : 'all';
     if (targetStation === 'all' && audits.length) {
         // Find a station that has audits or fallback
@@ -12797,11 +12820,11 @@ function getAuditorDisplayName(auditorName) {
         const fullName = normalizeTurkish(u.fullName || '');
         const emailPrefix = u.email ? normalizeTurkish(u.email.split('@')[0] || '') : '';
         const searchPrefix = searchName.split('@')[0];
-        
-        return username === searchName || 
-               name === searchName || 
-               fullName === searchName ||
-               (emailPrefix && emailPrefix === searchPrefix);
+
+        return username === searchName ||
+            name === searchName ||
+            fullName === searchName ||
+            (emailPrefix && emailPrefix === searchPrefix);
     });
     return user ? getUserDisplayName(user) : auditorName;
 }
@@ -12815,11 +12838,11 @@ function getAuditorUserObject(auditorName) {
         const fullName = normalizeTurkish(u.fullName || '');
         const emailPrefix = u.email ? normalizeTurkish(u.email.split('@')[0] || '') : '';
         const searchPrefix = searchName.split('@')[0];
-        
-        return username === searchName || 
-               name === searchName || 
-               fullName === searchName ||
-               (emailPrefix && emailPrefix === searchPrefix);
+
+        return username === searchName ||
+            name === searchName ||
+            fullName === searchName ||
+            (emailPrefix && emailPrefix === searchPrefix);
     });
 }
 
@@ -13333,8 +13356,8 @@ function renderPeople() {
         const lineLogos = globalScope
             ? '<span class="people-all-lines"><i class="fas fa-globe"></i> Tam Yetki</span>'
             : lines.length
-            ? `${shownLines.map(line => `<span class="people-line-logo" style="background:${escapeAttr(appData.lineColors?.[line] || '#64748b')};">${escapeAttr(line)}</span>`).join('')}${lines.length > shownLines.length ? `<span class="people-more-lines">+${lines.length - shownLines.length}</span>` : ''}`
-            : '<span class="people-all-lines"><i class="fas fa-route"></i> Alan tanımlı değil</span>';
+                ? `${shownLines.map(line => `<span class="people-line-logo" style="background:${escapeAttr(appData.lineColors?.[line] || '#64748b')};">${escapeAttr(line)}</span>`).join('')}${lines.length > shownLines.length ? `<span class="people-more-lines">+${lines.length - shownLines.length}</span>` : ''}`
+                : '<span class="people-all-lines"><i class="fas fa-route"></i> Alan tanımlı değil</span>';
 
         return `
             <tr class="people-row">
@@ -13794,7 +13817,7 @@ function renderQuestionGroups() {
         card.style.border = isSelected ? `1px solid ${typeColor}` : `1px solid var(--border-main)`;
         card.style.borderLeft = `4px solid ${typeColor}`;
         card.style.boxShadow = isSelected ? `0 8px 24px ${typeColor}18` : 'none';
-        
+
         card.onclick = () => {
             appData.selectedGroupId = g.id;
             renderQuestionGroups();
@@ -14134,12 +14157,12 @@ function openEditQuestionGroupModal(groupId) {
     document.getElementById('edit-group-name').value = group.name || group.title || '';
     document.getElementById('edit-group-icon').value = group.icon || 'fa-clipboard-check';
     document.getElementById('edit-group-scale').value = group.scoringStrategy || getQuestionBankAuditType(group.auditTypeId).scoringStrategy || 'scaleAverage';
-    
+
     const type = (appData.auditTypes || []).find(t => (t.categories || []).some(c => String(c.id) === String(groupId)));
     const category = type ? (type.categories || []).find(c => String(c.id) === String(groupId)) : null;
     const weight = category && category.weight !== undefined ? category.weight : 1.0;
     document.getElementById('edit-group-weight').value = weight;
-    
+
     updateEditGroupScaleInfo();
     document.getElementById('edit-group-modal').style.display = 'flex';
 }
@@ -14632,8 +14655,8 @@ function viewStations(lineName) {
             const nfcKey = `${lineName}_${station}`;
             const nfcData = appData.stationNfcs?.[nfcKey];
             const locData = appData.stationLocations?.[nfcKey];
-            const nfcBadge = nfcData && nfcData.uid 
-                ? `<span class="station-nfc-badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 700;"><i class="fa-solid fa-nfc-directional" style="margin-right:2px;"></i> NFC: ${escapeAttr(nfcData.uid)}</span>` 
+            const nfcBadge = nfcData && nfcData.uid
+                ? `<span class="station-nfc-badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 700;"><i class="fa-solid fa-nfc-directional" style="margin-right:2px;"></i> NFC: ${escapeAttr(nfcData.uid)}</span>`
                 : `<span class="station-nfc-badge" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 700;"><i class="fas fa-ban" style="margin-right:2px;"></i> NFC Yok</span>`;
             const locBadge = locData && locData.latitude && locData.longitude
                 ? `<span class="station-loc-badge" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 700;"><i class="fas fa-location-dot" style="margin-right:2px;"></i> Konum: ${locData.latitude.toFixed(4)}, ${locData.longitude.toFixed(4)} (${locData.radius}m)</span>`
@@ -15112,21 +15135,21 @@ function renderAuditTypes() {
         </div>
         <div class="audit-type-strip" style="display: flex; flex-wrap: wrap; gap: 0.55rem; align-items: center;">
             ${auditTypes.map((type, index) => {
-                const typeColor = getAuditTypeColor(type.id, index);
-                const categories = (type.categories || []).filter(category => !category.isDeleted);
-                const questionCount = categories.reduce((total, category) => total + (category.questions || []).filter(question => !question.isDeleted).length, 0);
-                const isSelected = String(appData.selectedAuditTypeId) === String(type.id);
-                
-                const bgStyle = isSelected 
-                    ? `background: linear-gradient(135deg, color-mix(in srgb, ${typeColor} 24%, #08111e) 0%, #050b14 100%) !important;`
-                    : `background: var(--bg-card) !important;`;
-                const titleColor = isSelected ? '#ffffff !important' : 'var(--text-primary)';
-                const subColor = isSelected ? 'rgba(255, 255, 255, 0.7) !important' : 'var(--text-secondary)';
-                const countColor = isSelected ? '#ffffff !important' : typeColor;
-                const isActive = type.isActive !== false;
-                const opacityStyle = isActive ? '' : 'opacity: 0.65;';
+        const typeColor = getAuditTypeColor(type.id, index);
+        const categories = (type.categories || []).filter(category => !category.isDeleted);
+        const questionCount = categories.reduce((total, category) => total + (category.questions || []).filter(question => !question.isDeleted).length, 0);
+        const isSelected = String(appData.selectedAuditTypeId) === String(type.id);
 
-                return `
+        const bgStyle = isSelected
+            ? `background: linear-gradient(135deg, color-mix(in srgb, ${typeColor} 24%, #08111e) 0%, #050b14 100%) !important;`
+            : `background: var(--bg-card) !important;`;
+        const titleColor = isSelected ? '#ffffff !important' : 'var(--text-primary)';
+        const subColor = isSelected ? 'rgba(255, 255, 255, 0.7) !important' : 'var(--text-secondary)';
+        const countColor = isSelected ? '#ffffff !important' : typeColor;
+        const isActive = type.isActive !== false;
+        const opacityStyle = isActive ? '' : 'opacity: 0.65;';
+
+        return `
                     <div class="audit-type-chip ${isSelected ? 'active' : ''}" onclick="selectAuditType('${jsArg(type.id)}')" style="--audit-type-color:${typeColor}; width:240px; height:88px; padding:0.75rem 0.9rem; border-radius:14px; display:inline-flex; align-items:center; justify-content:space-between; border:1px solid ${isSelected ? typeColor : 'var(--border-main)'}; border-left:4px solid ${typeColor} !important; ${bgStyle} box-shadow:${isSelected ? '0 12px 28px ' + typeColor + '22' : 'none'}; transition:all 0.22s cubic-bezier(0.4, 0, 0.2, 1); cursor:pointer; flex:0 0 auto; box-sizing:border-box; ${opacityStyle}">
                         <div style="display:flex; flex-direction:column; gap:3px; min-width:0; flex:1; text-align:left;">
                             <span class="audit-type-chip-title" style="font-size:0.88rem; font-weight:900; color:${titleColor}; word-wrap:break-word; white-space:normal; margin:0; line-height:1.25;">${escapeAttr(type.title)} ${isActive ? '' : '(Pasif)'}</span>
@@ -15140,7 +15163,7 @@ function renderAuditTypes() {
                         </div>
                     </div>
                 `;
-            }).join('')}
+    }).join('')}
         </div>
         <div class="audit-type-action-panel" style="margin-top: 0.85rem; padding: 0.75rem 1rem; border-radius: 14px;">
             <div>
@@ -15277,13 +15300,13 @@ async function toggleQuestionStatus(questionId, currentActive) {
 
 function openEditQuestionModal(questionId) {
     const question = (appData.questions || []).find(q => String(q.id) === String(questionId)) ||
-                     (appData.legacyQuestions || []).find(q => String(q.id) === String(questionId));
+        (appData.legacyQuestions || []).find(q => String(q.id) === String(questionId));
     if (!question) return showToast('Soru bulunamadı.');
     ensureEditQuestionModal();
     document.getElementById('edit-q-id').value = question.id;
     document.getElementById('edit-q-text').value = question.questionText || '';
     document.getElementById('edit-q-category').value = question.categoryName || '';
-    
+
     let currentTypeVal = '5s-score';
     if (question.answerType === 'scale6' || question.type === 'scale6') {
         currentTypeVal = 'scale6';
@@ -15292,7 +15315,7 @@ function openEditQuestionModal(questionId) {
     }
     const typeSelect = document.getElementById('edit-q-type');
     if (typeSelect) typeSelect.value = currentTypeVal;
-    
+
     document.getElementById('edit-question-modal').style.display = 'flex';
 }
 
@@ -15343,7 +15366,7 @@ async function saveQuestionEdit() {
     const categoryName = document.getElementById('edit-q-category')?.value.trim();
     const questionText = document.getElementById('edit-q-text')?.value.trim();
     const selectedTypeVal = document.getElementById('edit-q-type')?.value || '5s-score';
-    
+
     if (!id || !categoryName || !questionText) return showToast('Lütfen tüm alanları doldurunuz.');
 
     let qType = '5s-score';
@@ -15360,8 +15383,8 @@ async function saveQuestionEdit() {
         qMaxScore = 1;
     }
 
-    const updates = { 
-        categoryName, 
+    const updates = {
+        categoryName,
         questionText,
         type: qType,
         answerType: qAnswerType,
@@ -15420,7 +15443,7 @@ function populateDashboardFilters() {
     const selectedLines = getMultiSelectValues(lineSelect);
     const currentStations = getMultiSelectValues(stationSelect);
     stationSelect.innerHTML = '<option value="all">Tüm İstasyonlar</option>';
-    
+
     let stationsToDisplay = [];
     if (!selectedLines.length) {
         scopedLines.forEach(line => {
@@ -15586,7 +15609,7 @@ function renderAuditorPerformance() {
     const { audits, ncs } = getFilteredDashboardData();
 
     const auditorStats = {};
-    
+
     audits.forEach(a => {
         const name = a.auditorName || 'Bilinmeyen';
         if (!auditorStats[name]) {
@@ -15648,12 +15671,12 @@ function toggleCustomSelect(wrapperId) {
     if (!wrapper) return;
     const card = wrapper.querySelector('.custom-select-options-card');
     if (!card) return;
-    
+
     card.style.display = card.style.display === 'block' ? 'none' : 'block';
 }
 
 // Close Dropdowns on Click Outside
-document.addEventListener('click', function(e) {
+document.addEventListener('click', function (e) {
     if (!e.target.closest('.custom-select-wrapper')) {
         document.querySelectorAll('.custom-select-options-card').forEach(card => {
             card.style.display = 'none';
@@ -15661,7 +15684,7 @@ document.addEventListener('click', function(e) {
     }
 });
 
-window.clearFilters = function(view) {
+window.clearFilters = function (view) {
     let selectIds = [];
     if (view === 'dashboard') {
         selectIds = [
@@ -15707,12 +15730,12 @@ window.clearFilters = function(view) {
     selectIds.forEach(id => {
         const select = document.getElementById(id);
         if (!select) return;
-        
+
         // Reset selections
         Array.from(select.options).forEach(opt => {
             opt.selected = (opt.value === 'all');
         });
-        
+
         // Trigger onchange to populate other fields and update views
         select.dispatchEvent(new Event('change'));
         if (typeof select.onchange === 'function') {
@@ -15762,7 +15785,7 @@ window.clearFilters = function(view) {
         initNCFilters();
         renderNCs();
     }
-    
+
     // Global UI sync
     if (typeof syncCustomSelects === 'function') {
         syncCustomSelects();
@@ -15816,21 +15839,21 @@ function syncSingleCustomSelect(selectId, optionsContainerId, defaultLabel, acti
     const select = document.getElementById(selectId);
     const optionsContainer = document.getElementById(optionsContainerId);
     if (!select || !optionsContainer) return;
-    
+
     optionsContainer.innerHTML = '';
     const selectedValues = isMulti ? getMultiSelectValues(select) : [select.value];
-    
+
     // Build checkboxed options list
     Array.from(select.options).forEach(opt => {
         if (!opt.value) return;
-        
-        const isSelected = isMulti 
+
+        const isSelected = isMulti
             ? (selectedValues.includes(opt.value) || (selectedValues.length === 0 && opt.value === 'all'))
             : (select.value === opt.value);
-            
+
         const optDiv = document.createElement('div');
         optDiv.className = 'custom-option-item' + (isSelected ? ' selected' : '');
-        
+
         // Apply custom color for audit type dropdown options
         if (selectId.includes('type') && opt.value !== 'all') {
             const typeColor = getAuditTypeColor(opt.value);
@@ -15839,14 +15862,14 @@ function syncSingleCustomSelect(selectId, optionsContainerId, defaultLabel, acti
             optDiv.style.color = typeColor;
             optDiv.style.fontWeight = '700';
         }
-        
-        const checkboxHtml = isMulti 
+
+        const checkboxHtml = isMulti
             ? `<input type="checkbox" ${isSelected ? 'checked' : ''} style="pointer-events:none; margin:0;">`
             : '';
-            
+
         optDiv.innerHTML = `${checkboxHtml} <span>${escapeHtml(opt.text)}</span>`;
-        
-        optDiv.addEventListener('click', function(e) {
+
+        optDiv.addEventListener('click', function (e) {
             e.stopPropagation();
             if (isMulti) {
                 if (opt.value === 'all') {
@@ -15857,7 +15880,7 @@ function syncSingleCustomSelect(selectId, optionsContainerId, defaultLabel, acti
                     // Uncheck "all" option
                     const allOpt = Array.from(select.options).find(o => o.value === 'all');
                     if (allOpt) allOpt.selected = false;
-                    
+
                     // Fallback to "all" if empty
                     const selected = getMultiSelectValues(select);
                     if (selected.length === 0 && allOpt) {
@@ -15878,10 +15901,10 @@ function syncSingleCustomSelect(selectId, optionsContainerId, defaultLabel, acti
             }
             renderAll();
         });
-        
+
         optionsContainer.appendChild(optDiv);
     });
-    
+
     // Update Trigger Label Text
     const wrapper = optionsContainer.closest('.custom-select-wrapper');
     if (wrapper) {
@@ -15916,9 +15939,9 @@ const escapeHtml = escapeAttr;
 async function runM1Migration() {
     // Check if M1A/M1B exist anywhere or if M1 is missing from lines/colors
     const hasOldM1 = appData.lines.includes('M1A') || appData.lines.includes('M1B') ||
-                     'M1A' in appData.lineColors || 'M1B' in appData.lineColors ||
-                     'M1A' in appData.stations || 'M1B' in appData.stations;
-                     
+        'M1A' in appData.lineColors || 'M1B' in appData.lineColors ||
+        'M1A' in appData.stations || 'M1B' in appData.stations;
+
     const isM1Missing = !appData.lines.includes('M1') || !('M1' in appData.lineColors);
     const needsStationNumbers = !appData.stationNumbers || Object.keys(appData.stationNumbers).length === 0;
 
@@ -15968,7 +15991,7 @@ async function runM1Migration() {
         stationNfcs: appData.stationNfcs || {},
         stationLocations: appData.stationLocations || {}
     });
-    
+
     console.log('M1 Migration / Station Numbers successfully applied and saved to Firestore!');
 
     // 5. Migrate users assigned to M1A or M1B
@@ -16014,7 +16037,7 @@ async function runCoordinatesCorrection() {
     if (!appData.stationLocations) appData.stationLocations = {};
     let needsUpdate = false;
     const updatedLocations = { ...appData.stationLocations };
-    
+
     // T1_Çemberlitaş check
     const cemberlitasKey = 'T1_Çemberlitaş';
     const cemberlitasLoc = updatedLocations[cemberlitasKey];
@@ -16439,12 +16462,12 @@ function downloadQuestionBankTemplate() {
 
     // Style headers and set column widths
     const range = XLSX.utils.decode_range(ws['!ref']);
-    for(let C = range.s.c; C <= range.e.c; ++C) {
+    for (let C = range.s.c; C <= range.e.c; ++C) {
         const address = XLSX.utils.encode_col(C) + "1";
-        if(!ws[address]) continue;
+        if (!ws[address]) continue;
         ws[address].s = { font: { bold: true } };
     }
-    
+
     ws['!cols'] = [
         { wch: 25 }, { wch: 20 }, { wch: 28 }, { wch: 28 }, { wch: 25 }, { wch: 45 }, { wch: 20 }
     ];
@@ -16492,22 +16515,22 @@ function downloadQuestionBankTemplate() {
         ["", "", "- Evet-Hayır"]
     ];
     const wsInstr = XLSX.utils.aoa_to_sheet(instructions);
-    
+
     // Formatting widths and merges for visual quality
     wsInstr['!cols'] = [
         { wch: 32 }, // Sütun Adı
         { wch: 65 }, // Açıklama
         { wch: 55 }  // Kabul Edilen Değerler
     ];
-    
+
     wsInstr['!merges'] = [
-        { s: {r: 0, c: 0}, e: {r: 0, c: 2} },
-        { s: {r: 1, c: 0}, e: {r: 1, c: 2} },
-        { s: {r: 3, c: 0}, e: {r: 3, c: 2} },
-        { s: {r: 4, c: 0}, e: {r: 4, c: 2} },
-        { s: {r: 5, c: 0}, e: {r: 5, c: 2} },
-        { s: {r: 6, c: 0}, e: {r: 6, c: 2} },
-        { s: {r: 8, c: 0}, e: {r: 8, c: 2} }
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 2 } },
+        { s: { r: 1, c: 0 }, e: { r: 1, c: 2 } },
+        { s: { r: 3, c: 0 }, e: { r: 3, c: 2 } },
+        { s: { r: 4, c: 0 }, e: { r: 4, c: 2 } },
+        { s: { r: 5, c: 0 }, e: { r: 5, c: 2 } },
+        { s: { r: 6, c: 0 }, e: { r: 6, c: 2 } },
+        { s: { r: 8, c: 0 }, e: { r: 8, c: 2 } }
     ];
 
     XLSX.utils.book_append_sheet(wb, wsInstr, "Nasıl Yapılır");
@@ -16527,7 +16550,7 @@ function parseExcelRuleToValues(ruleStr, strategy) {
 
     const parts = lower.split(',').map(s => s.trim()).filter(Boolean);
     const results = [];
-    
+
     for (const part of parts) {
         if (strategy === 'booleanAverage') {
             if (part === 'evet') results.push(true);
@@ -16556,20 +16579,20 @@ async function handleQuestionBankExcelImport(event) {
     try {
         const data = await file.arrayBuffer();
         const wb = XLSX.read(data, { type: 'array' });
-        
+
         const sheetName = wb.SheetNames[0];
         const ws = wb.Sheets[sheetName];
         const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
-        
+
         // Remove header row
         rows.shift();
 
         // 1. Group by Audit Type
         const typesMap = {};
-        
+
         for (const row of rows) {
             if (!row || row.length < 6) continue;
-            
+
             const typeName = String(row[0] || '').trim();
             const strategyRaw = String(row[1] || '').trim();
             const photoRulesRaw = String(row[2] || '').trim();
@@ -16584,7 +16607,7 @@ async function handleQuestionBankExcelImport(event) {
                 let strategy = 'scaleAverage';
                 if (strategyRaw.toLowerCase() === 'evet-hayır' || strategyRaw.toLowerCase() === 'evet-hayir') strategy = 'booleanAverage';
                 if (strategyRaw.toLowerCase() === 'toplam puan') strategy = 'sumTotal';
-                
+
                 typesMap[typeName] = {
                     name: typeName,
                     strategy: strategy,
@@ -16593,14 +16616,14 @@ async function handleQuestionBankExcelImport(event) {
                     categories: {}
                 };
             }
-            
+
             if (!typesMap[typeName].categories[categoryName]) {
                 typesMap[typeName].categories[categoryName] = [];
             }
-            
+
             let qType = typesMap[typeName].strategy === 'booleanAverage' ? 'yes-no' : '5s-score';
             let aType = typesMap[typeName].strategy === 'booleanAverage' ? 'boolean' : 'scale';
-            
+
             if (questionTypeRaw.toLowerCase() === 'evet-hayır' || questionTypeRaw.toLowerCase() === 'evet-hayir') {
                 qType = 'yes-no';
                 aType = 'boolean';
@@ -16608,7 +16631,7 @@ async function handleQuestionBankExcelImport(event) {
                 qType = '5s-score';
                 aType = 'scale';
             }
-            
+
             typesMap[typeName].categories[categoryName].push({
                 text: questionText,
                 type: qType,
@@ -16620,9 +16643,9 @@ async function handleQuestionBankExcelImport(event) {
         for (const [tName, tData] of Object.entries(typesMap)) {
             // Find existing type or create new
             let existingType = (appData.auditTypes || []).find(t => (t.title || '').toLowerCase() === tName.toLowerCase());
-            
+
             let typeId = existingType ? existingType.id : `AT-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-            
+
             let mergedType = {
                 id: typeId,
                 title: tName,
@@ -16636,12 +16659,12 @@ async function handleQuestionBankExcelImport(event) {
 
             for (const [cName, cQuestions] of Object.entries(tData.categories)) {
                 let existingCategory = mergedType.categories.find(c => (c.name || '').toLowerCase() === cName.toLowerCase());
-                
+
                 if (existingCategory) {
                     // append questions
                     for (const q of cQuestions) {
                         existingCategory.questions.push({
-                            id: `Q-${Date.now()}-${Math.floor(Math.random()*10000)}`,
+                            id: `Q-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
                             text: q.text,
                             type: q.type,
                             answerType: q.answerType,
@@ -16653,7 +16676,7 @@ async function handleQuestionBankExcelImport(event) {
                 } else {
                     // create category
                     let newCategory = {
-                        id: `CAT-${Date.now()}-${Math.floor(Math.random()*10000)}`,
+                        id: `CAT-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
                         name: cName,
                         title: cName,
                         icon: 'fa-layer-group',
@@ -16662,10 +16685,10 @@ async function handleQuestionBankExcelImport(event) {
                         orderIndex: mergedType.categories.length,
                         questions: []
                     };
-                    
+
                     for (const q of cQuestions) {
                         newCategory.questions.push({
-                            id: `Q-${Date.now()}-${Math.floor(Math.random()*10000)}`,
+                            id: `Q-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
                             text: q.text,
                             type: q.type,
                             answerType: q.answerType,
@@ -16677,14 +16700,14 @@ async function handleQuestionBankExcelImport(event) {
                     mergedType.categories.push(newCategory);
                 }
             }
-            
+
             // Save to Firestore
             await db.collection('auditTypes').doc(typeId).set(normalizeQuestionBankType(mergedType), { merge: true });
         }
-        
+
         showToast('Excel başarıyla içeri aktarıldı.');
         document.getElementById('excel-import-input').value = '';
-        
+
     } catch (err) {
         console.error("Excel import error:", err);
         showToast('Excel okunurken bir hata oluştu.');
@@ -16711,7 +16734,7 @@ function downloadPeopleTemplate() {
         "ramazan.tilki", "Ramazan Tilki", "ramazan.tilki@metro.istanbul", "Süper Admin", "Baş Onaylayıcı", "Tümü"
     ];
     const wsData = XLSX.utils.aoa_to_sheet([headers, exampleRow]);
-    
+
     // Style headers
     wsData['!cols'] = [
         { wch: 20 }, { wch: 25 }, { wch: 30 }, { wch: 25 }, { wch: 20 }, { wch: 40 }
@@ -16750,17 +16773,17 @@ function downloadPeopleTemplate() {
         ["", "", "Eğer tüm hatları görebilecekse sadece 'Tümü' yazın."],
         ["", "", "(Örn: M1, M2, M3)"]
     ];
-    
+
     const wsInstr = XLSX.utils.aoa_to_sheet(instructions);
     wsInstr['!cols'] = [{ wch: 30 }, { wch: 60 }, { wch: 50 }];
     wsInstr['!merges'] = [
-        { s: {r: 0, c: 0}, e: {r: 0, c: 2} },
-        { s: {r: 1, c: 0}, e: {r: 1, c: 2} },
-        { s: {r: 3, c: 0}, e: {r: 3, c: 2} },
-        { s: {r: 4, c: 0}, e: {r: 4, c: 2} },
-        { s: {r: 5, c: 0}, e: {r: 5, c: 2} },
-        { s: {r: 6, c: 0}, e: {r: 6, c: 2} },
-        { s: {r: 8, c: 0}, e: {r: 8, c: 2} }
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 2 } },
+        { s: { r: 1, c: 0 }, e: { r: 1, c: 2 } },
+        { s: { r: 3, c: 0 }, e: { r: 3, c: 2 } },
+        { s: { r: 4, c: 0 }, e: { r: 4, c: 2 } },
+        { s: { r: 5, c: 0 }, e: { r: 5, c: 2 } },
+        { s: { r: 6, c: 0 }, e: { r: 6, c: 2 } },
+        { s: { r: 8, c: 0 }, e: { r: 8, c: 2 } }
     ];
 
     XLSX.utils.book_append_sheet(wb, wsInstr, "Nasıl Yapılır");
@@ -16779,14 +16802,14 @@ async function handlePeopleExcelImport(event) {
 
     showToast('Aktarım başlatıldı, lütfen bekleyin...');
     const reader = new FileReader();
-    reader.onload = async function(e) {
+    reader.onload = async function (e) {
         try {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
-            
+
             const firstSheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[firstSheetName];
-            
+
             const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
             if (rows.length < 2) {
                 showToast("Excel dosyası boş veya sadece başlıklar var.");
@@ -16814,7 +16837,7 @@ async function handlePeopleExcelImport(event) {
                 // Parse Role
                 let roleId = 'Field_Auditor';
                 let authorityValue = 'Auditor';
-                
+
                 if (rawRole.includes('süper') || rawRole.includes('super')) {
                     roleId = 'Super_Admin';
                     authorityValue = 'Super_Admin';
@@ -16908,7 +16931,7 @@ function downloadLinesStationsTemplate() {
         "Hat Kodu (ID)", "Hat Adı", "Hat Rengi (Hex)", "İstasyon Kodu (ID)", "İstasyon Adı", "Tesis Tipi"
     ];
     const wsData = XLSX.utils.aoa_to_sheet([headers]);
-    
+
     wsData['!cols'] = [
         { wch: 15 }, { wch: 30 }, { wch: 15 }, { wch: 20 }, { wch: 30 }, { wch: 20 }
     ];
@@ -16931,7 +16954,7 @@ function downloadLinesStationsTemplate() {
         ["5) İstasyon Adı", "İstasyonun görünen adı.", "Örn: Yenikapı"],
         ["6) Tesis Tipi", "Bu yerin tipi (İstasyon, Yerleşke vs.).", "Örn: İstasyon"]
     ];
-    
+
     const wsInstr = XLSX.utils.aoa_to_sheet(instructions);
     wsInstr['!cols'] = [{ wch: 20 }, { wch: 60 }, { wch: 30 }];
     XLSX.utils.book_append_sheet(wb, wsInstr, "Nasıl Yapılır");
@@ -16950,13 +16973,13 @@ async function handleLinesStationsExcelImport(event) {
 
     showToast('Hatlar aktarılıyor, bekleyin...');
     const reader = new FileReader();
-    reader.onload = async function(e) {
+    reader.onload = async function (e) {
         try {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
             const worksheet = workbook.Sheets[workbook.SheetNames[0]];
             const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-            
+
             if (rows.length < 2) {
                 showToast("Excel dosyası boş veya sadece başlıklar var.");
                 return;
@@ -16964,7 +16987,7 @@ async function handleLinesStationsExcelImport(event) {
 
             let linesMap = new Map(appData.lines.map(l => [l.id, l]));
             let colorsMap = { ...appData.lineColors };
-            
+
             let stationsMap = {};
             for (const [lId, stArr] of Object.entries(appData.stations || {})) {
                 stationsMap[lId] = [...stArr];
@@ -17015,7 +17038,7 @@ async function handleLinesStationsExcelImport(event) {
                 appData.lines = Array.from(linesMap.values());
                 appData.lineColors = colorsMap;
                 appData.stations = stationsMap;
-                
+
                 await saveLinesStationsToFirebase();
                 showToast("Hat ve İstasyonlar başarıyla güncellendi.");
                 renderLines();
@@ -17047,7 +17070,7 @@ function downloadPlanningTemplate() {
         "Plan Tipi (Aylık/Yıllık/Yıllık Haftalık)", "Yıl (Örn: 2026)", "Ay (1-12)", "Hafta (1-4) (Aylık/Yıllık Haftalık İçin)", "Görev Türü (İstasyon/Hat)", "Denetçi (Kullanıcı Adı)", "Hat Kodu", "İstasyon Kodu", "Denetim Tipi Adı"
     ];
     const wsData = XLSX.utils.aoa_to_sheet([headers]);
-    
+
     wsData['!cols'] = [
         { wch: 35 }, { wch: 15 }, { wch: 15 }, { wch: 30 }, { wch: 30 }, { wch: 25 }, { wch: 15 }, { wch: 20 }, { wch: 35 }
     ];
@@ -17069,12 +17092,12 @@ function downloadPlanningTemplate() {
         ["8) İstasyon Kodu", "Gerekiyorsa İstasyon ID'si.", "Örn: M1_Yenikapi"],
         ["9) Denetim Tipi Adı", "Uygulanacak soru bankası.", "Örn: 5S Denetimi"]
     ];
-    
+
     const wsInstr = XLSX.utils.aoa_to_sheet(instructions);
     wsInstr['!cols'] = [{ wch: 30 }, { wch: 50 }, { wch: 40 }];
     wsInstr['!merges'] = [
-        { s: {r: 0, c: 0}, e: {r: 0, c: 2} },
-        { s: {r: 1, c: 0}, e: {r: 1, c: 2} }
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 2 } },
+        { s: { r: 1, c: 0 }, e: { r: 1, c: 2 } }
     ];
     XLSX.utils.book_append_sheet(wb, wsInstr, "Nasıl Yapılır");
 
@@ -17092,12 +17115,12 @@ async function handlePlanningExcelImport(event) {
 
     showToast('Planlar aktarılıyor...');
     const reader = new FileReader();
-    reader.onload = async function(e) {
+    reader.onload = async function (e) {
         try {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
             const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
-            
+
             if (rows.length < 2) return showToast("Excel dosyası boş.");
 
             const batch = db.batch();
@@ -17133,23 +17156,23 @@ async function handlePlanningExcelImport(event) {
                     const validWeek = isNaN(week) ? 1 : week;
                     startDate = new Date(year, month - 1, (validWeek - 1) * 7 + 1);
                     endDate = new Date(year, month - 1, validWeek * 7);
-                    id = `MT-${Date.now()}-${validWeek}-${Math.floor(Math.random()*1000)}`;
+                    id = `MT-${Date.now()}-${validWeek}-${Math.floor(Math.random() * 1000)}`;
                 } else if (planTypeRaw.includes('yıllık') || planTypeRaw.includes('yillik')) {
                     if (planTypeRaw.includes('hafta') || planTypeRaw.includes('haftalık') || planTypeRaw.includes('haftalik')) {
                         const validWeek = isNaN(week) ? 1 : week;
                         startDate = new Date(year, month - 1, (validWeek - 1) * 7 + 1);
                         endDate = new Date(year, month - 1, validWeek * 7);
-                        id = `YWT-${Date.now()}-${month}-${validWeek}-${Math.floor(Math.random()*1000)}`;
+                        id = `YWT-${Date.now()}-${month}-${validWeek}-${Math.floor(Math.random() * 1000)}`;
                     } else {
                         startDate = new Date(year, month - 1, 1);
                         endDate = new Date(year, month, 0); // last day of month
-                        id = `YT-${Date.now()}-${month}-${Math.floor(Math.random()*1000)}`;
+                        id = `YT-${Date.now()}-${month}-${Math.floor(Math.random() * 1000)}`;
                     }
                 } else {
                     // Fallback to manual if unknown
                     startDate = new Date(year, month - 1, 1);
                     endDate = new Date(year, month, 0);
-                    id = `${Date.now()}-${Math.floor(Math.random()*1000)}`;
+                    id = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
                 }
 
                 const task = {
@@ -17157,7 +17180,7 @@ async function handlePlanningExcelImport(event) {
                     type,
                     stationId,
                     lineId,
-                    auditType: auditTypeId, 
+                    auditType: auditTypeId,
                     startDate: startDate.toISOString(),
                     dueDate: endDate.toISOString(),
                     status: 'pending',
@@ -17202,14 +17225,14 @@ function runPresenceHeartbeat() {
         if (currentUser.lastActive) {
             const lastActiveDate = new Date(currentUser.lastActive);
             const isToday = lastActiveDate.getDate() === now.getDate() &&
-                            lastActiveDate.getMonth() === now.getMonth() &&
-                            lastActiveDate.getFullYear() === now.getFullYear();
+                lastActiveDate.getMonth() === now.getMonth() &&
+                lastActiveDate.getFullYear() === now.getFullYear();
             if (isToday) {
                 console.log('Kullanıcı bugün zaten giriş yapmış, veritabanı yazma işlemi atlanıyor.');
                 return;
             }
         }
-        
+
         console.log('Updating today\'s login in Firestore for:', currentUser.id);
         db.collection('users').doc(currentUser.id).update({
             lastActive: now.toISOString(),
@@ -17252,54 +17275,54 @@ function renderOnlineUsers() {
     const emptyDiv = document.getElementById('online-users-empty');
     const onlineCountEl = document.getElementById('online-users-count');
     const totalCountEl = document.getElementById('total-users-count');
-    
+
     if (!tbody) return;
-    
+
     tbody.innerHTML = '';
-    
+
     // Total count update
     const totalUsers = appData.users ? appData.users.length : 0;
     if (totalCountEl) totalCountEl.innerText = totalUsers;
-    
+
     const now = new Date();
-    
+
     // Filter users active today (calendar day) on web
     const onlineUsers = (appData.users || []).filter(u => {
         if (!u.lastActive || u.activePlatform !== 'web') return false;
         const lastActiveDate = new Date(u.lastActive);
         return lastActiveDate.getDate() === now.getDate() &&
-               lastActiveDate.getMonth() === now.getMonth() &&
-               lastActiveDate.getFullYear() === now.getFullYear();
+            lastActiveDate.getMonth() === now.getMonth() &&
+            lastActiveDate.getFullYear() === now.getFullYear();
     });
-    
+
     // Sort: most recently active first
     onlineUsers.sort((a, b) => new Date(b.lastActive) - new Date(a.lastActive));
-    
+
     if (onlineCountEl) onlineCountEl.innerText = onlineUsers.length;
-    
+
     if (onlineUsers.length === 0) {
         emptyDiv.style.display = 'block';
         tbody.parentElement.style.display = 'none';
         return;
     }
-    
+
     emptyDiv.style.display = 'none';
     tbody.parentElement.style.display = 'table';
-    
+
     onlineUsers.forEach(u => {
         const tr = document.createElement('tr');
         tr.style.borderBottom = '1px solid var(--border-color)';
-        
+
         // Avatar color and initials
         const avatarBg = getUserAvatarBgColor(u.name);
         const initials = getUserInitials(u.name);
-        
+
         // Time text (Format as Today HH:MM)
         const dateObj = new Date(u.lastActive);
         const hours = String(dateObj.getHours()).padStart(2, '0');
         const minutes = String(dateObj.getMinutes()).padStart(2, '0');
         const timeText = `Bugün ${hours}:${minutes}`;
-        
+
         tr.innerHTML = `
             <td style="padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
                 <div style="position: relative; display: inline-block; flex-shrink: 0;">
@@ -17325,7 +17348,7 @@ function renderOnlineUsers() {
         `;
         tbody.appendChild(tr);
     });
-    
+
     // Schedule periodic UI-only refresh if not already scheduled (every 5 minutes is plenty for daily active view)
     if (!onlineUsersRefreshInterval) {
         onlineUsersRefreshInterval = setInterval(() => {
