@@ -1582,7 +1582,7 @@ function populateAuditPageFilters() {
     const hasUsers = Array.isArray(appData.users) && appData.users.length > 0;
     const isPopulatedWithProfiles = userSelect.dataset.populatedWithProfiles === 'true';
     if (userSelect.options.length <= 1 || (hasUsers && !isPopulatedWithProfiles)) {
-        userSelect.innerHTML = '<option value="all">Tüm Kullanıcılar</option>';
+        userSelect.innerHTML = '<option value="all">Tüm Denetçiler</option>';
         const auditorMap = new Map();
         accessibleAudits.forEach(audit => {
             if (!audit.auditorName) return;
@@ -15834,7 +15834,7 @@ function syncCustomSelects() {
         syncSingleCustomSelect('audit-filter-year', 'custom-options-audit-year', 'Tüm Yıllar', 'Yıl Seçildi', true, '');
         syncSingleCustomSelect('audit-filter-line', 'custom-options-audit-line', 'Tüm Hatlar', 'Hat Seçildi', true, '');
         syncSingleCustomSelect('audit-filter-station', 'custom-options-audit-station', 'Tüm İstasyonlar', 'İst. Seçildi', true, '');
-        syncSingleCustomSelect('audit-filter-user', 'custom-options-audit-user', 'Tüm Kullanıcılar', 'Denetçi Seçildi', true, '');
+        syncSingleCustomSelect('audit-filter-user', 'custom-options-audit-user', 'Tüm Denetçiler', 'Denetçi Seçildi', true, '');
         syncSingleCustomSelect('audit-filter-status', 'custom-options-audit-status', 'Tüm Durumlar', 'Durum Seçildi', true, '');
     }
 
