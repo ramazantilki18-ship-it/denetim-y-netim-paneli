@@ -3772,6 +3772,19 @@ function inspectNC(id, parentAuditId = null) {
     }
     const audit = getAccessibleAuditById(nc.auditId) || {};
     const auditUserName = getAuditorDisplayName(audit.auditorName || nc.auditorName || nc.owner || 'Sistem');
+    const auditorUser = getAuditorUserObject(audit.auditorName || nc.auditorName || nc.owner || 'Sistem');
+    let auditorTitle = '';
+    if (auditorUser) {
+        auditorTitle = auditorUser.title || auditorUser.jobTitle;
+        if (!auditorTitle && auditorUser.roleId) {
+            const role = typeof getRbacRoleById === 'function' ? getRbacRoleById(auditorUser.roleId) : null;
+            if (role) auditorTitle = role.name;
+        }
+        if (!auditorTitle) {
+            auditorTitle = typeof getRbacRoleDisplayName === 'function' ? getRbacRoleDisplayName(auditorUser) : '';
+        }
+    }
+    auditorTitle = auditorTitle || 'Denetçi';
 
     currentAuditId = audit.id || null;
     const modal = document.getElementById('audit-modal');
@@ -3824,6 +3837,12 @@ function inspectNC(id, parentAuditId = null) {
     const station = audit.station || nc.station || 'İstasyon Belirtilmedi';
     const lineColor = appData.lineColors?.[line] || '#64748b';
 
+    let auditorLinesText = '';
+    if (auditorUser && Array.isArray(auditorUser.authorizedLines) && auditorUser.authorizedLines.length > 0) {
+        auditorLinesText = auditorUser.authorizedLines.filter(Boolean).join(', ');
+    }
+    const lineText = auditorLinesText || line;
+
     const closureDate = nc.closureDate ? new Date(nc.closureDate) : null;
     const closureDateText = closureDate && !Number.isNaN(closureDate.getTime())
         ? closureDate.toLocaleString('tr-TR', {
@@ -3861,8 +3880,16 @@ function inspectNC(id, parentAuditId = null) {
                         <strong>${escapeAttr(recordDateTextWithWeek)}</strong>
                     </div>
                     <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.08rem; width: 100%; margin-top: 0.35rem; padding-top: 0.35rem; border-top: 1px dashed var(--border-main);">
-                        <span><i class="fas fa-user-shield"></i> Kayıt Sorumlusu</span>
-                        <strong>${escapeAttr(auditUserName)}</strong>
+                        <span style="font-size: 0.58rem; color: var(--text-dim); display: flex; align-items: center; gap: 4px;"><i class="fas fa-user-shield"></i> Kayıt Sorumlusu</span>
+                        <strong style="font-size: 0.8rem; font-weight: 800; color: var(--text-primary); margin-top: 0.05rem;">${escapeAttr(auditUserName)}</strong>
+                        <div style="display: flex; align-items: center; gap: 5px; margin-top: 0.15rem; font-size: 0.58rem; font-weight: 700;">
+                            <span style="background: color-mix(in srgb, var(--nc-status-color) 8%, var(--bg-input)); color: var(--text-secondary); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--border-main);" title="Kullanıcı Ünvanı">
+                                ${escapeAttr(auditorTitle)}
+                            </span>
+                            <span style="background: color-mix(in srgb, var(--nc-line-color) 12%, transparent); color: var(--nc-line-color); padding: 1px 5px; border-radius: 4px; border: 1px solid color-mix(in srgb, var(--nc-line-color) 30%, transparent);" title="Sorumlu Olduğu Hatlar">
+                                ${escapeAttr(lineText)} Hattı
+                            </span>
+                        </div>
                     </div>
                 </div>
             </section>
