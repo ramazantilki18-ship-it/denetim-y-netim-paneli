@@ -9655,11 +9655,10 @@ body.light-mode .permission-role-card > p {
 }
 
 .nc-detail-line-logo {
-    min-width: 46px;
+    width: 46px;
     height: 46px;
-    padding: 0 0.5rem;
     border: 3px solid color-mix(in srgb, #fff 90%, transparent);
-    border-radius: 13px;
+    border-radius: 50%;
     display: inline-flex;
     align-items: center;
     justify-content: center;
