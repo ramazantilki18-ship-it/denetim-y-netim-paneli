@@ -3865,7 +3865,7 @@ function inspectNC(id, parentAuditId = null) {
             </section>
 
             <!-- 1. Başlık: Uygunsuzluk Bulgusu (Çerçevenin Dışında) -->
-            <div class="nc-detail-section-heading" style="margin-bottom: 0.65rem; padding-left: 0.2rem; gap: 0.65rem;">
+            <div class="nc-detail-section-heading" style="margin-bottom: 0.65rem; padding-left: 0.2rem; gap: 0.65rem; margin-top: 0.8rem;">
                 <span style="width: 34px; height: 34px; flex: 0 0 34px; font-size: 0.85rem; border-radius: 9px; color: var(--nc-status-color); background: color-mix(in srgb, var(--nc-status-color) 10%, transparent); display: grid; place-items: center;"><i class="fas fa-triangle-exclamation"></i></span>
                 <div>
                     <h3 style="font-size: 0.88rem; font-weight: 900; letter-spacing: 0.2px; color: var(--text-primary); margin: 0;">Uygunsuzluk Bulgusu ve Detayları</h3>
@@ -3908,7 +3908,7 @@ function inspectNC(id, parentAuditId = null) {
 
             ${(nc.closureComment || (nc.closurePhotoPaths || []).length > 0) ? `
                 <!-- 1. Başlık: Çözüm ve Kapanış (Çerçevenin Dışında) -->
-                <div class="nc-detail-section-heading" style="margin-bottom: 0.65rem; padding-left: 0.2rem; gap: 0.65rem; margin-top: 0.6rem;">
+                <div class="nc-detail-section-heading" style="margin-bottom: 0.65rem; padding-left: 0.2rem; gap: 0.65rem; margin-top: 1.3rem;">
                     <span style="width: 34px; height: 34px; flex: 0 0 34px; font-size: 0.85rem; border-radius: 9px; color: #16a34a; background: color-mix(in srgb, #16a34a 10%, transparent); display: grid; place-items: center;"><i class="fas fa-circle-check"></i></span>
                     <div>
                         <h3 style="font-size: 0.88rem; font-weight: 900; letter-spacing: 0.2px; color: var(--text-primary); margin: 0;">Çözüm ve Kapanış</h3>
