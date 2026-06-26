@@ -3874,29 +3874,29 @@ function inspectNC(id, parentAuditId = null) {
                     </div>
                 </div>
 
-                <!-- 2. Soru Bulgusu Kartı -->
+                <!-- 2. Soru ve Cevap/Açıklama Birleşik Kartı -->
                 <div style="margin-bottom: 0.75rem; padding-top: 0.1rem;">
                     <span style="display: block; font-size: 0.58rem; font-weight: 850; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.35rem;">
-                        <i class="fas fa-circle-question" style="margin-right: 4px; color: var(--nc-status-color);"></i> Tespit Edilen Soru / Madde
+                        <i class="fas fa-circle-question" style="margin-right: 4px; color: var(--nc-status-color);"></i> Tespit Edilen Soru ve Denetçi Yanıtı
                     </span>
-                    <div class="nc-detail-text-card" style="margin: 0; border-left: 3px solid var(--nc-status-color); font-weight: 700; font-size: 0.82rem; line-height: 1.4;">
-                        ${escapeAttr(nc.questionText || 'Belirtilmedi')}
+                    <div style="border: 1px solid var(--border-main); border-left: 3px solid var(--nc-status-color); border-radius: 10px; background: var(--bg-card); overflow: hidden; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.02);">
+                        <!-- Soru/Madde Alanı -->
+                        <div style="padding: 0.8rem 0.9rem; font-weight: 700; font-size: 0.82rem; line-height: 1.4; color: var(--text-primary); background: color-mix(in srgb, var(--nc-status-color) 4%, var(--bg-input)); border-bottom: 1px dashed var(--border-main);">
+                            ${escapeAttr(nc.questionText || 'Belirtilmedi')}
+                        </div>
+                        <!-- Yanıt/Açıklama Alanı -->
+                        <div style="padding: 0.8rem 0.9rem; font-size: 0.76rem; background: var(--bg-card);">
+                            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 0.35rem; color: var(--text-dim); font-size: 0.58rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.2px;">
+                                <i class="fas fa-reply" style="transform: rotate(180deg); color: var(--nc-status-color);"></i> Denetçi Açıklaması / Bulgusu
+                            </div>
+                            <div style="color: var(--text-secondary); line-height: 1.4; font-weight: 500;">
+                                ${commentsHtml || '<span style="color: var(--text-dim); font-style: italic;">Açıklama girilmemiş</span>'}
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- 3. Denetçi Açıklamaları (Varsa) -->
-                ${commentsHtml ? `
-                    <div style="margin-bottom: 0.75rem; padding-top: 0.25rem;">
-                        <span style="display: block; font-size: 0.58rem; font-weight: 850; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.35rem;">
-                            <i class="fas fa-comment-dots" style="margin-right: 4px; color: var(--nc-status-color);"></i> Denetçi Açıklamaları
-                        </span>
-                        <div class="nc-detail-comment-card" style="margin: 0; padding: 0.65rem 0.75rem; font-size: 0.75rem; font-weight: 500;">
-                            ${commentsHtml}
-                        </div>
-                    </div>
-                ` : ''}
-
-                <!-- 4. Denetim Kanıtları (Görseller) -->
+                <!-- 3. Denetim Kanıtları (Görseller) -->
                 <div style="padding-top: 0.25rem;">
                     <span style="display: block; font-size: 0.58rem; font-weight: 850; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.35rem;">
                         <i class="fas fa-images" style="margin-right: 4px; color: var(--nc-status-color);"></i> Denetim Kanıtları
