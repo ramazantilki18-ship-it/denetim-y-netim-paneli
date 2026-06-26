@@ -3864,18 +3864,19 @@ function inspectNC(id, parentAuditId = null) {
                 </div>
             </section>
 
-            <section class="nc-detail-section" style="margin-bottom: 0.75rem; border: 1.5px solid #e11d48; box-shadow: 0 8px 24px rgba(225, 29, 72, 0.06);">
-                <!-- 1. Başlık: Uygunsuzluk Bulgusu -->
-                <div class="nc-detail-section-heading" style="margin-bottom: 0.85rem; border-bottom: 1px solid var(--border-main); padding-bottom: 0.6rem; gap: 0.65rem;">
-                    <span style="width: 38px; height: 38px; flex: 0 0 38px; font-size: 0.9rem; border-radius: 10px; color: var(--nc-status-color); background: color-mix(in srgb, var(--nc-status-color) 10%, transparent); display: grid; place-items: center;"><i class="fas fa-triangle-exclamation"></i></span>
-                    <div>
-                        <h3 style="font-size: 0.88rem; font-weight: 900; letter-spacing: 0.2px; color: var(--text-primary); margin: 0;">Uygunsuzluk Bulgusu ve Detayları</h3>
-                        <p style="font-size: 0.62rem; font-weight: 600; color: var(--text-dim); margin: 0.15rem 0 0;">Denetimde tespit edilen bulgular, açıklamalar ve kanıtlar</p>
-                    </div>
+            <!-- 1. Başlık: Uygunsuzluk Bulgusu (Çerçevenin Dışında) -->
+            <div class="nc-detail-section-heading" style="margin-bottom: 0.65rem; padding-left: 0.2rem; gap: 0.65rem;">
+                <span style="width: 34px; height: 34px; flex: 0 0 34px; font-size: 0.85rem; border-radius: 9px; color: var(--nc-status-color); background: color-mix(in srgb, var(--nc-status-color) 10%, transparent); display: grid; place-items: center;"><i class="fas fa-triangle-exclamation"></i></span>
+                <div>
+                    <h3 style="font-size: 0.88rem; font-weight: 900; letter-spacing: 0.2px; color: var(--text-primary); margin: 0;">Uygunsuzluk Bulgusu ve Detayları</h3>
+                    <p style="font-size: 0.62rem; font-weight: 600; color: var(--text-dim); margin: 0.15rem 0 0;">Denetimde tespit edilen bulgular, açıklamalar ve kanıtlar</p>
                 </div>
+            </div>
 
+            <!-- Çerçeveli İçerik Kartı (Kırmızı) -->
+            <section class="nc-detail-section" style="margin-bottom: 1.2rem; border: 1.5px solid #e11d48; box-shadow: 0 8px 24px rgba(225, 29, 72, 0.06); padding: 1rem;">
                 <!-- 2. Soru Bulgusu Kartı -->
-                <div style="margin-bottom: 0.75rem; padding-top: 0.1rem;">
+                <div style="margin-bottom: 0.75rem;">
                     <span style="display: block; font-size: 0.58rem; font-weight: 850; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.35rem;">
                         <i class="fas fa-circle-question" style="margin-right: 4px; color: var(--nc-status-color);"></i> Tespit Edilen Soru / Madde
                     </span>
@@ -3906,16 +3907,17 @@ function inspectNC(id, parentAuditId = null) {
             </section>
 
             ${(nc.closureComment || (nc.closurePhotoPaths || []).length > 0) ? `
-                <section class="nc-detail-resolution" style="border: 1.5px solid #16a34a; box-shadow: 0 8px 24px rgba(22, 163, 74, 0.06);">
-                    <!-- 1. Başlık: Çözüm ve Kapanış -->
-                    <div class="nc-detail-section-heading" style="margin-bottom: 0.85rem; border-bottom: 1px solid var(--border-main); padding-bottom: 0.6rem; gap: 0.65rem;">
-                        <span style="width: 38px; height: 38px; flex: 0 0 38px; font-size: 0.9rem; border-radius: 10px; color: #16a34a; background: color-mix(in srgb, #16a34a 10%, transparent); display: grid; place-items: center;"><i class="fas fa-circle-check"></i></span>
-                        <div>
-                            <h3 style="font-size: 0.88rem; font-weight: 900; letter-spacing: 0.2px; color: var(--text-primary); margin: 0;">Çözüm ve Kapanış</h3>
-                            <p style="font-size: 0.62rem; font-weight: 600; color: var(--text-dim); margin: 0.15rem 0 0;">Uygunsuzluk için uygulanan düzeltici işlem ve onay bilgileri</p>
-                        </div>
+                <!-- 1. Başlık: Çözüm ve Kapanış (Çerçevenin Dışında) -->
+                <div class="nc-detail-section-heading" style="margin-bottom: 0.65rem; padding-left: 0.2rem; gap: 0.65rem; margin-top: 0.6rem;">
+                    <span style="width: 34px; height: 34px; flex: 0 0 34px; font-size: 0.85rem; border-radius: 9px; color: #16a34a; background: color-mix(in srgb, #16a34a 10%, transparent); display: grid; place-items: center;"><i class="fas fa-circle-check"></i></span>
+                    <div>
+                        <h3 style="font-size: 0.88rem; font-weight: 900; letter-spacing: 0.2px; color: var(--text-primary); margin: 0;">Çözüm ve Kapanış</h3>
+                        <p style="font-size: 0.62rem; font-weight: 600; color: var(--text-dim); margin: 0.15rem 0 0;">Uygunsuzluk için uygulanan düzeltici işlem ve onay bilgileri</p>
                     </div>
-                    
+                </div>
+
+                <!-- Çerçeveli İçerik Kartı (Yeşil) -->
+                <section class="nc-detail-resolution" style="border: 1.5px solid #16a34a; box-shadow: 0 8px 24px rgba(22, 163, 74, 0.06); padding: 1rem; margin-bottom: 0.75rem;">
                     <!-- 2. Kapanış Bilgileri Grid -->
                     <div class="nc-resolution-meta-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 0.75rem;">
                         <div class="nc-detail-owner-card" style="margin: 0;">
