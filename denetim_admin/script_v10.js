@@ -3906,13 +3906,18 @@ function inspectNC(id, parentAuditId = null) {
             </section>
 
             ${(nc.closureComment || (nc.closurePhotoPaths || []).length > 0) ? `
-                <section class="nc-detail-resolution">
-                    <div class="nc-detail-section-heading">
-                        <span><i class="fas fa-circle-check"></i></span>
-                        <div><h3>Çözüm ve Kapanış</h3><p>Uygunsuzluk için uygulanan düzeltici işlem</p></div>
+                <section class="nc-detail-resolution" style="border: 1.5px solid #16a34a; box-shadow: 0 8px 24px rgba(22, 163, 74, 0.06);">
+                    <!-- 1. Başlık: Çözüm ve Kapanış -->
+                    <div class="nc-detail-section-heading" style="margin-bottom: 0.85rem; border-bottom: 1px solid var(--border-main); padding-bottom: 0.6rem; gap: 0.65rem;">
+                        <span style="width: 38px; height: 38px; flex: 0 0 38px; font-size: 0.9rem; border-radius: 10px; color: #16a34a; background: color-mix(in srgb, #16a34a 10%, transparent); display: grid; place-items: center;"><i class="fas fa-circle-check"></i></span>
+                        <div>
+                            <h3 style="font-size: 0.88rem; font-weight: 900; letter-spacing: 0.2px; color: var(--text-primary); margin: 0;">Çözüm ve Kapanış</h3>
+                            <p style="font-size: 0.62rem; font-weight: 600; color: var(--text-dim); margin: 0.15rem 0 0;">Uygunsuzluk için uygulanan düzeltici işlem ve onay bilgileri</p>
+                        </div>
                     </div>
                     
-                    <div class="nc-resolution-meta-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 12px;">
+                    <!-- 2. Kapanış Bilgileri Grid -->
+                    <div class="nc-resolution-meta-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 0.75rem;">
                         <div class="nc-detail-owner-card" style="margin: 0;">
                             <span style="color: #ea580c; background: color-mix(in srgb, #ea580c 11%, transparent);"><i class="fas fa-calendar-check"></i></span>
                             <div><small>Kapatma Tarihi</small><strong>${escapeAttr(closureDateText)}</strong></div>
@@ -3927,11 +3932,23 @@ function inspectNC(id, parentAuditId = null) {
                         </div>
                     </div>
 
-                    ${nc.closureComment
-                ? `<div class="nc-detail-resolution-text" style="margin-bottom: 12px;">${escapeAttr(nc.closureComment)}</div>`
-                : ''}
-                    <div class="nc-detail-resolution-evidence">
-                        <span class="nc-detail-resolution-label"><i class="fas fa-images"></i> Çözüm Kanıtları</span>
+                    <!-- 3. Çözüm Açıklaması (Varsa) -->
+                    ${nc.closureComment ? `
+                        <div style="margin-bottom: 0.75rem; padding-top: 0.1rem;">
+                            <span style="display: block; font-size: 0.58rem; font-weight: 850; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.35rem;">
+                                <i class="fas fa-comment-dots" style="margin-right: 4px; color: #16a34a;"></i> Çözüm Açıklaması
+                            </span>
+                            <div class="nc-detail-resolution-text" style="margin: 0; font-size: 0.75rem; font-weight: 500; line-height: 1.4;">
+                                ${escapeAttr(nc.closureComment)}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <!-- 4. Çözüm Kanıtları (Görseller) -->
+                    <div style="padding-top: 0.1rem;">
+                        <span style="display: block; font-size: 0.58rem; font-weight: 850; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.35rem;">
+                            <i class="fas fa-images" style="margin-right: 4px; color: #16a34a;"></i> Çözüm Kanıtları
+                        </span>
                         ${renderImageGallery(nc.closurePhotoPaths || [])}
                     </div>
                 </section>
