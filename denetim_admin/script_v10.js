@@ -1460,7 +1460,9 @@ function populateStatsFilters() {
     // 3. Kullanıcı Filtresi (yalnızca mevcut denetimlerdeki denetçiler, Türkçe normalize)
     if (userSelect) {
         const currentUsers = getMultiSelectValues(userSelect);
-        if (userSelect.options.length <= 1) {
+        const hasUsers = Array.isArray(appData.users) && appData.users.length > 0;
+        const isPopulatedWithProfiles = userSelect.dataset.populatedWithProfiles === 'true';
+        if (userSelect.options.length <= 1 || (hasUsers && !isPopulatedWithProfiles)) {
             userSelect.innerHTML = '<option value="all">Tüm Denetçiler</option>';
             const auditorMap = new Map();
             accessibleAudits.forEach(audit => {
@@ -1473,6 +1475,9 @@ function populateStatsFilters() {
                 userSelect.add(new Option(getAuditorDisplayName(auditor), auditor));
             });
             setMultiSelectValues(userSelect, currentUsers);
+            if (hasUsers) {
+                userSelect.dataset.populatedWithProfiles = 'true';
+            }
         }
     }
 
@@ -1574,7 +1579,9 @@ function populateAuditPageFilters() {
 
     // 3. Kullanıcı Filtresi (Türkçe karakter normalizasyonu ile tekil)
     const currentUsers = getMultiSelectValues(userSelect);
-    if (userSelect.options.length <= 1) {
+    const hasUsers = Array.isArray(appData.users) && appData.users.length > 0;
+    const isPopulatedWithProfiles = userSelect.dataset.populatedWithProfiles === 'true';
+    if (userSelect.options.length <= 1 || (hasUsers && !isPopulatedWithProfiles)) {
         userSelect.innerHTML = '<option value="all">Tüm Kullanıcılar</option>';
         const auditorMap = new Map();
         accessibleAudits.forEach(audit => {
@@ -1587,6 +1594,9 @@ function populateAuditPageFilters() {
             userSelect.add(new Option(getAuditorDisplayName(auditor), auditor));
         });
         setMultiSelectValues(userSelect, currentUsers);
+        if (hasUsers) {
+            userSelect.dataset.populatedWithProfiles = 'true';
+        }
     }
 
     // 4. Yıl Filtresi
@@ -15468,7 +15478,9 @@ function populateDashboardFilters() {
 
     // 3. Denetçi / Personel Filtresi (Türkçe normalize)
     const currentUsers = getMultiSelectValues(userSelect);
-    if (userSelect.options.length <= 1) {
+    const hasUsers = Array.isArray(appData.users) && appData.users.length > 0;
+    const isPopulatedWithProfiles = userSelect.dataset.populatedWithProfiles === 'true';
+    if (userSelect.options.length <= 1 || (hasUsers && !isPopulatedWithProfiles)) {
         userSelect.innerHTML = '<option value="all">Tüm Denetçiler</option>';
         const auditorMap = new Map();
         accessibleAudits.forEach(audit => {
@@ -15481,6 +15493,9 @@ function populateDashboardFilters() {
             userSelect.add(new Option(getAuditorDisplayName(auditor), auditor));
         });
         setMultiSelectValues(userSelect, currentUsers);
+        if (hasUsers) {
+            userSelect.dataset.populatedWithProfiles = 'true';
+        }
     }
 
     // 4. Yıl Filtresi
