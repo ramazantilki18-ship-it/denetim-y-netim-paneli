@@ -3866,7 +3866,7 @@ function inspectNC(id, parentAuditId = null) {
 
             <section class="nc-detail-section" style="margin-bottom: 0.75rem; border: 1.5px solid #e11d48; box-shadow: 0 8px 24px rgba(225, 29, 72, 0.06);">
                 <!-- 1. Başlık: Uygunsuzluk Bulgusu (Kutunun İçinde) -->
-                <div class="nc-detail-section-heading" style="margin-bottom: 0.85rem; border-bottom: 1px solid var(--border-main); padding-bottom: 0.6rem; gap: 0.65rem;">
+                <div class="nc-detail-section-heading" style="margin-bottom: 0.85rem; border-bottom: 2px solid var(--border-main); padding-bottom: 0.6rem; gap: 0.65rem;">
                     <span style="width: 38px; height: 38px; flex: 0 0 38px; font-size: 0.9rem; border-radius: 10px; color: var(--nc-status-color); background: color-mix(in srgb, var(--nc-status-color) 10%, transparent); display: grid; place-items: center;"><i class="fas fa-triangle-exclamation"></i></span>
                     <div>
                         <h3 style="font-size: 0.88rem; font-weight: 900; letter-spacing: 0.2px; color: var(--text-primary); margin: 0;">Uygunsuzluk Bulgusu ve Detayları</h3>
@@ -3908,7 +3908,7 @@ function inspectNC(id, parentAuditId = null) {
             ${(nc.closureComment || (nc.closurePhotoPaths || []).length > 0) ? `
                 <section class="nc-detail-resolution" style="border: 1.5px solid #16a34a; box-shadow: 0 8px 24px rgba(22, 163, 74, 0.06); margin-bottom: 0.75rem;">
                     <!-- 1. Başlık: Çözüm ve Kapanış (Kutunun İçinde) -->
-                    <div class="nc-detail-section-heading" style="margin-bottom: 0.85rem; border-bottom: 1px solid var(--border-main); padding-bottom: 0.6rem; gap: 0.65rem;">
+                    <div class="nc-detail-section-heading" style="margin-bottom: 0.85rem; border-bottom: 2px solid var(--border-main); padding-bottom: 0.6rem; gap: 0.65rem;">
                         <span style="width: 38px; height: 38px; flex: 0 0 38px; font-size: 0.9rem; border-radius: 10px; color: #16a34a; background: color-mix(in srgb, #16a34a 10%, transparent); display: grid; place-items: center;"><i class="fas fa-circle-check"></i></span>
                         <div>
                             <h3 style="font-size: 0.88rem; font-weight: 900; letter-spacing: 0.2px; color: var(--text-primary); margin: 0;">Çözüm ve Kapanış</h3>
