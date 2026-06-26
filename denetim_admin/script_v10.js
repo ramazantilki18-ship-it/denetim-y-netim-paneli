@@ -3803,7 +3803,10 @@ function inspectNC(id, parentAuditId = null) {
     const commentsHtml = commentParts
         .map(item => String(item || '').trim())
         .filter(Boolean)
-        .map(item => `<p>${escapeAttr(item)}</p>`)
+        .map((item, index) => `<p style="margin: 0 0 6px 0; display: flex; gap: 6px; align-items: flex-start; line-height: 1.4;">
+            <span style="font-weight: 800; color: var(--nc-status-color); flex-shrink: 0;">${index + 1}.</span>
+            <span style="font-weight: 500; color: var(--text-secondary);">${escapeAttr(item)}</span>
+        </p>`)
         .join('');
     const recordDate = new Date(nc.detectionDate || nc.date || audit.date);
     const recordDateText = Number.isNaN(recordDate.getTime())
