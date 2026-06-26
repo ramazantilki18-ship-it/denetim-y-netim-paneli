@@ -3852,49 +3852,52 @@ function inspectNC(id, parentAuditId = null) {
                         </div>
                     </div>
                 </div>
-                <div class="nc-detail-overview-meta">
-                    <span><i class="fas fa-calendar-day"></i> Kayıt Tarihi</span>
-                    <strong>${escapeAttr(recordDateTextWithWeek)}</strong>
+                <div class="nc-detail-overview-meta" style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.35rem; justify-content: center;">
+                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.08rem; width: 100%;">
+                        <span><i class="fas fa-calendar-day"></i> Kayıt Tarihi</span>
+                        <strong>${escapeAttr(recordDateTextWithWeek)}</strong>
+                    </div>
+                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.08rem; width: 100%; margin-top: 0.35rem; padding-top: 0.35rem; border-top: 1px dashed var(--border-main);">
+                        <span><i class="fas fa-user-shield"></i> Kayıt Sorumlusu</span>
+                        <strong>${escapeAttr(auditUserName)}</strong>
+                    </div>
                 </div>
             </section>
 
-            <div class="nc-detail-grid">
-                <section class="nc-detail-section nc-detail-section--finding">
-                    <div class="nc-detail-section-heading">
-                        <span><i class="fas fa-triangle-exclamation"></i></span>
-                        <div><h3>Uygunsuzluk Bulgusu</h3><p>Denetimde tespit edilen soru veya kontrol maddesi</p></div>
+            <section class="nc-detail-section" style="margin-bottom: 0.75rem;">
+                <!-- 1. Başlık: Uygunsuzluk Bulgusu -->
+                <div class="nc-detail-section-heading" style="margin-bottom: 0.6rem;">
+                    <span><i class="fas fa-triangle-exclamation"></i></span>
+                    <div>
+                        <h3>Uygunsuzluk Bulgusu ve Detayları</h3>
+                        <p>Denetimde tespit edilen bulgular, açıklamalar ve kanıtlar</p>
                     </div>
-                    <div class="nc-detail-text-card">${escapeAttr(nc.questionText || 'Belirtilmedi')}</div>
-                </section>
-
-                <section class="nc-detail-section nc-detail-section--owner">
-                    <div class="nc-detail-section-heading">
-                        <span><i class="fas fa-user-shield"></i></span>
-                        <div><h3>Kayıt Sorumlusu</h3><p>Denetim kaydını oluşturan kullanıcı</p></div>
-                    </div>
-                    <div class="nc-detail-owner-card">
-                        <span><i class="fas fa-user"></i></span>
-                        <div><small>Kullanıcı</small><strong>${escapeAttr(auditUserName)}</strong></div>
-                    </div>
-                </section>
-            </div>
-
-            ${commentsHtml ? `
-                <section class="nc-detail-section">
-                    <div class="nc-detail-section-heading">
-                        <span><i class="fas fa-message"></i></span>
-                        <div><h3>Denetçi Açıklamaları</h3><p>Bulguya ilişkin saha notları ve ek açıklamalar</p></div>
-                    </div>
-                    <div class="nc-detail-comment-card">${commentsHtml}</div>
-                </section>
-            ` : ''}
-
-            <section class="nc-detail-section nc-detail-section--evidence">
-                <div class="nc-detail-section-heading">
-                    <span><i class="fas fa-camera"></i></span>
-                    <div><h3>Denetim Kanıtları</h3><p>Uygunsuzluk tespitinde eklenen görseller</p></div>
                 </div>
-                ${renderImageGallery(nc.auditorPhotoPaths || [])}
+
+                <!-- 2. Soru Bulgusu Kartı -->
+                <div class="nc-detail-text-card" style="margin-bottom: 0.75rem; border-left: 3px solid var(--nc-status-color); font-weight: 700; font-size: 0.82rem; line-height: 1.4;">
+                    ${escapeAttr(nc.questionText || 'Belirtilmedi')}
+                </div>
+
+                <!-- 3. Denetçi Açıklamaları (Varsa) -->
+                ${commentsHtml ? `
+                    <div style="margin-bottom: 0.75rem; padding-top: 0.25rem;">
+                        <span style="display: block; font-size: 0.58rem; font-weight: 850; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.35rem;">
+                            <i class="fas fa-comment-dots" style="margin-right: 4px; color: var(--nc-status-color);"></i> Denetçi Açıklamaları
+                        </span>
+                        <div class="nc-detail-comment-card" style="margin: 0; padding: 0.65rem 0.75rem; font-size: 0.75rem; font-weight: 500;">
+                            ${commentsHtml}
+                        </div>
+                    </div>
+                ` : ''}
+
+                <!-- 4. Denetim Kanıtları (Görseller) -->
+                <div style="padding-top: 0.25rem;">
+                    <span style="display: block; font-size: 0.58rem; font-weight: 850; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.35rem;">
+                        <i class="fas fa-images" style="margin-right: 4px; color: var(--nc-status-color);"></i> Denetim Kanıtları
+                    </span>
+                    ${renderImageGallery(nc.auditorPhotoPaths || [])}
+                </div>
             </section>
 
             ${(nc.closureComment || (nc.closurePhotoPaths || []).length > 0) ? `
