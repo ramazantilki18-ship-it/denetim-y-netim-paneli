@@ -3883,7 +3883,7 @@ function inspectNC(id, parentAuditId = null) {
                         <span style="font-size: 0.58rem; color: var(--text-dim); display: flex; align-items: center; gap: 4px;"><i class="fas fa-user-shield"></i> Kayıt Sorumlusu</span>
                         <strong style="font-size: 0.8rem; font-weight: 850; color: var(--text-primary); margin-top: 0.05rem;">${escapeAttr(auditUserName)}</strong>
                         <span style="font-size: 0.64rem; font-weight: 650; color: var(--text-secondary);">${escapeAttr(auditorTitle)}</span>
-                        <span style="font-size: 0.64rem; font-weight: 650; color: var(--text-dim);">${escapeAttr(lineText)} Hattı</span>
+                        <span style="font-size: 0.64rem; font-weight: 650; color: var(--text-dim);">${escapeAttr(lineText)}</span>
                     </div>
                 </div>
             </section>
