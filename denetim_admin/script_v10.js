@@ -3771,7 +3771,7 @@ function inspectNC(id, parentAuditId = null) {
         return;
     }
     const audit = getAccessibleAuditById(nc.auditId) || {};
-    const auditUserName = audit.auditorName || nc.auditorName || nc.owner || 'Sistem';
+    const auditUserName = getAuditorDisplayName(audit.auditorName || nc.auditorName || nc.owner || 'Sistem');
 
     currentAuditId = audit.id || null;
     const modal = document.getElementById('audit-modal');
