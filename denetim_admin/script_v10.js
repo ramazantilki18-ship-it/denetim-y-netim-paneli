@@ -3867,7 +3867,7 @@ function inspectNC(id, parentAuditId = null) {
                 </div>
             </section>
 
-            <section class="nc-detail-section" style="margin-bottom: 0.75rem; border: 1.5px solid #e11d48; box-shadow: 0 8px 24px rgba(225, 29, 72, 0.06);">
+            <section class="nc-detail-section" style="margin-bottom: 0.75rem; border: 2.5px solid #e11d48; box-shadow: 0 8px 24px rgba(225, 29, 72, 0.1);">
                 <!-- 1. Başlık: Uygunsuzluk Bulgusu (Kutunun İçinde) -->
                 <div class="nc-detail-section-heading" style="margin-bottom: 0.85rem; border-bottom: 2px solid var(--border-main); padding-bottom: 0.6rem; gap: 0.65rem;">
                     <span style="width: 38px; height: 38px; flex: 0 0 38px; font-size: 0.9rem; border-radius: 10px; color: var(--nc-status-color); background: color-mix(in srgb, var(--nc-status-color) 10%, transparent); display: grid; place-items: center;"><i class="fas fa-triangle-exclamation"></i></span>
@@ -3909,7 +3909,7 @@ function inspectNC(id, parentAuditId = null) {
             </section>
 
             ${(nc.closureComment || (nc.closurePhotoPaths || []).length > 0) ? `
-                <section class="nc-detail-resolution" style="border: 1.5px solid #16a34a; box-shadow: 0 8px 24px rgba(22, 163, 74, 0.06); margin-bottom: 0.75rem;">
+                <section class="nc-detail-resolution" style="border: 2.5px solid #16a34a; box-shadow: 0 8px 24px rgba(22, 163, 74, 0.1); margin-bottom: 0.75rem;">
                     <!-- 1. Başlık: Çözüm ve Kapanış (Kutunun İçinde) -->
                     <div class="nc-detail-section-heading" style="margin-bottom: 0.85rem; border-bottom: 2px solid var(--border-main); padding-bottom: 0.6rem; gap: 0.65rem;">
                         <span style="width: 38px; height: 38px; flex: 0 0 38px; font-size: 0.9rem; border-radius: 10px; color: #16a34a; background: color-mix(in srgb, #16a34a 10%, transparent); display: grid; place-items: center;"><i class="fas fa-circle-check"></i></span>
