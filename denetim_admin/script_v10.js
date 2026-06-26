@@ -3879,17 +3879,11 @@ function inspectNC(id, parentAuditId = null) {
                         <span><i class="fas fa-calendar-day"></i> Kayıt Tarihi</span>
                         <strong>${escapeAttr(recordDateTextWithWeek)}</strong>
                     </div>
-                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.08rem; width: 100%; margin-top: 0.35rem; padding-top: 0.35rem; border-top: 1px dashed var(--border-main);">
+                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.12rem; width: 100%; margin-top: 0.35rem; padding-top: 0.35rem; border-top: 1px dashed var(--border-main);">
                         <span style="font-size: 0.58rem; color: var(--text-dim); display: flex; align-items: center; gap: 4px;"><i class="fas fa-user-shield"></i> Kayıt Sorumlusu</span>
-                        <strong style="font-size: 0.8rem; font-weight: 800; color: var(--text-primary); margin-top: 0.05rem;">${escapeAttr(auditUserName)}</strong>
-                        <div style="display: flex; align-items: center; gap: 5px; margin-top: 0.15rem; font-size: 0.58rem; font-weight: 700;">
-                            <span style="background: color-mix(in srgb, var(--nc-status-color) 8%, var(--bg-input)); color: var(--text-secondary); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--border-main);" title="Kullanıcı Ünvanı">
-                                ${escapeAttr(auditorTitle)}
-                            </span>
-                            <span style="background: color-mix(in srgb, var(--nc-line-color) 12%, transparent); color: var(--nc-line-color); padding: 1px 5px; border-radius: 4px; border: 1px solid color-mix(in srgb, var(--nc-line-color) 30%, transparent);" title="Sorumlu Olduğu Hatlar">
-                                ${escapeAttr(lineText)} Hattı
-                            </span>
-                        </div>
+                        <strong style="font-size: 0.8rem; font-weight: 850; color: var(--text-primary); margin-top: 0.05rem;">${escapeAttr(auditUserName)}</strong>
+                        <span style="font-size: 0.64rem; font-weight: 650; color: var(--text-secondary);">${escapeAttr(auditorTitle)}</span>
+                        <span style="font-size: 0.64rem; font-weight: 650; color: var(--text-dim);">${escapeAttr(lineText)} Hattı</span>
                     </div>
                 </div>
             </section>
