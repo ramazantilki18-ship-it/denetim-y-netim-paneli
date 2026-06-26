@@ -12836,7 +12836,18 @@ function getAuditorDisplayName(auditorName) {
             fullName === searchName ||
             (emailPrefix && emailPrefix === searchPrefix);
     });
-    return user ? getUserDisplayName(user) : auditorName;
+    if (user) return getUserDisplayName(user);
+
+    // Akıllı Geri Çekilme (Smart Fallback): Eğer veritabanında eşleşme bulunamadıysa ve "isim.soyisim" formatındaysa temizle ve ad soyad yap
+    if (typeof auditorName === 'string' && auditorName.includes('.') && !auditorName.includes(' ')) {
+        const cleanName = auditorName.split('@')[0];
+        if (cleanName.includes('.')) {
+            return cleanName.split('.')
+                .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+                .join(' ');
+        }
+    }
+    return auditorName;
 }
 
 function getAuditorUserObject(auditorName) {
