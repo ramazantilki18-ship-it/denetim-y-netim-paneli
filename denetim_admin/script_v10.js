@@ -3866,17 +3866,22 @@ function inspectNC(id, parentAuditId = null) {
 
             <section class="nc-detail-section" style="margin-bottom: 0.75rem;">
                 <!-- 1. Başlık: Uygunsuzluk Bulgusu -->
-                <div class="nc-detail-section-heading" style="margin-bottom: 0.6rem;">
-                    <span><i class="fas fa-triangle-exclamation"></i></span>
+                <div class="nc-detail-section-heading" style="margin-bottom: 0.85rem; border-bottom: 1px solid var(--border-main); padding-bottom: 0.6rem; gap: 0.65rem;">
+                    <span style="width: 38px; height: 38px; flex: 0 0 38px; font-size: 0.9rem; border-radius: 10px; color: var(--nc-status-color); background: color-mix(in srgb, var(--nc-status-color) 10%, transparent); display: grid; place-items: center;"><i class="fas fa-triangle-exclamation"></i></span>
                     <div>
-                        <h3>Uygunsuzluk Bulgusu ve Detayları</h3>
-                        <p>Denetimde tespit edilen bulgular, açıklamalar ve kanıtlar</p>
+                        <h3 style="font-size: 0.88rem; font-weight: 900; letter-spacing: 0.2px; color: var(--text-primary); margin: 0;">Uygunsuzluk Bulgusu ve Detayları</h3>
+                        <p style="font-size: 0.62rem; font-weight: 600; color: var(--text-dim); margin: 0.15rem 0 0;">Denetimde tespit edilen bulgular, açıklamalar ve kanıtlar</p>
                     </div>
                 </div>
 
                 <!-- 2. Soru Bulgusu Kartı -->
-                <div class="nc-detail-text-card" style="margin-bottom: 0.75rem; border-left: 3px solid var(--nc-status-color); font-weight: 700; font-size: 0.82rem; line-height: 1.4;">
-                    ${escapeAttr(nc.questionText || 'Belirtilmedi')}
+                <div style="margin-bottom: 0.75rem; padding-top: 0.1rem;">
+                    <span style="display: block; font-size: 0.58rem; font-weight: 850; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.35rem;">
+                        <i class="fas fa-circle-question" style="margin-right: 4px; color: var(--nc-status-color);"></i> Tespit Edilen Soru / Madde
+                    </span>
+                    <div class="nc-detail-text-card" style="margin: 0; border-left: 3px solid var(--nc-status-color); font-weight: 700; font-size: 0.82rem; line-height: 1.4;">
+                        ${escapeAttr(nc.questionText || 'Belirtilmedi')}
+                    </div>
                 </div>
 
                 <!-- 3. Denetçi Açıklamaları (Varsa) -->
