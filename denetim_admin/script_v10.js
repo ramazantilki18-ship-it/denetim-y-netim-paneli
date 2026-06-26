@@ -8710,7 +8710,7 @@ function openAuditModal(id) {
         const metrics = buildAuditDetailMetrics(audit);
         const overallScore = clampAuditPercent(metrics.overallPercent);
         const categoryAverageScore = clampAuditPercent(metrics.categoryAveragePercent);
-        const scoreColor = overallScore >= 85 ? '#16A34A' : (overallScore >= 70 ? '#EA580C' : '#E11D48');
+        const scoreColor = categoryAverageScore >= 85 ? '#16A34A' : (categoryAverageScore >= 70 ? '#EA580C' : '#E11D48');
 
         // Dynamic Categories & Scores from 'answers' (Mobile parity)
         let categories = ['Ayıklama', 'Düzen', 'Temizlik', 'Standartlaştırma', 'Disiplin'];
@@ -8761,7 +8761,7 @@ function openAuditModal(id) {
                         <!-- Column 1: Overall Score Badge (Large, on the left, standing alone) -->
                         <div style="width: 85px; height: 85px; border: 4px solid ${scoreColor}; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); flex-shrink: 0;">
                             <div style="text-align: center;">
-                                <div style="font-size: 1.5rem; font-weight: 900;">%${Math.round(overallScore)}</div>
+                                <div style="font-size: 1.5rem; font-weight: 900;">%${categoryAverageScore.toFixed(1)}</div>
                                 <div style="font-size: 0.5rem; opacity: 0.7; font-weight: 900; letter-spacing: 1px;">TOPLAM</div>
                             </div>
                         </div>
