@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kurumsal Denetim | Admin Kontrol Paneli</title>
-    <link rel="stylesheet" href="style_v4.css?v=100">
+    <link rel="stylesheet" href="style_v4.css?v=106">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
@@ -531,19 +531,29 @@
                 </div>
 
                 <!-- Stats Grid -->
-                <section class="stats-grid stats-grid-5 dashboard-stat-grid">
+                <section class="stats-grid stats-grid-6 dashboard-stat-grid">
                     <div class="stat-card dashboard-stat-card dashboard-stat-card-clickable" role="button" tabindex="0"
                         data-dashboard-view="audits-view" onclick="openDashboardStatCard(this)"
                         onkeydown="handleDashboardStatCardKey(event, this)" title="Denetimleri görüntüle"
                         style="--stat-accent: #3b82f6; --stat-accent-rgb: 59, 130, 246;">
                         <h3 class="dashboard-stat-title">
-                            <span class="dashboard-stat-icon"><i class="fas fa-chart-line"></i></span>
                             Operasyon Başarısı
                         </h3>
                         <div class="stat-value dashboard-stat-value" id="stat-avg-score">%0</div>
                         <div class="dashboard-stat-footer">
-                            <span class="stat-trend">Denetim başarı ortalaması</span>
-                            <span class="dashboard-stat-badge" id="stat-total-audits">0 Adet</span>
+                            <span class="dashboard-stat-badge" id="stat-total-audits">0 Denetim</span>
+                        </div>
+                    </div>
+                    <div class="stat-card dashboard-stat-card dashboard-stat-card-clickable" role="button" tabindex="0"
+                        data-nc-filter="Açık" onclick="openDashboardStatCard(this)"
+                        onkeydown="handleDashboardStatCardKey(event, this)" title="Açık uygunsuzlukları görüntüle"
+                        style="--stat-accent: #8b5cf6; --stat-accent-rgb: 139, 92, 246;">
+                        <h3 class="dashboard-stat-title">
+                            Açık Uygunsuzluk
+                        </h3>
+                        <div class="stat-value dashboard-stat-value" id="stat-total-nc">0</div>
+                        <div class="dashboard-stat-footer">
+                            <span class="dashboard-stat-badge" id="stat-active-nc">0 Toplam</span>
                         </div>
                     </div>
                     <div class="stat-card dashboard-stat-card dashboard-stat-card-clickable" role="button" tabindex="0"
@@ -551,12 +561,10 @@
                         onkeydown="handleDashboardStatCardKey(event, this)" title="Geciken uygunsuzlukları görüntüle"
                         style="--stat-accent: #ef4444; --stat-accent-rgb: 239, 68, 68;">
                         <h3 class="dashboard-stat-title">
-                            <span class="dashboard-stat-icon"><i class="fas fa-clock-rotate-left"></i></span>
                             Geciken Aksiyon
                         </h3>
                         <div class="stat-value dashboard-stat-value" id="stat-delayed-nc">0</div>
                         <div class="dashboard-stat-footer">
-                            <span class="stat-trend">Acil müdahale bekleyen</span>
                         </div>
                     </div>
                     <div class="stat-card dashboard-stat-card dashboard-stat-card-clickable" role="button" tabindex="0"
@@ -565,12 +573,10 @@
                         title="Kontrol bekleyen uygunsuzlukları görüntüle"
                         style="--stat-accent: #f59e0b; --stat-accent-rgb: 245, 158, 11;">
                         <h3 class="dashboard-stat-title">
-                            <span class="dashboard-stat-icon"><i class="fas fa-hourglass-half"></i></span>
                             Onay Bekleyenler
                         </h3>
                         <div class="stat-value dashboard-stat-value" id="stat-control-nc">0</div>
                         <div class="dashboard-stat-footer">
-                            <span class="stat-trend">Kontrol onayı bekliyor</span>
                         </div>
                     </div>
                     <div class="stat-card dashboard-stat-card dashboard-stat-card-clickable" role="button" tabindex="0"
@@ -578,12 +584,10 @@
                         onkeydown="handleDashboardStatCardKey(event, this)" title="Kapatılan uygunsuzlukları görüntüle"
                         style="--stat-accent: #10b981; --stat-accent-rgb: 16, 185, 129;">
                         <h3 class="dashboard-stat-title">
-                            <span class="dashboard-stat-icon"><i class="fas fa-circle-check"></i></span>
                             Çözüm Performansı
                         </h3>
                         <div class="stat-value dashboard-stat-value" id="stat-closure-rate">%0</div>
                         <div class="dashboard-stat-footer">
-                            <span class="stat-trend">Aksiyon kapatma başarısı</span>
                             <span class="dashboard-stat-badge" id="stat-closed-nc">0 Adet</span>
                         </div>
                     </div>
@@ -592,12 +596,10 @@
                         onkeydown="handleDashboardStatCardKey(event, this)" title="Kapatılan aksiyonları görüntüle"
                         style="--stat-accent: #06b6d4; --stat-accent-rgb: 6, 182, 212;">
                         <h3 class="dashboard-stat-title">
-                            <span class="dashboard-stat-icon"><i class="fas fa-stopwatch"></i></span>
                             Zamanında Kapatma
                         </h3>
                         <div class="stat-value dashboard-stat-value" id="stat-ontime-rate">%0</div>
                         <div class="dashboard-stat-footer">
-                            <span class="stat-trend">Süresi içinde kapatılan aksiyon</span>
                             <span class="dashboard-stat-badge" id="stat-ontime-count">0 / 0</span>
                         </div>
                     </div>
@@ -3512,5 +3514,5 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"
         crossorigin="anonymous"></script>
     <script src="metro_data.js"></script>
-    <script src="script_v10.js?v=117"></script>
+    <script src="script_v10.js?v=125"></script>
 </body>

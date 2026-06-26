@@ -584,6 +584,10 @@ header {
     grid-template-columns: repeat(5, 1fr) !important;
 }
 
+.stats-grid-6 {
+    grid-template-columns: repeat(6, 1fr) !important;
+}
+
 .stat-card {
     background: var(--glass-bg);
     backdrop-filter: blur(10px);
@@ -1166,16 +1170,19 @@ td {
 }
 
 .dashboard-stat-card {
-    min-height: 172px;
-    padding: 1.15rem 1.1rem 3.8rem;
+    min-height: 92px;
+    padding: 0.65rem 0.9rem;
     display: flex;
     flex-direction: column;
-    border: 1px solid rgba(var(--stat-accent-rgb), 0.2);
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    border: 1px solid rgba(var(--stat-accent-rgb), 0.16);
     border-left: 4px solid var(--stat-accent);
     background:
-        radial-gradient(circle at 100% 0%, rgba(var(--stat-accent-rgb), 0.13), transparent 46%),
+        radial-gradient(circle at 50% 0%, rgba(var(--stat-accent-rgb), 0.08), transparent 50%),
         var(--bg-card);
-    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.09);
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
     isolation: isolate;
 }
 
@@ -1212,15 +1219,16 @@ td {
 }
 
 .dashboard-stat-title {
-    min-height: 34px;
+    min-height: auto;
     margin: 0 !important;
     display: flex;
     align-items: center;
-    gap: 0.6rem;
-    color: var(--text-secondary) !important;
-    font-size: 0.82rem !important;
-    font-weight: 800;
-    line-height: 1.25;
+    justify-content: center;
+    gap: 0.5rem;
+    color: var(--text-dim) !important;
+    font-size: 0.75rem !important;
+    font-weight: 750;
+    line-height: 1.2;
 }
 
 .dashboard-stat-icon {
@@ -1238,9 +1246,9 @@ td {
 }
 
 .dashboard-stat-value {
-    margin-top: 0.8rem;
+    margin-top: 0.3rem;
     color: var(--stat-accent) !important;
-    font-size: clamp(1.7rem, 2.1vw, 2.15rem);
+    font-size: clamp(1.5rem, 1.8vw, 1.85rem);
     font-weight: 800;
     letter-spacing: -0.04em;
     line-height: 1;
@@ -1274,16 +1282,17 @@ td {
     position: static !important;
     inset: auto !important;
     margin: 0 !important;
-    padding: 0.28rem 0.55rem;
-    border: 1px solid rgba(var(--stat-accent-rgb), 0.22);
-    border-radius: 999px;
-    color: var(--stat-accent);
-    background: rgba(var(--stat-accent-rgb), 0.11);
-    font-size: 0.65rem;
-    font-weight: 850;
-    line-height: 1;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: var(--text-secondary) !important;
+    font-size: 0.72rem !important;
+    font-weight: 750;
+    line-height: 1.2;
     letter-spacing: 0.02em;
     white-space: nowrap;
+    align-self: center;
 }
 
 .reports-grid {

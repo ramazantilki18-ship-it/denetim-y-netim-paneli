@@ -6135,6 +6135,7 @@ function redirectToNCWithFilter(status) {
 function normalizeDashboardStatLayout() {
     const cards = [
         { valueId: 'stat-avg-score', badgeId: 'stat-total-audits' },
+        { valueId: 'stat-total-nc', badgeId: 'stat-active-nc' },
         { valueId: 'stat-delayed-nc' },
         { valueId: 'stat-control-nc' },
         { valueId: 'stat-closure-rate', badgeId: 'stat-closed-nc' },
@@ -6150,23 +6151,42 @@ function normalizeDashboardStatLayout() {
         value.classList.add('dashboard-stat-value');
         card.querySelector('h3')?.classList.add('dashboard-stat-title');
 
-        let footer = card.querySelector('.dashboard-stat-footer');
-        if (!footer) {
-            footer = document.createElement('div');
-            footer.className = 'dashboard-stat-footer';
-            card.appendChild(footer);
+        // Find the badge first before modifying the DOM
+        const badge = badgeId ? document.getElementById(badgeId) : null;
+        if (badge) {
+            // Move the badge out of the footer container so it doesn't get destroyed
+            card.appendChild(badge);
         }
 
-        const directTrend = Array.from(card.children)
-            .find(element => element.classList.contains('stat-trend'));
-        if (directTrend) footer.prepend(directTrend);
+        // Now we can safely remove the old footer container if it exists
+        const footer = card.querySelector('.dashboard-stat-footer');
+        if (footer) footer.remove();
 
-        if (badgeId) {
-            const badge = document.getElementById(badgeId);
-            if (badge) {
-                badge.classList.add('dashboard-stat-badge');
-                footer.appendChild(badge);
+        // Group value and badge vertically and center them
+        let valGroup = card.querySelector('.dashboard-stat-value-group');
+        if (!valGroup) {
+            valGroup = document.createElement('div');
+            valGroup.className = 'dashboard-stat-value-group';
+            valGroup.style.display = 'flex';
+            valGroup.style.flexDirection = 'column';
+            valGroup.style.alignItems = 'center';
+            valGroup.style.gap = '0.15rem';
+            valGroup.style.marginTop = '0.3rem';
+            valGroup.style.width = '100%';
+
+            const titleEl = card.querySelector('h3');
+            if (titleEl) {
+                titleEl.after(valGroup);
+            } else {
+                card.prepend(valGroup);
             }
+        }
+
+        valGroup.appendChild(value);
+
+        if (badge) {
+            badge.classList.add('dashboard-stat-badge');
+            valGroup.appendChild(badge);
         }
     });
 }
@@ -6187,8 +6207,11 @@ function updateStats() {
     const totalNCLen = ncs.length;
     const closureRate = totalNCLen > 0 ? (closedNCLen / totalNCLen) * 100 : 0;
 
-    if (document.getElementById('stat-total-audits')) document.getElementById('stat-total-audits').innerText = totalAudits + ' Adet';
+    if (document.getElementById('stat-total-audits')) document.getElementById('stat-total-audits').innerText = totalAudits + ' Denetim';
     if (document.getElementById('stat-avg-score')) document.getElementById('stat-avg-score').innerText = '%' + Math.round(avgScore);
+
+    if (document.getElementById('stat-total-nc')) document.getElementById('stat-total-nc').innerText = openNCLen;
+    if (document.getElementById('stat-active-nc')) document.getElementById('stat-active-nc').innerText = totalNCLen + ' Toplam';
 
     if (document.getElementById('stat-open-nc')) document.getElementById('stat-open-nc').innerText = openNCLen;
     if (document.getElementById('stat-delayed-nc')) document.getElementById('stat-delayed-nc').innerText = delayedNCLen;
