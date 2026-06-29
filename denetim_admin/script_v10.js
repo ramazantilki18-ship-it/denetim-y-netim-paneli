@@ -650,6 +650,19 @@ function initAuthListener() {
             mainApp.style.display = 'none';
             currentUser = null;
 
+            // Reset active views and navigation highlights to default (dashboard-view)
+            document.querySelectorAll('.view-section').forEach(view => {
+                view.style.display = view.id === 'dashboard-view' ? 'block' : 'none';
+            });
+            document.querySelectorAll('.nav-item').forEach(item => {
+                const onClickAttr = item.getAttribute('onclick') || '';
+                if (onClickAttr.includes('dashboard-view')) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+
             // Giriş butonunun yükleniyor durumunu sıfırla
             const loginBtn = document.querySelector('.login-btn');
             if (loginBtn) {
@@ -747,9 +760,7 @@ async function loadUserProfile(firebaseUser) {
         renderUserLineLogos(currentUser);
         pushDebug('updatePermissionGatedUI called...');
         updatePermissionGatedUI();
-        if (isFieldAuditor(currentUser) || isFieldAuditorActionOwner(currentUser)) {
-            switchView('audits-view');
-        }
+        navigateToDefaultView(currentUser);
 
         // Force refresh matrix if we are on that view
         if (document.getElementById('permissions-view').style.display !== 'none') {
@@ -1717,6 +1728,25 @@ function canShowNavView(viewId, user = currentUser) {
     }
     const requiredPerm = NAV_VIEW_PERMISSIONS[viewId];
     return requiredPerm ? hasPermission(requiredPerm, user) : true;
+}
+
+function navigateToDefaultView(user = currentUser) {
+    const viewOrder = [
+        'dashboard-view',
+        'audits-view',
+        'nc-management-view',
+        'stats-view',
+        'reports-view',
+        'planning-view'
+    ];
+    for (const viewId of viewOrder) {
+        if (canShowNavView(viewId, user)) {
+            switchView(viewId);
+            return;
+        }
+    }
+    // Fallback if none matched
+    switchView('dashboard-view');
 }
 
 function updatePermissionGatedUI() {
