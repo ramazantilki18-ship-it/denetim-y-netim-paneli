@@ -13509,7 +13509,6 @@ function renderPeople() {
 
     ensurePeopleFilters();
     const search = (document.getElementById('people-search')?.value || '').toLocaleLowerCase('tr-TR').trim();
-    const usernameFilter = document.getElementById('people-username-filter')?.value || 'all';
     const roleFilter = document.getElementById('people-role-filter')?.value || 'all';
     const lineFilter = document.getElementById('people-line-filter')?.value || 'all';
     const users = (Array.isArray(appData.users) ? appData.users : [])
@@ -13523,12 +13522,11 @@ function renderPeople() {
             const lines = Array.isArray(user.authorizedLines) ? user.authorizedLines : [];
             const globalScope = hasGlobalScope(user);
             const matchesSearch = !search || `${name} ${username} ${authorityLabel} ${title} ${email}`.toLocaleLowerCase('tr-TR').includes(search);
-            const matchesUsername = usernameFilter === 'all' || username === usernameFilter;
             const matchesRole = roleFilter === 'all' || authorityValue === roleFilter;
             const matchesLine = lineFilter === 'all' || globalScope || lines.includes(lineFilter);
-            return matchesSearch && matchesUsername && matchesRole && matchesLine;
+            return matchesSearch && matchesRole && matchesLine;
         })
-        .sort((a, b) => getUserUsername(a).localeCompare(getUserUsername(b), 'tr'));
+        .sort((a, b) => getUserDisplayName(a).localeCompare(getUserDisplayName(b), 'tr'));
 
     if (!users.length) {
         container.innerHTML = `
@@ -13536,7 +13534,6 @@ function renderPeople() {
                 <table class="cms-table people-table" style="width: 100%; border-collapse: collapse;">
                     <thead>
                         <tr>
-                            <th style="font-weight: 850; font-size: 0.72rem; text-transform: uppercase; padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-main);">Kullanıcı Adı</th>
                             <th style="font-weight: 850; font-size: 0.72rem; text-transform: uppercase; padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-main);">Ad Soyad</th>
                             <th style="font-weight: 850; font-size: 0.72rem; text-transform: uppercase; padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-main);">Rol / Yetki</th>
                             <th style="font-weight: 850; font-size: 0.72rem; text-transform: uppercase; padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-main);">E-Posta / Ünvan</th>
@@ -13546,7 +13543,7 @@ function renderPeople() {
                     </thead>
                     <tbody>
                         <tr>
-                            <td colspan="6" style="text-align:center; padding:2.5rem; color:var(--text-dim); font-weight:700; font-size:0.8rem;">Filtrelere uygun personel kaydı bulunmuyor.</td>
+                            <td colspan="5" style="text-align:center; padding:2.5rem; color:var(--text-dim); font-weight:700; font-size:0.8rem;">Filtrelere uygun personel kaydı bulunmuyor.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -13556,7 +13553,6 @@ function renderPeople() {
 
     const rowsHtml = users.map(user => {
         const name = getUserDisplayName(user);
-        const username = getUserUsername(user);
         const authorityLabel = getRbacRoleDisplayName(user);
         const globalScope = hasGlobalScope(user);
         const lines = Array.isArray(user.authorizedLines) ? user.authorizedLines : [];
@@ -13569,7 +13565,6 @@ function renderPeople() {
 
         return `
             <tr class="people-row">
-                <td style="font-weight:700; font-size:0.8rem; color:var(--text-primary); padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border-main);">${escapeAttr(username)}</td>
                 <td style="font-weight:700; font-size:0.8rem; color:var(--text-secondary); padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border-main);">${escapeAttr(name || '-')}</td>
                 <td style="padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border-main);"><span class="role" style="font-size:0.65rem; font-weight:800; padding:0.12rem 0.45rem; border-radius:999px; background:rgba(139, 92, 246, 0.08); color:var(--primary);">${escapeAttr(authorityLabel)}</span></td>
                 <td style="font-size:0.75rem; color:var(--text-dim); padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border-main);">
@@ -13591,7 +13586,6 @@ function renderPeople() {
             <table class="cms-table people-table" style="width: 100%; border-collapse: collapse;">
                 <thead>
                     <tr>
-                        <th style="font-weight: 850; font-size: 0.72rem; text-transform: uppercase; padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-main); text-align: left;">Kullanıcı Adı</th>
                         <th style="font-weight: 850; font-size: 0.72rem; text-transform: uppercase; padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-main); text-align: left;">Ad Soyad</th>
                         <th style="font-weight: 850; font-size: 0.72rem; text-transform: uppercase; padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-main); text-align: left;">Rol / Yetki</th>
                         <th style="font-weight: 850; font-size: 0.72rem; text-transform: uppercase; padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border-main); text-align: left;">E-Posta / Ünvan</th>
@@ -13610,19 +13604,12 @@ function renderPeople() {
 function ensurePeopleFilters() {
     const list = document.getElementById('people-list');
     if (!list) return;
-    const usernames = [...new Set((appData.users || []).map(u => getUserUsername(u)).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'tr'));
     const authorities = RBAC_ROLES.map(role => [role.id, role.name]);
-    const existingUsername = document.getElementById('people-username-filter');
-    if (existingUsername) {
-        const currentValue = existingUsername.value;
-        existingUsername.innerHTML = `<option value="all">Tüm Kullanıcılar</option>${usernames.map(username => `<option value="${escapeAttr(username)}">${escapeAttr(username)}</option>`).join('')}`;
-        existingUsername.value = usernames.includes(currentValue) ? currentValue : 'all';
-        const existingRole = document.getElementById('people-role-filter');
-        if (existingRole) {
-            const currentRole = existingRole.value;
-            existingRole.innerHTML = `<option value="all">Tüm Yetkiler</option>${authorities.map(([value, label]) => `<option value="${escapeAttr(value)}">${escapeAttr(label)}</option>`).join('')}`;
-            existingRole.value = authorities.some(([value]) => value === currentRole) ? currentRole : 'all';
-        }
+    const existingRole = document.getElementById('people-role-filter');
+    if (existingRole) {
+        const currentRole = existingRole.value;
+        existingRole.innerHTML = `<option value="all">Tüm Yetkiler</option>${authorities.map(([value, label]) => `<option value="${escapeAttr(value)}">${escapeAttr(label)}</option>`).join('')}`;
+        existingRole.value = authorities.some(([value]) => value === currentRole) ? currentRole : 'all';
         return;
     }
     const filterPanel = document.createElement('div');
@@ -13631,14 +13618,7 @@ function ensurePeopleFilters() {
     filterPanel.innerHTML = `
         <div class="people-filter-field people-search-field">
             <label>Hızlı Ara</label>
-            <div><i class="fas fa-search"></i><input id="people-search" type="text" placeholder="Kullanıcı, ad, e-posta veya yetki" oninput="renderPeople()"></div>
-        </div>
-        <div class="people-filter-field">
-            <label>Kullanıcı Adı</label>
-            <select id="people-username-filter" onchange="renderPeople()">
-                <option value="all">Tüm Kullanıcılar</option>
-                ${usernames.map(username => `<option value="${escapeAttr(username)}">${escapeAttr(username)}</option>`).join('')}
-            </select>
+            <div><i class="fas fa-search"></i><input id="people-search" type="text" placeholder="Ad, e-posta veya yetki" oninput="renderPeople()"></div>
         </div>
         <div class="people-filter-field">
             <label>Sistem Rolü</label>
@@ -13663,9 +13643,7 @@ function clearPeopleFilters() {
     const search = document.getElementById('people-search');
     const role = document.getElementById('people-role-filter');
     const line = document.getElementById('people-line-filter');
-    const username = document.getElementById('people-username-filter');
     if (search) search.value = '';
-    if (username) username.value = 'all';
     if (role) role.value = 'all';
     if (line) line.value = 'all';
     renderPeople();
