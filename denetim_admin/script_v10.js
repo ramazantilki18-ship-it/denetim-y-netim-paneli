@@ -1755,9 +1755,21 @@ function updatePermissionGatedUI() {
     const feedbackNavItem = document.getElementById('feedbacks-nav-item');
     const refreshNavItem = document.getElementById('refresh-nav-item');
     const logsNavItem = document.getElementById('logs-nav-item');
-    if (feedbackNavItem) feedbackNavItem.style.display = superAdminOnlyVisible ? '' : 'none';
-    if (refreshNavItem) refreshNavItem.style.display = superAdminOnlyVisible ? '' : 'none';
-    if (logsNavItem) logsNavItem.style.display = hasPermission('view_logs') ? '' : 'none';
+    
+    if (feedbackNavItem) {
+        feedbackNavItem.style.display = superAdminOnlyVisible ? '' : 'none';
+        feedbackNavItem.classList.toggle('nav-hidden', !superAdminOnlyVisible);
+    }
+    if (refreshNavItem) {
+        refreshNavItem.style.display = superAdminOnlyVisible ? '' : 'none';
+        refreshNavItem.classList.toggle('nav-hidden', !superAdminOnlyVisible);
+    }
+    if (logsNavItem) {
+        const hasLogs = hasPermission('view_logs');
+        logsNavItem.style.display = hasLogs ? '' : 'none';
+        logsNavItem.classList.toggle('nav-hidden', !hasLogs);
+    }
+    
     const clearAllPlansBtn = document.getElementById('clear-all-plans-btn');
     if (clearAllPlansBtn) {
         clearAllPlansBtn.innerHTML = superAdminOnlyVisible
@@ -1775,7 +1787,9 @@ function updatePermissionGatedUI() {
         const viewId = match[1];
         const li = item.closest('li');
         if (!li) return;
-        li.style.display = canShowNavView(viewId) ? '' : 'none';
+        const canShow = canShowNavView(viewId);
+        li.style.display = canShow ? '' : 'none';
+        li.classList.toggle('nav-hidden', !canShow);
     });
 
     // YÖNETİM başlığı ve ayırıcı çizginin durumunu güncelle
@@ -1787,8 +1801,15 @@ function updatePermissionGatedUI() {
 
     const mgmtDivider = document.getElementById('management-divider');
     const mgmtHeader = document.getElementById('management-header');
-    if (mgmtDivider) mgmtDivider.style.display = hasAnyMgmtPermission ? '' : 'none';
-    if (mgmtHeader) mgmtHeader.style.display = hasAnyMgmtPermission ? '' : 'none';
+    
+    if (mgmtDivider) {
+        mgmtDivider.style.display = hasAnyMgmtPermission ? '' : 'none';
+        mgmtDivider.classList.toggle('nav-hidden', !hasAnyMgmtPermission);
+    }
+    if (mgmtHeader) {
+        mgmtHeader.style.display = hasAnyMgmtPermission ? '' : 'none';
+        mgmtHeader.classList.toggle('nav-hidden', !hasAnyMgmtPermission);
+    }
 
     const addPersonnelBtn = document.querySelector('#people-view .section-header .btn-primary');
     if (addPersonnelBtn) addPersonnelBtn.style.display = hasPermission('user_add_edit') ? '' : 'none';

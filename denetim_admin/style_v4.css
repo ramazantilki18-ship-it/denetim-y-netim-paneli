@@ -12352,3 +12352,7 @@ body.light-mode .station-network-name small {
 body.light-mode .people-table tr:hover {
     background: rgba(15, 23, 42, 0.02) !important;
 }
+
+.nav-hidden {
+    display: none !important;
+}
