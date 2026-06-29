@@ -8048,6 +8048,19 @@ function renderCompactStationAudits(audits) {
     const data = sortedStations.map(st => stations[st]);
 
     // Render chart
+    const wrapper = document.getElementById('stats-stations-chart-wrapper');
+    if (wrapper) {
+        const stationCount = sortedStations.length;
+        const isMobile = window.innerWidth <= 768;
+        const minColWidth = isMobile ? 38 : 45;
+        const totalWidth = stationCount * minColWidth;
+        if (stationCount > (isMobile ? 6 : 10)) {
+            wrapper.style.width = totalWidth + 'px';
+        } else {
+            wrapper.style.width = '100%';
+        }
+    }
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
@@ -8215,6 +8228,19 @@ function renderDashboardStationAudits(audits) {
     const data = sortedStations.map(st => stations[st]);
 
     // Render chart
+    const wrapper = document.getElementById('dashboard-stations-chart-wrapper');
+    if (wrapper) {
+        const stationCount = sortedStations.length;
+        const isMobile = window.innerWidth <= 768;
+        const minColWidth = isMobile ? 38 : 45;
+        const totalWidth = stationCount * minColWidth;
+        if (stationCount > (isMobile ? 6 : 10)) {
+            wrapper.style.width = totalWidth + 'px';
+        } else {
+            wrapper.style.width = '100%';
+        }
+    }
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 

@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kurumsal Denetim | Admin Kontrol Paneli</title>
-    <link rel="stylesheet" href="style_v4.css?v=134">
+    <link rel="stylesheet" href="style_v4.css?v=135">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
@@ -632,8 +632,10 @@
                                 <!-- Dynamic tabs populated by JS -->
                             </div>
                         </div>
-                        <div style="height: 180px; position: relative; width: 100%;">
-                            <canvas id="dashboard-stations-chart"></canvas>
+                        <div style="height: 180px; position: relative; width: 100%; overflow-x: auto; overflow-y: hidden;" class="custom-scrollbar">
+                            <div id="dashboard-stations-chart-wrapper" style="height: 100%; width: 100%;">
+                                <canvas id="dashboard-stations-chart"></canvas>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -1184,8 +1186,8 @@
                             </div>
                         </div>
                         <div class="stats-horizontal-scroll">
-                            <div class="stats-trend-canvas-wrap">
-                                <div class="stats-chart" style="height: 175px; margin-top: 0; min-height: 175px;"><canvas id="stats-stations-chart"></canvas></div>
+                            <div id="stats-stations-chart-wrapper" style="width: 100%;">
+                                <div class="stats-chart" style="height: 175px; margin-top: 0; min-height: 175px; width: 100%;"><canvas id="stats-stations-chart"></canvas></div>
                             </div>
                         </div>
                     </article>
@@ -3529,5 +3531,5 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"
         crossorigin="anonymous"></script>
     <script src="metro_data.js"></script>
-    <script src="script_v10.js?v=125"></script>
+    <script src="script_v10.js?v=126"></script>
 </body>
