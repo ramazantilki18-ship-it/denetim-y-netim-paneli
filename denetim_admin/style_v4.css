@@ -12353,6 +12353,7 @@ body.light-mode .people-table tr:hover {
     background: rgba(15, 23, 42, 0.02) !important;
 }
 
+.nav-links li.nav-hidden,
 .nav-hidden {
     display: none !important;
 }
