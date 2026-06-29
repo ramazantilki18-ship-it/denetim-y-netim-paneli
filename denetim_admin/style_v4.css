@@ -4871,9 +4871,9 @@ header {
     position: relative;
     overflow: hidden;
     align-items: center;
-    min-height: 92px;
-    padding: 1rem 1.05rem 1rem 1.25rem;
-    border-radius: 22px;
+    min-height: 60px;
+    padding: 0.45rem 1.05rem 0.45rem 1.25rem;
+    border-radius: 16px;
     border: 1px solid rgba(148, 163, 184, 0.26);
     background:
         linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.72)),
