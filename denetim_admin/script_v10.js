@@ -630,6 +630,15 @@ function initAuthListener() {
     document.getElementById('main-app').style.display = 'none';
     document.getElementById('login-overlay').style.display = 'none';
 
+    // Beni Hatırla kontrolü
+    const rememberedEmail = localStorage.getItem('rememberedEmail');
+    const emailInput = document.getElementById('login-email');
+    const rememberMeCheck = document.getElementById('remember-me');
+    if (rememberedEmail && emailInput) {
+        emailInput.value = rememberedEmail;
+        if (rememberMeCheck) rememberMeCheck.checked = true;
+    }
+
     firebase.auth().onAuthStateChanged(async (user) => {
         pushDebug('onAuthStateChanged fired! user: ' + (user ? user.email : 'null'));
         const loginOverlay = document.getElementById('login-overlay');
@@ -662,6 +671,22 @@ function initAuthListener() {
                     item.classList.remove('active');
                 }
             });
+
+            // Giriş formu temizleme ve Beni Hatırla kontrolü
+            const emailInput = document.getElementById('login-email');
+            const passInput = document.getElementById('login-password');
+            const rememberMeCheck = document.getElementById('remember-me');
+            
+            if (passInput) passInput.value = '';
+            
+            const rememberedEmail = localStorage.getItem('rememberedEmail');
+            if (rememberedEmail && emailInput) {
+                emailInput.value = rememberedEmail;
+                if (rememberMeCheck) rememberMeCheck.checked = true;
+            } else {
+                if (emailInput) emailInput.value = '';
+                if (rememberMeCheck) rememberMeCheck.checked = false;
+            }
 
             // Giriş butonunun yükleniyor durumunu sıfırla
             const loginBtn = document.querySelector('.login-btn');
@@ -1049,6 +1074,14 @@ async function handleLogin(e) {
         pushDebug('Calling signInWithEmailAndPassword...');
         await auth.signInWithEmailAndPassword(finalEmail, pass);
         pushDebug('signInWithEmailAndPassword returned successfully!');
+
+        // Beni Hatırla mantığı
+        const rememberMeCheck = document.getElementById('remember-me');
+        if (rememberMeCheck && rememberMeCheck.checked) {
+            localStorage.setItem('rememberedEmail', email);
+        } else {
+            localStorage.removeItem('rememberedEmail');
+        }
         // Başarılı giriş durumunda onAuthStateChanged tetiklenecektir
     } catch (err) {
         console.error('Login error detail:', err);
