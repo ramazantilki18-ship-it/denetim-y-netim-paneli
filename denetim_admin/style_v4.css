@@ -12354,6 +12354,8 @@ body.light-mode .people-table tr:hover {
 }
 
 .nav-links li.nav-hidden,
+.user-profile.nav-hidden,
+.premium-user-profile.nav-hidden,
 .nav-hidden {
     display: none !important;
 }

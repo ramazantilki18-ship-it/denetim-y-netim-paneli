@@ -1874,7 +1874,9 @@ function switchView(viewId) {
     // Toggle desktop top-right user profile card visibility
     const userProfileCard = document.querySelector('.user-profile');
     if (userProfileCard) {
-        userProfileCard.style.display = (viewId === 'dashboard-view') ? 'flex' : 'none';
+        const showProfile = (viewId === 'dashboard-view');
+        userProfileCard.style.display = showProfile ? 'flex' : 'none';
+        userProfileCard.classList.toggle('nav-hidden', !showProfile);
     }
 
     // Hide all views
