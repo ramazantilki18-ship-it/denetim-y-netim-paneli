@@ -13509,6 +13509,7 @@ function renderPeople() {
 
     ensurePeopleFilters();
     const search = (document.getElementById('people-search')?.value || '').toLocaleLowerCase('tr-TR').trim();
+    const nameFilterVal = document.getElementById('people-name-filter')?.value || 'all';
     const roleFilter = document.getElementById('people-role-filter')?.value || 'all';
     const lineFilter = document.getElementById('people-line-filter')?.value || 'all';
     const users = (Array.isArray(appData.users) ? appData.users : [])
@@ -13522,9 +13523,10 @@ function renderPeople() {
             const lines = Array.isArray(user.authorizedLines) ? user.authorizedLines : [];
             const globalScope = hasGlobalScope(user);
             const matchesSearch = !search || `${name} ${username} ${authorityLabel} ${title} ${email}`.toLocaleLowerCase('tr-TR').includes(search);
+            const matchesNameFilter = nameFilterVal === 'all' || name === nameFilterVal;
             const matchesRole = roleFilter === 'all' || authorityValue === roleFilter;
             const matchesLine = lineFilter === 'all' || globalScope || lines.includes(lineFilter);
-            return matchesSearch && matchesRole && matchesLine;
+            return matchesSearch && matchesNameFilter && matchesRole && matchesLine;
         })
         .sort((a, b) => getUserDisplayName(a).localeCompare(getUserDisplayName(b), 'tr'));
 
@@ -13604,12 +13606,21 @@ function renderPeople() {
 function ensurePeopleFilters() {
     const list = document.getElementById('people-list');
     if (!list) return;
+    const names = [...new Set((appData.users || []).map(u => getUserDisplayName(u)).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'tr'));
     const authorities = RBAC_ROLES.map(role => [role.id, role.name]);
-    const existingRole = document.getElementById('people-role-filter');
-    if (existingRole) {
-        const currentRole = existingRole.value;
-        existingRole.innerHTML = `<option value="all">Tüm Yetkiler</option>${authorities.map(([value, label]) => `<option value="${escapeAttr(value)}">${escapeAttr(label)}</option>`).join('')}`;
-        existingRole.value = authorities.some(([value]) => value === currentRole) ? currentRole : 'all';
+    
+    const existingNameFilter = document.getElementById('people-name-filter');
+    if (existingNameFilter) {
+        const currentValue = existingNameFilter.value;
+        existingNameFilter.innerHTML = `<option value="all">Tüm Personeller</option>${names.map(name => `<option value="${escapeAttr(name)}">${escapeAttr(name)}</option>`).join('')}`;
+        existingNameFilter.value = names.includes(currentValue) ? currentValue : 'all';
+        
+        const existingRole = document.getElementById('people-role-filter');
+        if (existingRole) {
+            const currentRole = existingRole.value;
+            existingRole.innerHTML = `<option value="all">Tüm Yetkiler</option>${authorities.map(([value, label]) => `<option value="${escapeAttr(value)}">${escapeAttr(label)}</option>`).join('')}`;
+            existingRole.value = authorities.some(([value]) => value === currentRole) ? currentRole : 'all';
+        }
         return;
     }
     const filterPanel = document.createElement('div');
@@ -13619,6 +13630,13 @@ function ensurePeopleFilters() {
         <div class="people-filter-field people-search-field">
             <label>Hızlı Ara</label>
             <div><i class="fas fa-search"></i><input id="people-search" type="text" placeholder="Ad, e-posta veya yetki" oninput="renderPeople()"></div>
+        </div>
+        <div class="people-filter-field">
+            <label>Personel Adı</label>
+            <select id="people-name-filter" onchange="renderPeople()">
+                <option value="all">Tüm Personeller</option>
+                ${names.map(name => `<option value="${escapeAttr(name)}">${escapeAttr(name)}</option>`).join('')}
+            </select>
         </div>
         <div class="people-filter-field">
             <label>Sistem Rolü</label>
@@ -13643,7 +13661,9 @@ function clearPeopleFilters() {
     const search = document.getElementById('people-search');
     const role = document.getElementById('people-role-filter');
     const line = document.getElementById('people-line-filter');
+    const nameFilter = document.getElementById('people-name-filter');
     if (search) search.value = '';
+    if (nameFilter) nameFilter.value = 'all';
     if (role) role.value = 'all';
     if (line) line.value = 'all';
     renderPeople();
