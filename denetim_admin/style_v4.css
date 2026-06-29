@@ -3859,14 +3859,21 @@ body:not(.light-mode) #nc-management-view {
     position: sticky;
     top: 0;
     z-index: 2;
-    height: 40px;
-    padding: 0.5rem 0.42rem;
-    color: var(--text-dim);
-    background: var(--nc-panel);
-    font-size: 0.64rem;
-    font-weight: 900;
+    height: 42px;
+    padding: 0.65rem 0.5rem;
+    color: var(--text-primary);
+    background: #0f2b48;
+    font-size: 0.72rem;
+    font-weight: 800;
     letter-spacing: 0.055em;
     text-transform: uppercase;
+    border-bottom: 2px solid var(--border-main);
+}
+
+body.light-mode #nc-table thead th {
+    color: var(--text-primary);
+    background: #cbd5e1;
+    border-bottom: 2px solid var(--border-main);
 }
 
 #nc-table thead th:first-child {
@@ -4304,14 +4311,21 @@ body:not(.light-mode) #audits-view {
     position: sticky;
     top: 0;
     z-index: 2;
-    height: 40px;
-    padding: 0.42rem 0.24rem;
-    color: var(--text-dim);
-    background: var(--audit-panel);
-    font-size: 0.63rem;
-    font-weight: 900;
+    height: 42px;
+    padding: 0.65rem 0.5rem;
+    color: var(--text-primary);
+    background: #0f2b48;
+    font-size: 0.72rem;
+    font-weight: 800;
     letter-spacing: 0.05em;
     text-transform: uppercase;
+    border-bottom: 2px solid var(--border-main);
+}
+
+body.light-mode #all-audits-table thead th {
+    color: var(--text-primary);
+    background: #cbd5e1;
+    border-bottom: 2px solid var(--border-main);
 }
 
 #all-audits-table thead th:first-child {
