@@ -1871,6 +1871,12 @@ function switchView(viewId) {
     }
     updateActivePageTitle(viewId);
 
+    // Toggle desktop top-right user profile card visibility
+    const userProfileCard = document.querySelector('.user-profile');
+    if (userProfileCard) {
+        userProfileCard.style.display = (viewId === 'dashboard-view') ? 'flex' : 'none';
+    }
+
     // Hide all views
     document.querySelectorAll('.view-section').forEach(view => {
         view.style.display = 'none';
