@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kurumsal Denetim | Admin Kontrol Paneli</title>
-    <link rel="stylesheet" href="style_v4.css?v=106">
+    <link rel="stylesheet" href="style_v4.css?v=134">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
@@ -160,6 +160,15 @@
                 <button id="sidebar-toggle" onclick="toggleSidebarCompact()" title="Menüyü Daralt / Genişlet">
                     <i class="fas fa-chevron-left" id="sidebar-toggle-icon"></i>
                 </button>
+                <div class="sidebar-header-actions">
+                    <span id="user-display-name-mobile" class="user-display-name-mobile">...</span>
+                    <button class="btn-outline premium-theme-toggle" onclick="toggleDarkMode()" title="Temayı Değiştir">
+                        <i class="fas fa-sun"></i>
+                    </button>
+                    <button class="btn-outline premium-logout" onclick="handleLogout()" title="Çıkış Yap">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
             </div>
             <nav>
                 <ul class="nav-links">
@@ -522,9 +531,8 @@
                             </div>
 
                         </div>
-                        <div style="display: flex; gap: 0.4rem; flex-shrink: 0; align-items: center;">
-                            <button class="btn-outline" onclick="clearFilters('dashboard')"
-                                style="background: transparent; border: 1px dashed rgba(249, 115, 22, 0.4); color: #f97316; height: 32px; padding: 0 0.8rem; border-radius: 8px; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 0.35rem; cursor: pointer; transition: all 0.2s;"><i
+                        <div class="dashboard-filter-actions" style="display: flex; gap: 0.4rem; flex-shrink: 0; align-items: center;">
+                            <button class="btn-outline dashboard-clear-filter-button" onclick="clearFilters('dashboard')"><i
                                     class="fas fa-filter-circle-xmark"></i> Temizle</button>
                         </div>
                     </div>
@@ -768,8 +776,8 @@
                     </div>
 
                     <!-- Custom Dropdown Filters Row -->
-                    <div style="display: flex; gap: 0.5rem; align-items: center; width: 100%; flex-wrap: nowrap;">
-                        <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.5rem; flex: 1;">
+                    <div class="stats-filter-row" style="display: flex; gap: 0.5rem; align-items: center; width: 100%; flex-wrap: nowrap;">
+                        <div class="stats-filter-grid" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.5rem; flex: 1;">
                             <div class="custom-select-wrapper" id="custom-wrap-stats-type">
                                 <div class="custom-select-trigger"
                                     onclick="toggleCustomSelect('custom-wrap-stats-type')">
@@ -829,9 +837,8 @@
                                 </div>
                             </div>
                         </div>
-                        <div style="display: flex; gap: 0.4rem; flex-shrink: 0; align-items: center;">
-                            <button class="btn-outline" onclick="clearFilters('stats')"
-                                style="background: transparent; border: 1px dashed rgba(249, 115, 22, 0.4); color: #f97316; height: 32px; padding: 0 0.8rem; border-radius: 8px; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 0.35rem; cursor: pointer; transition: all 0.2s;"><i
+                        <div class="stats-filter-actions" style="display: flex; gap: 0.4rem; flex-shrink: 0; align-items: center;">
+                            <button class="btn-outline stats-clear-filter-button" onclick="clearFilters('stats')"><i
                                     class="fas fa-filter-circle-xmark"></i> Temizle</button>
                             <button class="btn-primary" onclick="window.print()"
                                 style="height: 32px; padding: 0 0.8rem; border-radius: 8px; font-size: 0.75rem;"><i
@@ -1116,7 +1123,11 @@
                                 <p>Denetimlerin başarı bantlarına dağılımı.</p>
                             </div>
                         </div>
-                        <div class="stats-chart"><canvas id="stats-score-distribution-chart"></canvas></div>
+                        <div class="stats-horizontal-scroll">
+                            <div class="stats-trend-canvas-wrap">
+                                <div class="stats-chart"><canvas id="stats-score-distribution-chart"></canvas></div>
+                            </div>
+                        </div>
                     </article>
                     <article class="stats-analytics-card stats-span-2">
                         <div class="stats-card-heading">
@@ -1154,7 +1165,11 @@
                                 <p>Açık, geciken, kontrolde ve kapalı kayıtların oranı.</p>
                             </div>
                         </div>
-                        <div class="stats-chart stats-chart-large"><canvas id="stats-nc-status-chart"></canvas></div>
+                        <div class="stats-horizontal-scroll">
+                            <div class="stats-trend-canvas-wrap">
+                                <div class="stats-chart stats-chart-large"><canvas id="stats-nc-status-chart"></canvas></div>
+                            </div>
+                        </div>
                     </article>
                     <article class="stats-analytics-card" style="grid-column: span 3; padding: 0.8rem 1.15rem;">
                         <div class="stats-card-heading"
@@ -1168,8 +1183,10 @@
                                 <!-- Dynamic tabs populated by JS -->
                             </div>
                         </div>
-                        <div style="height: 175px; position: relative; width: 100%;">
-                            <canvas id="stats-stations-chart"></canvas>
+                        <div class="stats-horizontal-scroll">
+                            <div class="stats-trend-canvas-wrap">
+                                <div class="stats-chart" style="height: 175px; margin-top: 0; min-height: 175px;"><canvas id="stats-stations-chart"></canvas></div>
+                            </div>
                         </div>
                     </article>
                 </section>
@@ -1390,22 +1407,7 @@
                                 </div>
                             </div>
 
-                            <!-- Dropdown 2 & 3: Denetimler Akıllı Tarih Seçici -->
-                            <div class="custom-select-wrapper" id="custom-wrap-audits-unified-date"
-                                style="grid-column: span 2; position: relative;">
-                                <div class="custom-select-trigger"
-                                    onclick="toggleCustomSelect('custom-wrap-audits-unified-date')">
-                                    <span class="custom-select-label" id="audits-unified-date-label">Tüm Zamanlar</span>
-                                    <i class="fas fa-calendar-alt"
-                                        style="font-size: 0.75rem; color: var(--text-secondary);"></i>
-                                </div>
-                                <div class="custom-select-options-card" id="custom-options-audits-unified-date"
-                                    style="width: 320px; padding: 0.8rem; overflow-y: visible; max-height: unset; z-index: 1000; right: 0; left: auto;">
-                                    <!-- Dynamic content will go here -->
-                                </div>
-                            </div>
-
-                            <!-- Dropdown 4: Hatlar -->
+                            <!-- Dropdown 2: Hatlar -->
                             <div class="custom-select-wrapper" id="custom-wrap-audit-line">
                                 <div class="custom-select-trigger"
                                     onclick="toggleCustomSelect('custom-wrap-audit-line')">
@@ -1418,7 +1420,7 @@
                                 </div>
                             </div>
 
-                            <!-- Dropdown 5: İstasyonlar -->
+                            <!-- Dropdown 3: İstasyonlar -->
                             <div class="custom-select-wrapper" id="custom-wrap-audit-station">
                                 <div class="custom-select-trigger"
                                     onclick="toggleCustomSelect('custom-wrap-audit-station')">
@@ -1431,7 +1433,7 @@
                                 </div>
                             </div>
 
-                            <!-- Dropdown 6: Kullanıcılar -->
+                            <!-- Dropdown 4: Kullanıcılar -->
                             <div class="custom-select-wrapper" id="custom-wrap-audit-user">
                                 <div class="custom-select-trigger"
                                     onclick="toggleCustomSelect('custom-wrap-audit-user')">
@@ -1444,7 +1446,7 @@
                                 </div>
                             </div>
 
-                            <!-- Dropdown 7: Durumlar -->
+                            <!-- Dropdown 5: Durumlar -->
                             <div class="custom-select-wrapper" id="custom-wrap-audit-status">
                                 <div class="custom-select-trigger"
                                     onclick="toggleCustomSelect('custom-wrap-audit-status')">
@@ -1454,6 +1456,21 @@
                                 </div>
                                 <div class="custom-select-options-card">
                                     <div class="custom-options-list" id="custom-options-audit-status"></div>
+                                </div>
+                            </div>
+
+                            <!-- Dropdown 6: Denetimler Akıllı Tarih Seçici -->
+                            <div class="custom-select-wrapper" id="custom-wrap-audits-unified-date"
+                                style="grid-column: span 2; position: relative;">
+                                <div class="custom-select-trigger"
+                                    onclick="toggleCustomSelect('custom-wrap-audits-unified-date')">
+                                    <span class="custom-select-label" id="audits-unified-date-label">Tüm Zamanlar</span>
+                                    <i class="fas fa-calendar-alt"
+                                        style="font-size: 0.75rem; color: var(--text-secondary);"></i>
+                                </div>
+                                <div class="custom-select-options-card" id="custom-options-audits-unified-date"
+                                    style="width: 320px; padding: 0.8rem; overflow-y: visible; max-height: unset; z-index: 1000; right: 0; left: auto;">
+                                    <!-- Dynamic content will go here -->
                                 </div>
                             </div>
 
@@ -1668,6 +1685,17 @@
                                         <div class="custom-options-list" id="custom-options-nc-station"></div>
                                     </div>
                                 </div>
+                                <div class="custom-select-wrapper" id="custom-wrap-nc-responsible">
+                                    <div class="custom-select-trigger"
+                                        onclick="toggleCustomSelect('custom-wrap-nc-responsible')">
+                                        <span class="custom-select-label">Tüm Kullanıcılar</span>
+                                        <i class="fas fa-chevron-down"
+                                            style="font-size: 0.6rem; color: var(--text-secondary);"></i>
+                                    </div>
+                                    <div class="custom-select-options-card">
+                                        <div class="custom-options-list" id="custom-options-nc-responsible"></div>
+                                    </div>
+                                </div>
                                 <div class="custom-select-wrapper" id="custom-wrap-nc-category">
                                     <div class="custom-select-trigger"
                                         onclick="toggleCustomSelect('custom-wrap-nc-category')">
@@ -1680,7 +1708,7 @@
                                     </div>
                                 </div>
 
-                                <!-- Dropdown 5 & 6: Uygunsuzluklar Akıllı Tarih Seçici -->
+                                <!-- Dropdown 6: Uygunsuzluklar Akıllı Tarih Seçici -->
                                 <div class="custom-select-wrapper" id="custom-wrap-nc-unified-date"
                                     style="grid-column: span 2; position: relative;">
                                     <div class="custom-select-trigger"
@@ -1694,23 +1722,10 @@
                                         <!-- Dynamic content will go here -->
                                     </div>
                                 </div>
-
-                                <div class="custom-select-wrapper" id="custom-wrap-nc-responsible">
-                                    <div class="custom-select-trigger"
-                                        onclick="toggleCustomSelect('custom-wrap-nc-responsible')">
-                                        <span class="custom-select-label">Tüm Kullanıcılar</span>
-                                        <i class="fas fa-chevron-down"
-                                            style="font-size: 0.6rem; color: var(--text-secondary);"></i>
-                                    </div>
-                                    <div class="custom-select-options-card">
-                                        <div class="custom-options-list" id="custom-options-nc-responsible"></div>
-                                    </div>
-                                </div>
                             </div>
                             <div class="nc-filter-actions"
                                 style="display: flex; gap: 0.4rem; flex-shrink: 0; align-items: center;">
-                                <button class="btn-outline nc-clear-filter-button" onclick="clearFilters('nc')"
-                                    style="background: transparent; border: 1px dashed rgba(249, 115, 22, 0.4); color: #f97316; height: 32px; padding: 0 0.8rem; border-radius: 8px; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 0.35rem; cursor: pointer; transition: all 0.2s;"><i
+                                <button class="btn-outline nc-clear-filter-button" onclick="clearFilters('nc')"><i
                                         class="fas fa-filter-circle-xmark"></i> Temizle</button>
                             </div>
                         </div>

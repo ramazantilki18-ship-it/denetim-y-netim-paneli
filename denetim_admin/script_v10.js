@@ -733,6 +733,10 @@ async function loadUserProfile(firebaseUser) {
         console.log('DEBUG [User Header] resolvedName: "' + displayName + '", resolvedTitle: "' + displayTitle + '", title: "' + currentUser.title + '", jobTitle: "' + currentUser.jobTitle + '", role: "' + currentUser.role + '", roleId: "' + currentUser.roleId + '"');
 
         document.getElementById('user-display-name').textContent = displayName;
+        const mobileUserEl = document.getElementById('user-display-name-mobile');
+        if (mobileUserEl) {
+            mobileUserEl.textContent = displayName;
+        }
 
         const roleEl = document.getElementById('user-display-role');
         if (roleEl) {
@@ -11930,16 +11934,17 @@ function toggleDarkMode() {
 }
 
 function updateThemeIcon() {
-    const icon = document.getElementById('theme-toggle-icon');
-    if (!icon) return;
     const isDark = !document.body.classList.contains('light-mode');
-    if (isDark) {
-        icon.className = 'fas fa-sun';
-        icon.parentElement.title = 'Aydınlık Moda Geç';
-    } else {
-        icon.className = 'fas fa-moon';
-        icon.parentElement.title = 'Karanlık Moda Geç';
-    }
+    const icons = document.querySelectorAll('.premium-theme-toggle i');
+    icons.forEach(icon => {
+        if (isDark) {
+            icon.className = 'fas fa-sun';
+            icon.parentElement.title = 'Aydınlık Moda Geç';
+        } else {
+            icon.className = 'fas fa-moon';
+            icon.parentElement.title = 'Karanlık Moda Geç';
+        }
+    });
 }
 
 function showToast(message, type = 'success') {
