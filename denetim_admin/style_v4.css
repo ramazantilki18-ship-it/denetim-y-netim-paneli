@@ -12373,3 +12373,12 @@ body.light-mode .people-table tr:hover {
 .nav-hidden {
     display: none !important;
 }
+
+#all-audits-table thead th:first-child,
+#nc-table thead th:first-child {
+    padding: 0 !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+    width: 38px !important;
+    overflow: visible !important;
+}
