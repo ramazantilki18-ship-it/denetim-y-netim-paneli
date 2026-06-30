@@ -4404,7 +4404,8 @@ body.light-mode #all-audits-table thead th {
     font-variant-numeric: tabular-nums;
 }
 
-#all-audits-table .audit-type-cell .status-badge {
+#all-audits-table .audit-type-cell .status-badge,
+#recent-audits-table .audit-type-cell .status-badge {
     display: inline-block !important;
     max-width: none !important;
     min-height: 20px !important;
@@ -4412,15 +4413,15 @@ body.light-mode #all-audits-table thead th {
     padding: 2px 7px !important;
     overflow: visible !important;
     border-radius: 999px !important;
-    font-size: 0.54rem !important;
-    font-weight: 800;
+    font-size: 0.62rem !important;
+    font-weight: 800 !important;
     text-overflow: clip !important;
     white-space: nowrap !important;
     text-align: center !important;
     vertical-align: middle !important;
-    filter: brightness(0.68) !important;
-    color: rgba(255, 255, 255, 0.88) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15) !important;
 }
 
 #all-audits-table .audit-status-cell .status-badge {
