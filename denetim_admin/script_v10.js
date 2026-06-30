@@ -3041,6 +3041,9 @@ function getAuditListDate(audit) {
 
 function getNcListDate(nc) {
     const audit = getAccessibleAuditById(nc?.auditId) || {};
+    if (isNcClosed(nc)) {
+        return statsToDate(nc?.approvedAt || nc?.closureDate || nc?.detectionDate || nc?.createdAt || nc?.date || audit.date);
+    }
     return statsToDate(nc?.detectionDate || nc?.createdAt || nc?.date || audit.date);
 }
 
@@ -4304,7 +4307,8 @@ function approveNC(id) {
     const approverName = currentUser ? (currentUser.name || currentUser.username || (currentUser.email ? currentUser.email.split('@')[0] : '')) : 'Admin';
     db.collection('nonconformities').doc(id).update({
         status: 'completed',
-        approvedByName: approverName
+        approvedByName: approverName,
+        approvedAt: new Date().toISOString()
     }).then(() => {
         showToast(`${id} onaylandı ve kapatıldı.`);
         const nc = appData.nonconformities.find(n => n.id === id);
