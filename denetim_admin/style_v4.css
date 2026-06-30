@@ -3698,7 +3698,7 @@ body:not(.light-mode) #nc-management-view {
 }
 
 #nc-management-view #nc-filter-tabs .nc-filter-btn.active {
-    background: color-mix(in srgb, var(--nc-tab-color) 45%, #000000 55%) !important;
+    background: color-mix(in srgb, var(--nc-tab-color) 25%, #000000 75%) !important;
     color: #ffffff !important;
     border: 1.5px solid var(--nc-tab-color) !important;
     opacity: 1 !important;
@@ -3706,7 +3706,7 @@ body:not(.light-mode) #nc-management-view {
 }
 
 #nc-management-view #nc-filter-tabs .nc-filter-btn.active:hover {
-    background: color-mix(in srgb, var(--nc-tab-color) 55%, #000000 45%) !important;
+    background: color-mix(in srgb, var(--nc-tab-color) 35%, #000000 65%) !important;
 }
 
 #nc-management-view #nc-filter-tabs .nc-filter-btn.active .nc-filter-label {
