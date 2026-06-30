@@ -3698,25 +3698,15 @@ body:not(.light-mode) #nc-management-view {
 }
 
 #nc-management-view #nc-filter-tabs .nc-filter-btn.active {
-    background: #334155 !important;
+    background: color-mix(in srgb, var(--nc-tab-color) 45%, #000000 55%) !important;
     color: #ffffff !important;
     border: 1.5px solid var(--nc-tab-color) !important;
     opacity: 1 !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
 }
 
-body:not(.light-mode) #nc-management-view #nc-filter-tabs .nc-filter-btn.active {
-    background: #071324 !important;
-    color: #ffffff !important;
-    border: 1.5px solid var(--nc-tab-color) !important;
-}
-
 #nc-management-view #nc-filter-tabs .nc-filter-btn.active:hover {
-    background: #475569 !important;
-}
-
-body:not(.light-mode) #nc-management-view #nc-filter-tabs .nc-filter-btn.active:hover {
-    background: #0f172a !important;
+    background: color-mix(in srgb, var(--nc-tab-color) 55%, #000000 45%) !important;
 }
 
 #nc-management-view #nc-filter-tabs .nc-filter-btn.active .nc-filter-label {
