@@ -3698,18 +3698,36 @@ body:not(.light-mode) #nc-management-view {
 }
 
 #nc-management-view #nc-filter-tabs .nc-filter-btn.active {
-    border-color: rgba(var(--nc-tab-rgb), 0.62) !important;
-    box-shadow:
-        0 7px 17px rgba(var(--nc-tab-rgb), 0.16),
-        inset 0 0 0 1px rgba(var(--nc-tab-rgb), 0.1) !important;
+    background: #334155 !important;
+    color: #ffffff !important;
+    border: 1.5px solid var(--nc-tab-color) !important;
+    opacity: 1 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+body:not(.light-mode) #nc-management-view #nc-filter-tabs .nc-filter-btn.active {
+    background: #071324 !important;
+    color: #ffffff !important;
+    border: 1.5px solid var(--nc-tab-color) !important;
 }
 
 #nc-management-view #nc-filter-tabs .nc-filter-btn.active:hover {
-    background:
-        linear-gradient(135deg, rgba(var(--nc-tab-rgb), 0.3), rgba(var(--nc-tab-rgb), 0.15)) !important;
-    box-shadow:
-        0 8px 19px rgba(var(--nc-tab-rgb), 0.2),
-        inset 0 0 0 1px rgba(var(--nc-tab-rgb), 0.28) !important;
+    background: #475569 !important;
+}
+
+body:not(.light-mode) #nc-management-view #nc-filter-tabs .nc-filter-btn.active:hover {
+    background: #0f172a !important;
+}
+
+#nc-management-view #nc-filter-tabs .nc-filter-btn.active .nc-filter-label {
+    color: #ffffff !important;
+}
+
+#nc-management-view #nc-filter-tabs .nc-filter-btn.active .nc-filter-count {
+    background: #ffffff !important;
+    color: var(--nc-tab-color) !important;
+    border-color: #ffffff !important;
+    font-weight: 800 !important;
 }
 
 #nc-management-view #nc-filter-tabs .nc-filter-label {
