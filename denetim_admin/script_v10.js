@@ -8814,7 +8814,7 @@ function createAuditRow(audit, options = {}) {
     tr.className = `audit-table-row audit-table-row--${statusKey}`;
 
     const typeColor = getAuditTypeColor(audit.auditTypeId || (appData.auditTypes || []).find(t => (t.title || t.name) === auditTypeStr)?.id);
-    const typeBadgeHtml = `<span class="status-badge" style="background: ${typeColor}15; color: ${typeColor}; border: 1px solid ${typeColor}40; font-weight: 700;">${auditTypeStr}</span>`;
+    const typeBadgeHtml = `<span class="status-badge" style="background: ${typeColor}; color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.15); font-weight: 800; font-size: 0.65rem; text-shadow: 0 1px 2px rgba(0,0,0,0.15);">${auditTypeStr}</span>`;
 
     const { conformities, nonConformities } = getAuditConformityCounts(audit);
     const weekNum = getISOWeekNumber(dateObj);
