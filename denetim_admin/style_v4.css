@@ -4404,7 +4404,22 @@ body.light-mode #all-audits-table thead th {
     font-variant-numeric: tabular-nums;
 }
 
-#all-audits-table .audit-type-cell .status-badge,
+#all-audits-table .audit-type-cell .status-badge {
+    display: inline-block !important;
+    max-width: 120px !important;
+    min-height: 20px !important;
+    line-height: 16px !important;
+    padding: 2px 8px !important;
+    overflow: hidden !important;
+    border-radius: 999px !important;
+    font-size: 0.62rem !important;
+    font-weight: 800 !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+}
+
 #all-audits-table .audit-status-cell .status-badge {
     max-width: 100%;
     min-height: 24px;
