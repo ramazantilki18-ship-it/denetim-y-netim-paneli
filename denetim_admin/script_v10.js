@@ -3347,6 +3347,18 @@ function renderNCs(filter) {
             `;
         }
 
+        let closureDateHtml = '';
+        if (nc.closureDate) {
+            const cDate = new Date(nc.closureDate);
+            if (!isNaN(cDate.getTime())) {
+                closureDateHtml = `
+                    <div style="font-size: 0.64rem; color: #10b981; margin-top: 4px; font-weight: 700; white-space: nowrap;" title="Kapatılma / Çözüm Tarihi">
+                        Kapandı: ${cDate.toLocaleDateString('tr-TR')}
+                    </div>
+                `;
+            }
+        }
+
         const ans = audit.answers ? audit.answers.find(a => String(a.questionId) === String(nc.questionId) || String(a.questionText) === String(nc.questionText)) : null;
         const firstCommentHtml = ans ? (ans.comment || ans.detail || '').trim() : nc.detail;
 
@@ -3354,7 +3366,10 @@ function renderNCs(filter) {
 
         tr.innerHTML = `
             <td><input type="checkbox" class="nc-row-select" data-nc-id="${nc.id}" ${appData.selectedNCIds.has(nc.id) ? 'checked' : ''} onchange="toggleNCSelection(this)"></td>
-            <td class="nc-date-cell">${dateFormatted}</td>
+            <td class="nc-date-cell">
+                <div>${dateFormatted}</div>
+                ${closureDateHtml}
+            </td>
             <td class="nc-week-cell" style="text-align:center; font-size:0.8rem; color:var(--text-dim); font-weight:600;">${ncWeekNum !== '-' ? `${ncWeekNum}. Hf` : '-'}</td>
             <td><span style="color: var(--text-dim); font-weight: 500;">${timeFormatted}</span></td>
             <td style="text-align:center;">${photoThumb}</td>
