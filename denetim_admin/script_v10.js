@@ -8836,7 +8836,7 @@ function createAuditRow(audit, options = {}) {
             <span style="color:var(--text-dim); font-weight:500; margin:0 3px;">/</span>
             <span style="color:#ef4444;">${nonConformities}</span>
         </td>
-        <td class="audit-score-cell"><strong style="color: ${statusColor};">${displayScore.toFixed(1)}</strong></td>
+        <td class="audit-score-cell"><strong style="color: ${statusColor};">${displayScore === 100 ? '100' : displayScore.toFixed(1)}</strong></td>
         <td class="audit-status-cell"><span class="status-badge" style="background: ${statusColor}22; color: ${statusColor}; border-color: ${statusColor};">${statusText}</span></td>
         ${!hideActionColumn ? `
         <td class="audit-actions-cell">
@@ -8963,9 +8963,9 @@ function openAuditModal(id) {
                 <div style="width: 100%; background: linear-gradient(135deg, #001F3F, #003366); border-radius: 32px; padding: 24px; color: white; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(0,31,63,0.15);">
                     <div style="display: grid; grid-template-columns: auto 1fr 2.2fr; gap: 24px; align-items: center;">
                         <!-- Column 1: Overall Score Badge (Large, on the left, standing alone) -->
-                        <div style="width: 85px; height: 85px; border: 4px solid ${scoreColor}; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); flex-shrink: 0;">
+                        <div style="width: 90px; height: 90px; border: 4px solid ${scoreColor}; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); flex-shrink: 0; padding: 4px;">
                             <div style="text-align: center;">
-                                <div style="font-size: 1.5rem; font-weight: 900;">%${categoryAverageScore.toFixed(1)}</div>
+                                <div style="font-size: 1.38rem; font-weight: 900; line-height: 1.15;">%${categoryAverageScore === 100 ? '100' : categoryAverageScore.toFixed(1)}</div>
                                 <div style="font-size: 0.5rem; opacity: 0.7; font-weight: 900; letter-spacing: 1px;">TOPLAM</div>
                             </div>
                         </div>
@@ -10330,7 +10330,7 @@ function drawAuditPdfHero(doc, audit, y) {
     setAuditPdfRgb(doc, [255, 255, 255]);
     auditPdfText(doc, 'GENEL BAŞARI ENDEKSİ', badgeCenterX, badgeY + 5.5, { align: 'center' });
     doc.setFontSize(15);
-    auditPdfText(doc, `%${score.toFixed(1)}`, badgeCenterX, badgeY + 14.5, { align: 'center' });
+    auditPdfText(doc, `%${score === 100 ? '100' : score.toFixed(1)}`, badgeCenterX, badgeY + 14.5, { align: 'center' });
 
     const auditTypeText = auditPdfStr(audit.auditType || 'Genel Denetim');
     const typeGap = 3;
@@ -10497,7 +10497,7 @@ async function generateBulkAuditPDFs(action = 'download') {
                         data.cell.styles.textColor = color;
                         data.cell.styles.fontStyle = 'bold';
                         data.cell.styles.fontSize = 10; // Make score bigger
-                        data.cell.text = [`%${score.toFixed(1)}`];
+                        data.cell.text = [`%${score === 100 ? '100' : score.toFixed(1)}`];
                     }
                     if (data.section === 'body' && data.column.index === 3) {
                         data.cell.text = '';
