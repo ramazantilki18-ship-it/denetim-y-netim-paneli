@@ -12435,3 +12435,11 @@ body:not(.light-mode) #performance-matrix-container table thead th {
     background: #0f172a !important;
     color: #ffffff !important;
 }
+
+/* Force nc-date-cell columns to wrap and not overflow */
+#nc-table .nc-date-cell {
+    white-space: normal !important;
+    min-width: 85px !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+}

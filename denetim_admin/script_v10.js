@@ -3041,10 +3041,7 @@ function getAuditListDate(audit) {
 
 function getNcListDate(nc) {
     const audit = getAccessibleAuditById(nc?.auditId) || {};
-    if (isNcClosed(nc)) {
-        return statsToDate(nc?.approvedAt || nc?.closureDate || nc?.detectionDate || nc?.createdAt || nc?.date || audit.date);
-    }
-    return statsToDate(nc?.detectionDate || nc?.createdAt || nc?.date || audit.date);
+    return statsToDate(nc?.approvedAt || nc?.closureDate || nc?.detectionDate || nc?.createdAt || nc?.date || audit.date);
 }
 
 function sortRecordsByDate(items, direction, dateResolver) {
@@ -3352,8 +3349,8 @@ function renderNCs(filter) {
             const cDate = new Date(nc.closureDate);
             if (!isNaN(cDate.getTime())) {
                 closureDateHtml = `
-                    <div style="font-size: 0.64rem; color: #10b981; margin-top: 4px; font-weight: 700; white-space: nowrap;" title="Kapatılma / Çözüm Tarihi">
-                        Kapandı: ${cDate.toLocaleDateString('tr-TR')}
+                    <div style="font-size: 0.62rem; color: #10b981; margin-top: 3px; font-weight: 700; white-space: nowrap;" title="Kapatılma / Çözüm Tarihi">
+                        Kpnd: ${cDate.toLocaleDateString('tr-TR')}
                     </div>
                 `;
             }
