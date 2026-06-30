@@ -10933,7 +10933,7 @@ function renderStationMatrix() {
         const scrollStyles = needsScroll ? 'max-height: 195px; overflow-y: auto;' : '';
 
         htmlContent += `
-            <div style="margin-bottom: 1.5rem; background: transparent !important; border-left: 4px solid ${typeColor}; border-radius: 12px; overflow: hidden; box-shadow: none !important; width: fit-content; max-width: 100%;">
+            <div style="flex: 1 1 450px; min-width: 280px; max-width: 100%; background: transparent !important; border-left: 4px solid ${typeColor}; border-radius: 12px; overflow: hidden; box-shadow: none !important;">
                 ${typeName === 'Diğer' ? '' : `
                 <div style="display: flex; align-items: center; padding: 0.6rem 1rem; background: linear-gradient(90deg, ${typeColor}15 0%, transparent 100%); border-bottom: 1px solid var(--border-main);">
                     <h4 style="margin: 0; color: var(--text-primary); font-size: 0.85rem; font-weight: 800; display: flex; align-items: center; gap: 8px;">
