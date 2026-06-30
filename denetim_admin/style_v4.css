@@ -12401,3 +12401,37 @@ body.light-mode .people-table tr:hover {
     width: 38px !important;
     overflow: visible !important;
 }
+
+/* Performance Matrix Banner Header */
+.matrix-header-banner {
+    display: flex;
+    align-items: center;
+    padding: 0.65rem 1rem;
+    background: #334155 !important;
+    color: #ffffff !important;
+    border-bottom: 1px solid var(--glass-border) !important;
+}
+.matrix-header-banner h4 {
+    margin: 0;
+    color: #ffffff !important;
+    font-size: 0.85rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+/* Dark mode override for matrix banner */
+body:not(.light-mode) .matrix-header-banner {
+    background: #071324 !important;
+}
+
+/* Performance Matrix Table Header */
+#performance-matrix-container table thead th {
+    background: #475569 !important;
+    color: #ffffff !important;
+    border-bottom: 2px solid var(--primary) !important;
+}
+body:not(.light-mode) #performance-matrix-container table thead th {
+    background: #0f172a !important;
+    color: #ffffff !important;
+}

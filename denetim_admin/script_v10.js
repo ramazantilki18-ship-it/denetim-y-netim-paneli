@@ -10933,10 +10933,10 @@ function renderStationMatrix() {
         const scrollStyles = needsScroll ? 'max-height: 195px; overflow-y: auto;' : '';
 
         htmlContent += `
-            <div style="flex: 1 1 450px; min-width: 280px; max-width: 100%; background: transparent !important; border-left: 4px solid ${typeColor}; border-radius: 12px; overflow: hidden; box-shadow: none !important;">
+            <div style="flex: 1 1 450px; min-width: 280px; max-width: 100%; background: var(--bg-card) !important; border: 1px solid var(--glass-border); border-radius: 12px; overflow: hidden; box-shadow: none !important;">
                 ${typeName === 'Diğer' ? '' : `
-                <div style="display: flex; align-items: center; padding: 0.6rem 1rem; background: linear-gradient(90deg, ${typeColor}15 0%, transparent 100%); border-bottom: 1px solid var(--border-main);">
-                    <h4 style="margin: 0; color: var(--text-primary); font-size: 0.85rem; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                <div class="matrix-header-banner">
+                    <h4>
                         <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: ${typeColor}; box-shadow: 0 0 6px ${typeColor}80;"></span>
                         ${escapeAttr(typeName)}
                     </h4>
@@ -10946,10 +10946,10 @@ function renderStationMatrix() {
                 <table style="width: max-content; border-collapse: collapse; font-size: 0.72rem; text-align: center;">
                     <thead>
                         <tr>
-                            <th style="position: sticky; top: 0; background: var(--bg-body); z-index: 2; text-align:center; padding: 10px 8px 6px 8px; border-bottom: 2px solid var(--primary); color: var(--text-primary); font-weight: 800; white-space: nowrap; text-transform: uppercase;">HAT</th>
-                            <th style="position: sticky; top: 0; background: var(--bg-body); z-index: 2; text-align:left; padding: 10px 8px 6px 8px; border-bottom: 2px solid var(--primary); color: var(--text-primary); font-weight: 800; white-space: nowrap; text-transform: uppercase;">İSTASYON</th>
-                            ${visibleCategories.map(c => `<th style="position: sticky; top: 0; background: var(--bg-body); z-index: 2; padding: 10px 6px 6px 6px; border-bottom: 2px solid var(--primary); color: var(--text-primary); font-weight: 800; white-space: normal; line-height: 1.1; word-wrap: break-word; text-align: center; text-transform: uppercase;" title="${escapeAttr(c)}">${escapeAttr(c)}</th>`).join('')}
-                            <th style="position: sticky; top: 0; background: var(--bg-body); z-index: 2; padding: 10px 8px 6px 8px; border-bottom: 2px solid var(--primary); color: var(--text-primary); font-weight: 900; white-space: nowrap; text-align: center; text-transform: uppercase;">SKOR</th>
+                            <th style="position: sticky; top: 0; z-index: 2; text-align:center; padding: 10px 8px 6px 8px; font-weight: 800; white-space: nowrap; text-transform: uppercase;">HAT</th>
+                            <th style="position: sticky; top: 0; z-index: 2; text-align:left; padding: 10px 8px 6px 8px; font-weight: 800; white-space: nowrap; text-transform: uppercase;">İSTASYON</th>
+                            ${visibleCategories.map(c => `<th style="position: sticky; top: 0; z-index: 2; padding: 10px 6px 6px 6px; font-weight: 800; white-space: normal; line-height: 1.1; word-wrap: break-word; text-align: center; text-transform: uppercase;" title="${escapeAttr(c)}">${escapeAttr(c)}</th>`).join('')}
+                            <th style="position: sticky; top: 0; z-index: 2; padding: 10px 8px 6px 8px; font-weight: 900; white-space: nowrap; text-align: center; text-transform: uppercase;">SKOR</th>
                         </tr>
                     </thead>
                     <tbody>
