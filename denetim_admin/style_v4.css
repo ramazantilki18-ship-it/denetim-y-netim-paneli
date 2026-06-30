@@ -4418,7 +4418,9 @@ body.light-mode #all-audits-table thead th {
     white-space: nowrap !important;
     text-align: center !important;
     vertical-align: middle !important;
-    filter: brightness(0.76) !important;
+    filter: brightness(0.68) !important;
+    color: rgba(255, 255, 255, 0.88) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 #all-audits-table .audit-status-cell .status-badge {
