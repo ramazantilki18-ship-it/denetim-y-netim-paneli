@@ -3349,8 +3349,9 @@ function renderNCs(filter) {
             const cDate = new Date(nc.closureDate);
             if (!isNaN(cDate.getTime())) {
                 closureDateHtml = `
-                    <div style="font-size: 0.62rem; color: #10b981; margin-top: 3px; font-weight: 700; white-space: nowrap;" title="Kapatılma / Çözüm Tarihi">
-                        Kpnd: ${cDate.toLocaleDateString('tr-TR')}
+                    <div style="font-size: 0.62rem; color: #10b981; margin-top: 3px; font-weight: 700;" title="Kapatılma / Çözüm Tarihi">
+                        <div>Kpnd:</div>
+                        <div>${cDate.toLocaleDateString('tr-TR')}</div>
                     </div>
                 `;
             }
