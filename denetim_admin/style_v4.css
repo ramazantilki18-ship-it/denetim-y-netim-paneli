@@ -2902,18 +2902,19 @@ body:not(.light-mode) canvas {
 }
 
 .matrix-table th:first-child {
-    background: var(--bg-input);
+    background: #0f172a !important;
     z-index: 11;
+    color: #ffffff !important;
 }
 
 .matrix-table th {
-    background: var(--bg-input);
-    color: var(--text-primary);
+    background: #0f172a !important;
+    color: #ffffff !important;
     font-weight: 800;
     text-transform: uppercase;
     font-size: 0.65rem; /* Reduced from 0.7rem */
     padding: 0.45rem 0.35rem; /* Reduced from 1rem 0.75rem */
-    border-bottom: 2px solid var(--primary);
+    border-bottom: 2px solid var(--primary) !important;
     white-space: nowrap;
     text-align: center;
 }
@@ -12451,4 +12452,458 @@ body:not(.light-mode) #performance-matrix-container table thead th {
     min-width: 85px !important;
     text-align: center !important;
     vertical-align: middle !important;
+}
+
+/* ----------------------------------------------------
+ * ROSTER & PERSONAL STATS VIEWS STYLING RULES (style_v4.css Draft)
+ * ---------------------------------------------------- */
+
+.roster-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--card-shadow);
+    color: var(--text-primary);
+}
+
+.roster-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--glass-border);
+    padding-bottom: 1rem;
+    margin-bottom: 1.2rem;
+}
+
+.roster-header h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.roster-filters {
+    display: flex;
+    align-items: flex-end;
+    gap: 1.2rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.roster-filters .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.roster-filters .filter-group label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-dim);
+}
+
+/* Roster Days Grid and List */
+.roster-days-grid-header {
+    display: grid;
+    grid-template-columns: 140px 180px 1fr;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    background: rgba(var(--primary-rgb), 0.08);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+}
+
+.roster-days-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    max-height: 500px;
+    overflow-y: auto;
+    padding-right: 0.35rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.roster-day-row {
+    display: grid;
+    grid-template-columns: 140px 180px 1fr;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.6rem 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+    border-bottom: 1px solid rgba(var(--text-dim-rgb), 0.05);
+    transition: background 0.2s ease;
+}
+
+.roster-day-row:hover {
+    background: rgba(var(--primary-rgb), 0.04);
+}
+
+.roster-day-row .day-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.roster-day-row .day-number {
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(var(--primary-rgb), 0.12);
+    border-radius: 50%;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.roster-day-row .day-name {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.roster-day-row .shift-dropdown {
+    width: 100%;
+    padding: 0.38rem 0.5rem;
+    border-radius: 6px;
+}
+
+.roster-day-row .excuse-input {
+    width: 100%;
+    padding: 0.38rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.82rem;
+}
+
+/* ----------------------------------------------------
+ * PERSONAL STATS MATRIX TABLE
+ * ---------------------------------------------------- */
+
+.matrix-legend {
+    display: flex;
+    flex-wrap: nowrap !important;
+    gap: 0.8rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    align-items: center;
+    background: transparent !important;
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    border: none !important;
+    margin-left: auto;
+    box-shadow: none !important;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--text-secondary);
+}
+
+.deficit-box {
+    width: 16px;
+    height: 16px;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1.5px solid #ef4444;
+    border-radius: 3px;
+}
+
+.matrix-scroll-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.matrix-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+    min-width: 1200px; /* Force overflow scroll for matrix */
+}
+
+.matrix-table th, 
+.matrix-table td {
+    padding: 0.62rem 0.45rem;
+    border-bottom: 1px solid var(--glass-border);
+    border-right: 1px solid rgba(var(--text-dim-rgb), 0.05);
+    text-align: center;
+    vertical-align: middle;
+}
+
+.matrix-table th {
+    background: #0f172a !important;
+    font-weight: 800 !important;
+    color: #ffffff !important;
+    text-align: center !important;
+    border-bottom: 2px solid var(--primary) !important;
+}
+
+/* Specific table header & column controls */
+.matrix-user-hdr {
+    position: sticky;
+    left: 0;
+    z-index: 11;
+    background: #0f172a !important;
+    width: 180px;
+    min-width: 180px;
+    max-width: 180px;
+    text-align: center !important;
+    border-right: 2px solid var(--glass-border) !important;
+    color: #ffffff !important;
+}
+
+.matrix-user-cell {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    width: 180px;
+    min-width: 180px;
+    max-width: 180px;
+    text-align: left !important;
+    border-right: 2px solid var(--glass-border) !important;
+}
+
+body:not(.light-mode) .matrix-user-hdr {
+    background: #0f172a !important;
+}
+
+body:not(.light-mode) .matrix-user-cell {
+    background: #0f172a !important; /* Force solid dark background in dark mode when scrolling */
+}
+
+.matrix-day-hdr, 
+.matrix-day-cell {
+    width: 38px;
+    min-width: 38px;
+    max-width: 38px;
+    padding: 0.5rem 0.25rem !important;
+}
+
+.matrix-total-hdr,
+.matrix-total-cell {
+    width: 70px;
+    min-width: 70px;
+    max-width: 70px;
+    font-weight: 700;
+    background: rgba(var(--primary-rgb), 0.04);
+}
+
+/* Cells highlights */
+.matrix-day-cell {
+    position: relative;
+    transition: background 0.2s ease;
+}
+
+.matrix-day-cell:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.cell-deficit-red {
+    background: rgba(239, 68, 68, 0.08) !important;
+    border-radius: 4px;
+}
+
+.cell-has-excuse-orange {
+    background: rgba(217, 119, 6, 0.06) !important;
+    border-radius: 4px;
+}
+
+/* Shift badge styling */
+.matrix-shift-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    font-size: 0.65rem;
+    font-weight: 750;
+    border-radius: 4px;
+    border: 1px solid transparent;
+}
+
+.shift-badge-s { background: rgba(59, 130, 246, 0.12); color: #3b82f6; border-color: rgba(59, 130, 246, 0.25); }
+.shift-badge-a { background: rgba(139, 92, 246, 0.12); color: #8b5cf6; border-color: rgba(139, 92, 246, 0.25); }
+.shift-badge-g { background: rgba(100, 116, 139, 0.12); color: #64748b; border-color: rgba(100, 116, 139, 0.25); }
+.shift-badge-ht { background: rgba(245, 158, 11, 0.12); color: #f59e0b; border-color: rgba(245, 158, 11, 0.25); }
+.shift-badge-yi { background: rgba(16, 185, 129, 0.12); color: #10b981; border-color: rgba(16, 185, 129, 0.25); }
+.shift-badge-r { background: rgba(239, 68, 68, 0.12); color: #ef4444; border-color: rgba(239, 68, 68, 0.25); }
+.shift-badge-work-generic { background: rgba(139, 92, 246, 0.1); color: #a78bfa; border-color: rgba(139, 92, 246, 0.2); }
+.shift-badge-off-generic { background: rgba(255, 255, 255, 0.05); color: #94a3b8; border-color: rgba(255, 255, 255, 0.1); }
+.shift-badge-empty { background: rgba(255, 255, 255, 0.05); color: var(--text-dim); }
+
+.matrix-audit-count {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-top: 2px;
+}
+
+.matrix-excuse-icon {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 0.58rem;
+    color: #d97706;
+}
+
+/* Centered and solid dark headers override to bypass theme defaults */
+html body .matrix-table thead th,
+html body .matrix-table thead th.matrix-user-hdr,
+html body .matrix-table thead th.matrix-day-hdr,
+html body .matrix-table thead th.matrix-total-hdr {
+    background: #0f172a !important;
+    background-color: #0f172a !important;
+    color: #ffffff !important;
+}
+
+/* Premium Legend Title & Text-only Shift Styles for Contrast */
+.legend-group-title {
+    font-weight: 800;
+    font-size: 0.76rem;
+    color: #0f172a !important; /* Dark gray for light mode */
+}
+body:not(.light-mode) .legend-group-title {
+    color: #f1f5f9 !important; /* Bright white/gray for dark mode */
+}
+
+.legend-shift-text {
+    font-weight: 850;
+    font-size: 0.74rem;
+    display: inline-block;
+}
+.legend-shift-text-s { color: #0284c7 !important; } /* Sky Blue - Light Mode */
+.legend-shift-text-a { color: #ea580c !important; } /* Amber Orange - Light Mode */
+.legend-shift-text-ht { color: #dc2626 !important; } /* Red - Light Mode */
+.legend-shift-text-yi { color: #16a34a !important; } /* Green - Light Mode */
+.legend-shift-text-r { color: #db2777 !important; } /* Pink - Light Mode */
+.legend-shift-text-off { color: #475569 !important; } /* Slate - Light Mode */
+
+body:not(.light-mode) .legend-shift-text-s { color: #38bdf8 !important; } /* Bright Sky Blue - Dark Mode */
+body:not(.light-mode) .legend-shift-text-a { color: #fb923c !important; } /* Bright Orange - Dark Mode */
+body:not(.light-mode) .legend-shift-text-ht { color: #f87171 !important; } /* Bright Red - Dark Mode */
+body:not(.light-mode) .legend-shift-text-yi { color: #4ade80 !important; } /* Bright Green - Dark Mode */
+body:not(.light-mode) .legend-shift-text-r { color: #f472b6 !important; } /* Bright Pink - Dark Mode */
+body:not(.light-mode) .legend-shift-text-off { color: #94a3b8 !important; } /* Slate - Dark Mode */
+
+.legend-hours-text {
+    font-size: 0.58rem;
+    font-weight: 700;
+    color: #475569 !important; /* Dark gray for light mode */
+    white-space: nowrap;
+    margin-top: 1px;
+    display: block;
+}
+body:not(.light-mode) .legend-hours-text {
+    color: #cbd5e1 !important; /* Light gray for dark mode */
+}
+
+/* Responsive Scaling for Legend */
+.legend-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border-right: 1px solid rgba(255,255,255,0.1);
+    padding-right: 10px;
+    margin-right: 2px;
+    vertical-align: top;
+}
+body.light-mode .legend-group {
+    border-right: 1px solid rgba(0,0,0,0.1);
+}
+
+.legend-shifts-container {
+    display: inline-flex;
+    gap: 5px;
+}
+
+@media (max-width: 1400px) {
+    .legend-group-title {
+        font-size: 0.7rem;
+    }
+    .legend-shift-text {
+        font-size: 0.65rem;
+    }
+    .legend-hours-text {
+        font-size: 0.52rem;
+    }
+    .matrix-legend {
+        gap: 0.8rem !important;
+    }
+    .legend-group {
+        gap: 4px;
+        padding-right: 8px;
+        margin-right: 1px;
+    }
+    .legend-shifts-container {
+        gap: 4px;
+    }
+}
+
+@media (max-width: 1200px) {
+    .legend-group-title {
+        font-size: 0.64rem;
+    }
+    .legend-shift-text {
+        font-size: 0.58rem;
+    }
+    .legend-hours-text {
+        font-size: 0.46rem;
+    }
+    .matrix-legend {
+        gap: 0.5rem !important;
+    }
+    .legend-group {
+        gap: 3px;
+        padding-right: 6px;
+        margin-right: 1px;
+    }
+    .legend-shifts-container {
+        gap: 3px;
+    }
+}
+
+@media (max-width: 1000px) {
+    .legend-group-title {
+        font-size: 0.58rem;
+    }
+    .legend-shift-text {
+        font-size: 0.52rem;
+    }
+    .legend-hours-text {
+        font-size: 0.42rem;
+    }
+    .matrix-legend {
+        gap: 0.3rem !important;
+    }
+    .legend-group {
+        gap: 2px;
+        padding-right: 4px;
+        margin-right: 0px;
+        border-right: 1px solid rgba(255,255,255,0.06);
+    }
+    body.light-mode .legend-group {
+        border-right: 1px solid rgba(0,0,0,0.06);
+    }
+    .legend-shifts-container {
+        gap: 2px;
+    }
 }

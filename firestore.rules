@@ -117,6 +117,17 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    match /shifts/{shiftId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /user_rosters/{rosterId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

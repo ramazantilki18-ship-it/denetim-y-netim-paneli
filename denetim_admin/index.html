@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kurumsal Denetim | Admin Kontrol Paneli</title>
-    <link rel="stylesheet" href="style_v4.css?v=152">
+    <link rel="stylesheet" href="style_v4.css?v=164">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
@@ -13,8 +13,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-    <!-- SheetJS Excel Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- xlsx-js-style Excel Library -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+    <!-- Leaflet.js Map Library -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -181,6 +184,8 @@
                             <span>Uygunsuzluklar</span></a></li>
                     <li><a href="#" class="nav-item" onclick="switchView('stats-view')" title="İstatistikler"><i
                                 class="fas fa-chart-bar"></i> <span>İstatistikler</span></a></li>
+                    <li><a href="#" class="nav-item" onclick="switchView('personal-stats-view')" title="Kişisel İstatistikler"><i
+                                class="fas fa-user-clock"></i> <span>Kişisel İstatistikler</span></a></li>
                     <li><a href="#" class="nav-item" onclick="switchView('reports-view')" title="Raporlar"><i
                                 class="fas fa-file-invoice"></i> <span>Raporlar</span></a></li>
 
@@ -200,6 +205,8 @@
                                 class="fas fa-rss"></i> <span>NFC Tanımları</span></a></li>
                     <li><a href="#" class="nav-item" onclick="switchView('location-view')" title="Konum Tanımları"><i
                                 class="fas fa-location-dot"></i> <span>Konum Tanımları</span></a></li>
+                    <li><a href="#" class="nav-item" onclick="switchView('roster-entry-view')" title="Vardiya Tanımları"><i
+                                class="fas fa-business-time"></i> <span>Vardiya Tanımları</span></a></li>
                     <li><a href="#" class="nav-item" onclick="switchView('planning-view')" title="Görev Planlama"><i
                                 class="fas fa-calendar-alt"></i> <span>Görev Planlama</span></a></li>
                     <li><a href="#" class="nav-item" onclick="switchView('announcements-view')" title="Duyurular"><i
@@ -209,6 +216,8 @@
                                 class="fas fa-bug"></i> <span>Geri Bildirimler</span></a></li>
                     <li><a href="#" class="nav-item" onclick="switchView('permissions-view')" title="Yetkiler"><i
                                 class="fas fa-shield-alt"></i> <span>Yetkiler</span></a></li>
+                    <li id="excuse-mgmt-nav-item"><a href="#" class="nav-item" onclick="switchView('excuse-management-view')" title="Mazeret Yönetimi"><i
+                                class="fas fa-file-signature"></i> <span>Mazeret Yönetimi</span></a></li>
                     <li><a href="#" class="nav-item" onclick="switchView('online-users-view')"
                             title="Günlük Aktifler"><i class="fas fa-signal"></i> <span>Günlük Aktifler</span></a></li>
 
@@ -2791,9 +2800,13 @@
                         </div>
 
                     </div>
-
                 </div>
             </div>
+
+            <!-- Puantaj, Mazeret ve Vardiya Görünümleri -->
+            <div id="roster-entry-view" class="view-section" style="display: none;"></div>
+            <div id="personal-stats-view" class="view-section" style="display: none;"></div>
+            <div id="excuse-management-view" class="view-section" style="display: none;"></div>
 
         </main>
     </div>
@@ -3535,5 +3548,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"
         crossorigin="anonymous"></script>
     <script src="metro_data.js"></script>
-    <script src="script_v10.js?v=142"></script>
+    <script src="script_v10.js?v=151"></script>
+    <script src="roster_view.js?v=57"></script>
 </body>

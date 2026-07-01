@@ -272,7 +272,7 @@ function isSuperAdmin(user = currentUser) {
 }
 
 const FIELD_AUDITOR_WEB_VIEWS = new Set(['audits-view', 'nc-management-view']);
-const ACTION_OWNER_WEB_VIEWS = new Set(['audits-view', 'nc-management-view', 'planning-view']);
+const ACTION_OWNER_WEB_VIEWS = new Set(['audits-view', 'nc-management-view', 'planning-view', 'personal-stats-view']);
 
 function isFieldAuditor(user = currentUser) {
     return inferRbacRoleId(user) === 'Field_Auditor';
@@ -283,6 +283,7 @@ function isFieldAuditorActionOwner(user = currentUser) {
 }
 
 function canOperationalRoleAccessView(viewId, user = currentUser) {
+    if (viewId === 'roster-entry-view' || viewId === 'excuse-management-view') return isSuperAdmin(user);
     if (isFieldAuditor(user)) {
         if (FIELD_AUDITOR_WEB_VIEWS.has(viewId)) return true;
         if ((viewId === 'stats-view' || viewId === 'reports-view') && hasPermission('stats_view', user)) return true;
@@ -1167,7 +1168,8 @@ function initRealtimeSync() {
         renderSettings();
     });
 
-
+    // Roster Shift Management Listener initialization
+    initShiftsListener();
 
     // Listen for Lines/Stations (Firebase Sync)
     db.collection('system_config').doc('lines_stations').onSnapshot(doc => {
@@ -1698,6 +1700,9 @@ const VIEW_TITLES = {
     'settings-view': 'Sistem Ayarları',
     'logs-view': 'Sistem Logları',
     'online-users-view': 'Günlük Aktif Kullanıcılar',
+    'roster-entry-view': 'Vardiya Tanımları',
+    'personal-stats-view': 'Kişisel İstatistikler & Raporlar',
+    'excuse-management-view': 'Mazeret Yönetimi',
 };
 
 const VIEW_DESCRIPTIONS = {
@@ -1716,6 +1721,9 @@ const VIEW_DESCRIPTIONS = {
     'feedbacks-view': 'Uygulamadan iletilen geri bildirimleri ve hata kayıtlarını inceleyin.',
     'reports-view': 'Kurumsal rapor çıktıları ve dışa aktarma işlemleri.',
     'settings-view': 'Sistem davranışı, rapor ve bildirim ayarları.',
+    'roster-entry-view': 'Personelin mobil uygulamada seçebileceği vardiya saatlerini ve izin tiplerini tanımlayın.',
+    'personal-stats-view': 'Personelin günlük vardiya durumlarını, mazeretlerini ve tamamlanan denetim sayılarını listeleyin.',
+    'excuse-management-view': 'Personelin girdiği vardiya mazeretlerini listeleyin, düzenleyin ve silin.',
     'logs-view': 'Sistem genelinde yapılan işlemlerin geçmiş kayıtları ve denetim logları.',
     'online-users-view': 'Bugün sistemde aktif olan (giriş yapan veya işlem gerçekleştiren) web kullanıcılarını görüntüleyin.',
 };
@@ -1742,11 +1750,13 @@ const NAV_VIEW_PERMISSIONS = {
     'stats-view': 'stats_view',
     'reports-view': 'stats_view',
     'dashboard-view': 'dashboard_view',
-    'online-users-view': 'perm_mgmt'
+    'online-users-view': 'perm_mgmt',
+    'roster-entry-view': 'settings',
+    'excuse-management-view': 'settings'
 };
 
 function canShowNavView(viewId, user = currentUser) {
-    if (viewId === 'feedbacks-view') return isSuperAdmin(user);
+    if (viewId === 'feedbacks-view' || viewId === 'roster-entry-view' || viewId === 'excuse-management-view') return isSuperAdmin(user);
     if (isFieldAuditor(user)) {
         if (FIELD_AUDITOR_WEB_VIEWS.has(viewId)) return true;
         if ((viewId === 'stats-view' || viewId === 'reports-view') && hasPermission('stats_view', user)) return true;
@@ -1950,6 +1960,15 @@ function switchView(viewId) {
     }
     if (viewId === 'online-users-view') {
         renderOnlineUsers();
+    }
+    if (viewId === 'roster-entry-view') {
+        renderRosterEntry();
+    }
+    if (viewId === 'personal-stats-view') {
+        renderPersonalStats();
+    }
+    if (viewId === 'excuse-management-view') {
+        renderExcuseManagement();
     }
 }
 
@@ -2887,46 +2906,58 @@ function resolveImagePath(pathStr) {
     return '';
 }
 
-function findNcForAuditAnswer(audit, ans, categoryName = '', questionText = '') {
-    if (!audit || !appData.nonconformities) return null;
+function findNcsForAuditAnswer(audit, ans, categoryName = '', questionText = '') {
+    if (!audit || !ans || !appData.nonconformities) return [];
     const answerQuestion = resolveAuditAnswerQuestion(audit, ans);
     const resolvedQuestionText = questionText || answerQuestion.questionText || '';
     const resolvedCategoryName = categoryName || answerQuestion.categoryName || '';
-    const auditNcs = appData.nonconformities.filter(n =>
-        n &&
-        !n.isDeleted &&
-        !n.deleted &&
-        !n.deletedAt &&
-        String(n.auditId) === String(audit.id)
-    );
+    
+    return appData.nonconformities.filter(n => {
+        if (!n || n.isDeleted || n.deleted || n.deletedAt) return false;
+        if (String(n.auditId) !== String(audit.id)) return false;
+        
+        if (ans.questionId && n.questionId && String(n.questionId) === String(ans.questionId)) {
+            return true;
+        }
+        if (normalizeText(n.questionText) && normalizeText(n.questionText) === normalizeText(resolvedQuestionText)) {
+            return true;
+        }
+        if (normalizeText(n.category) === normalizeText(resolvedCategoryName) && 
+            normalizeText(n.questionText).includes(normalizeText(resolvedQuestionText).substring(0, 10))) {
+            return true;
+        }
+        return false;
+    });
+}
 
-    return auditNcs.find(n =>
-        ans?.questionId &&
-        n.questionId &&
-        String(n.questionId) === String(ans.questionId)
-    ) || auditNcs.find(n =>
-        normalizeText(n.questionText) &&
-        normalizeText(n.questionText) === normalizeText(resolvedQuestionText)
-    ) || auditNcs.find(n =>
-        normalizeText(n.category) === normalizeText(resolvedCategoryName) &&
-        normalizeText(n.questionText).includes(normalizeText(resolvedQuestionText).substring(0, 10))
-    ) || null;
+function findNcForAuditAnswer(audit, ans, categoryName = '', questionText = '') {
+    const list = findNcsForAuditAnswer(audit, ans, categoryName, questionText);
+    return list.length > 0 ? list[0] : null;
 }
 
 function collectAuditAnswerPhotoPaths(audit, ans) {
     const merged = new Set();
-    const nc = findNcForAuditAnswer(audit, ans);
-    const closurePaths = new Set((nc?.closurePhotoPaths || []).filter(Boolean));
+    const ncs = findNcsForAuditAnswer(audit, ans);
+    const closurePaths = new Set();
+    ncs.forEach(nc => {
+        (nc?.closurePhotoPaths || []).filter(Boolean).forEach(p => closurePaths.add(p));
+    });
     normalizeAuditPhotoPaths(ans)
         .filter(path => !closurePaths.has(path))
         .forEach(path => merged.add(path));
-    (nc?.auditorPhotoPaths || []).forEach(p => merged.add(p));
+    ncs.forEach(nc => {
+        (nc?.auditorPhotoPaths || []).forEach(p => merged.add(p));
+    });
     return Array.from(merged);
 }
 
 function collectAuditAnswerClosurePhotoPaths(audit, ans) {
-    const nc = findNcForAuditAnswer(audit, ans);
-    return [...new Set((nc?.closurePhotoPaths || []).filter(Boolean))];
+    const merged = new Set();
+    const ncs = findNcsForAuditAnswer(audit, ans);
+    ncs.forEach(nc => {
+        (nc?.closurePhotoPaths || []).filter(Boolean).forEach(p => merged.add(p));
+    });
+    return Array.from(merged);
 }
 
 const _resolvedImageUrlCache = {};
@@ -3357,8 +3388,7 @@ function renderNCs(filter) {
             }
         }
 
-        const ans = audit.answers ? audit.answers.find(a => String(a.questionId) === String(nc.questionId) || String(a.questionText) === String(nc.questionText)) : null;
-        const firstCommentHtml = ans ? (ans.comment || ans.detail || '').trim() : nc.detail;
+        const firstCommentHtml = (nc.auditorComment || (ans ? (ans.comment || ans.detail || '') : '') || nc.detail || '').trim();
 
         const ncWeekNum = isNaN(ncDateObj.getTime()) ? '-' : getISOWeekNumber(ncDateObj);
 
@@ -3922,9 +3952,11 @@ function inspectNC(id, parentAuditId = null) {
     }[normalizedStatus] || { label: 'Açık Kayıt', icon: 'fa-circle-exclamation', color: '#e11d48' };
     const scoreColor = score >= 4 ? '#16A34A' : '#E11D48';
     const ans = audit.answers ? audit.answers.find(a => String(a.questionId) === String(nc.questionId) || String(a.questionText) === String(nc.questionText)) : null;
-    const commentParts = ans
-        ? [(ans.comment || ans.detail || '').trim(), ...(Array.isArray(ans.additionalComments) ? ans.additionalComments : [])]
-        : [nc.detail];
+    const commentParts = nc.auditorComment
+        ? [nc.auditorComment.trim()]
+        : (ans
+            ? [(ans.comment || ans.detail || '').trim(), ...(Array.isArray(ans.additionalComments) ? ans.additionalComments : [])]
+            : [nc.detail]);
     const commentsHtml = commentParts
         .map(item => String(item || '').trim())
         .filter(Boolean)
@@ -8807,7 +8839,8 @@ function getAuditConformityCounts(audit = {}) {
         const scored = scoreAuditAnswer(audit, ans);
         if (scored.isOutOfScope) return;
         if (scored.isNonconformity) {
-            nonConformities++;
+            const addCount = Array.isArray(ans.additionalNonconformities) ? ans.additionalNonconformities.length : 0;
+            nonConformities += 1 + addCount;
         } else {
             conformities++;
         }
@@ -9047,30 +9080,58 @@ function openAuditModal(id) {
             const displayScore = row ? row.displayScore : sVal;
             if (!isNC) return '';
 
-            const nc = findNcForAuditAnswer(audit, ans, cat, questions[i]);
-            const isResolved = nc && isNcClosed(nc);
-            const cardStatusColor = isResolved ? '#16A34A' : '#E11D48';
+            const ncs = findNcsForAuditAnswer(audit, ans, cat, questions[i]);
+            if (ncs.length === 0) {
+                const isResolved = false;
+                const cardStatusColor = '#E11D48';
+                const comment = ans ? [(ans.comment || ans.detail || '').trim(), ...(Array.isArray(ans.additionalComments) ? ans.additionalComments : [])].filter(Boolean).join('<br/><br/>') : '';
+                return `
+                        <div onclick="goToNCFromAudit('${audit.id}', '${cat}', '')" class="audit-nc-card">
+                            <div style="width: 36px; height: 36px; background: #fff1f2; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: ${cardStatusColor}; flex-shrink: 0;">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="display: flex; justify-content: space-between;">
+                                    <div style="font-size: 0.7rem; color: #94a3b8; font-weight: 800; margin-bottom: 2px;">${cat.toUpperCase()}</div>
+                                    <i class="fas fa-arrow-right" style="font-size: 0.7rem; color: #94a3b8;"></i>
+                                </div>
+                                <div class="audit-nc-title">${questions[i] || '-'}</div>
+                                ${comment ? `<div class="audit-nc-comment"><strong>Açıklama:</strong> ${comment}</div>` : ''}
+                                <div style="margin-top: 8px;">
+                                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                                        <div style="padding: 2px 8px; background: ${cardStatusColor}; border-radius: 4px; color: white; font-size: 0.65rem; font-weight: 900;">PUAN: ${displayScore}</div>
+                                        <div style="font-size: 0.65rem; color: #94a3b8; font-weight: 600;"><i class="fas fa-camera"></i> Detaylara Git</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                `;
+            }
 
-            const comment = ans ? [(ans.comment || ans.detail || '').trim(), ...(Array.isArray(ans.additionalComments) ? ans.additionalComments : [])].filter(Boolean).join('<br/><br/>') : '';
+            return ncs.map((nc, idx) => {
+                const isResolved = isNcClosed(nc);
+                const cardStatusColor = isResolved ? '#16A34A' : '#E11D48';
+                const comment = nc.auditorComment || '';
+                const titleSuffix = ncs.length > 1 ? ` (Uygunsuzluk ${idx + 1})` : '';
 
-            return `
-                        <div onclick="goToNCFromAudit('${audit.id}', '${cat}', '${nc ? nc.id : ''}')" class="audit-nc-card${isResolved ? ' is-resolved' : ''}">
+                return `
+                        <div onclick="goToNCFromAudit('${audit.id}', '${cat}', '${nc.id}')" class="audit-nc-card${isResolved ? ' is-resolved' : ''}">
                             <div style="width: 36px; height: 36px; background: ${isResolved ? '#f0fdf4' : '#fff1f2'}; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: ${cardStatusColor}; flex-shrink: 0;">
                                 <i class="fas ${isResolved ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i>
                             </div>
                             <div style="flex: 1;">
                                 <div style="display: flex; justify-content: space-between;">
-                                    <div style="font-size: 0.7rem; color: #94a3b8; font-weight: 800; margin-bottom: 2px;">${cat.toUpperCase()}</div>
+                                    <div style="font-size: 0.7rem; color: #94a3b8; font-weight: 800; margin-bottom: 2px;">${cat.toUpperCase()}${titleSuffix}</div>
                                     ${isResolved
-                    ? `<span style="padding: 3px 8px; border-radius: 999px; background: #dcfce7; color: #15803d; font-size: 0.62rem; font-weight: 900;">\u00c7\u00d6Z\u00dcLD\u00dc</span>`
+                    ? `<span style="padding: 3px 8px; border-radius: 999px; background: #dcfce7; color: #15803d; font-size: 0.62rem; font-weight: 900;">ÇÖZÜLDÜ</span>`
                     : '<i class="fas fa-arrow-right" style="font-size: 0.7rem; color: #94a3b8;"></i>'}
                                 </div>
                                 <div class="audit-nc-title">${questions[i] || '-'}</div>
                                 ${comment ? `<div class="audit-nc-comment"><strong>Açıklama:</strong> ${comment}</div>` : ''}
-                                ${isResolved && nc.closureComment ? `<div class="audit-nc-resolution"><strong>\u00c7\u00f6z\u00fcm:</strong> ${escapeAttr(nc.closureComment)}</div>` : ''}
+                                ${isResolved && nc.closureComment ? `<div class="audit-nc-resolution"><strong>Çözüm:</strong> ${escapeAttr(nc.closureComment)}</div>` : ''}
                                 <div style="margin-top: 8px;">
                                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                                        <div style="padding: 2px 8px; background: ${cardStatusColor}; border-radius: 4px; color: white; font-size: 0.65rem; font-weight: 900;">${isResolved ? '\u00c7\u00d6Z\u00dcLD\u00dc' : `PUAN: ${displayScore}`}</div>
+                                        <div style="padding: 2px 8px; background: ${cardStatusColor}; border-radius: 4px; color: white; font-size: 0.65rem; font-weight: 900;">${isResolved ? 'ÇÖZÜLDÜ' : `PUAN: ${displayScore}`}</div>
                                         <div style="font-size: 0.65rem; color: #94a3b8; font-weight: 600;"><i class="fas fa-camera"></i> Detaylara Git</div>
                                     </div>
                                     
@@ -9094,7 +9155,8 @@ function openAuditModal(id) {
                                 </div>
                             </div>
                         </div>
-                        `;
+                `;
+            }).join('');
         }).join('')}
                 </div>
                 ` : ''}
@@ -9119,16 +9181,67 @@ function openAuditModal(id) {
                     const scorePercent = row ? row.percent : clampAuditPercent(sVal * 20);
                     const displayScore = row ? row.displayScore : sVal;
                     const color = isNC ? '#E11D48' : (scorePercent >= 80 ? '#16A34A' : '#EA580C');
-                    const ansComment = ans ? [(ans.comment || ans.detail || '').trim(), ...(Array.isArray(ans.additionalComments) ? ans.additionalComments : [])].filter(Boolean).join('<br/><br/>') : '';
-                    const ansPhotos = ans ? collectAuditAnswerPhotoPaths(audit, ans) : [];
+                    
+                    const ncs = findNcsForAuditAnswer(audit, ans, cat, questions[i]);
+                    let ncsHtml = '';
+                    if (isNC) {
+                        if (ncs.length > 0) {
+                            ncsHtml = ncs.map((nc, idx) => {
+                                const comment = nc.auditorComment || '';
+                                const photos = nc.auditorPhotoPaths || [];
+                                const titleSuffix = ncs.length > 1 ? ` (Uygunsuzluk ${idx + 1})` : '';
+                                
+                                return `
+                                    <div style="margin-top: 8px; padding: 10px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-main); border-left: 3px solid #E11D48;">
+                                        <div style="font-size: 0.65rem; font-weight: 850; color: #E11D48; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.2px;">
+                                            <i class="fas fa-triangle-exclamation" style="margin-right: 4px;"></i> Uygunsuzluk Detayı${titleSuffix}
+                                        </div>
+                                        ${comment ? `<div style="font-size: 0.74rem; color: var(--text-secondary); margin-bottom: 8px; font-weight: 500; line-height: 1.4;"><strong>Açıklama:</strong> ${escapeAttr(comment)}</div>` : ''}
+                                        ${photos.length > 0 ? `
+                                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                                ${photos.map(p => {
+                                                    const r = resolveImagePath(p);
+                                                    if (r) {
+                                                        return '<div style="width:48px;height:48px;border-radius:8px;overflow:hidden;border:1px solid var(--border-main);background:var(--bg-input);cursor:pointer;display:flex;align-items:center;justify-content:center;" onclick="openImagePreview(\'' + r + '\')"><img src="' + r + '" style="width:100%;height:100%;object-fit:contain;" onerror="this.parentElement.style.display=\'none\'"></div>';
+                                                    }
+                                                    return '';
+                                                }).join('')}
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                `;
+                            }).join('');
+                        } else {
+                            const fallbackComment = ans ? [(ans.comment || ans.detail || '').trim(), ...(Array.isArray(ans.additionalComments) ? ans.additionalComments : [])].filter(Boolean).join('<br/><br/>') : '';
+                            const fallbackPhotos = ans ? collectAuditAnswerPhotoPaths(audit, ans) : [];
+                            ncsHtml = `
+                                <div style="margin-top: 8px; padding: 10px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-main); border-left: 3px solid #E11D48;">
+                                    <div style="font-size: 0.65rem; font-weight: 850; color: #E11D48; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.2px;">
+                                        <i class="fas fa-triangle-exclamation" style="margin-right: 4px;"></i> Uygunsuzluk Detayı
+                                    </div>
+                                    ${fallbackComment ? `<div style="font-size: 0.74rem; color: var(--text-secondary); margin-bottom: 8px; font-weight: 500; line-height: 1.4;"><strong>Açıklama:</strong> ${escapeAttr(fallbackComment)}</div>` : ''}
+                                    ${fallbackPhotos.length > 0 ? `
+                                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                            ${fallbackPhotos.map(p => {
+                                                const r = resolveImagePath(p);
+                                                if (r) {
+                                                    return '<div style="width:48px;height:48px;border-radius:8px;overflow:hidden;border:1px solid var(--border-main);background:var(--bg-input);cursor:pointer;display:flex;align-items:center;justify-content:center;" onclick="openImagePreview(\'' + r + '\')"><img src="' + r + '" style="width:100%;height:100%;object-fit:contain;" onerror="this.parentElement.style.display=\'none\'"></div>';
+                                                }
+                                                return '';
+                                            }).join('')}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            `;
+                        }
+                    }
 
                     groupedQuestions[catKey].push({
                         originalIndex: i,
                         questionText: questions[i] || '-',
                         displayScore,
                         color,
-                        ansComment,
-                        ansPhotos
+                        ncsHtml
                     });
                 });
 
@@ -9145,18 +9258,7 @@ function openAuditModal(id) {
                                                         ${qObj.displayScore}
                                                     </div>
                                                 </div>
-                                                ${qObj.ansComment ? `<div class="audit-question-comment"><strong>Açıklama:</strong> ${qObj.ansComment}</div>` : ''}
-                                                ${qObj.ansPhotos.length > 0 ? `
-                                                    <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap;">
-                                                        ${qObj.ansPhotos.map(p => {
-                            const r = resolveImagePath(p);
-                            if (r) {
-                                return '<div style="width:48px;height:48px;border-radius:10px;overflow:hidden;border:1px solid #e2e8f0;background:#f8fafc;cursor:pointer;display:flex;align-items:center;justify-content:center;" onclick="openImagePreview(\'' + r + '\')"><img src="' + r + '" style="width:100%;height:100%;object-fit:contain;" onerror="this.parentElement.style.display=\'none\'"></div>';
-                            }
-                            return '<div data-audit-photo-path="' + encodeURIComponent(p) + '" style="width:48px;height:48px;border-radius:10px;overflow:hidden;border:1px solid #e2e8f0;background:#f8fafc;"></div>';
-                        }).join('')}
-                                                    </div>
-                                                ` : ''}
+                                                ${qObj.ncsHtml || ''}
                                             </div>
                                 `;
                     }).join('');
@@ -9849,7 +9951,7 @@ async function loadAuditPhotosForAnswer(audit, ans) {
             const url = await resolveImagePathAsync(p);
             if (url) {
                 const img = await loadAuditPdfImage(url);
-                if (img) loaded.push({ ...img, type: group.type });
+                if (img) loaded.push({ ...img, type: group.type, path: p });
             }
         }
     }
@@ -9957,48 +10059,183 @@ function drawAuditPdfCategoryChart(doc, audit, y) {
     return y + boxH + 4;
 }
 
-function getAuditPdfResolutionData(audit, ans, questionText, loadedPhotos, categoryName = '') {
-    const nc = findNcForAuditAnswer(audit, ans, categoryName, questionText);
-    const photos = (loadedPhotos || []).filter(photo => photo && photo.dataUrl);
+function buildAuditPdfNcBlockData(nc, loadedPhotos) {
+    const photos = loadedPhotos || [];
+    const ncDetectionPaths = new Set(nc.auditorPhotoPaths || []);
+    const ncClosurePaths = new Set(nc.closurePhotoPaths || []);
+
     return {
-        nc,
-        isResolved: Boolean(nc && isNcClosed(nc)),
-        closureNote: String(nc?.closureComment || '').trim(),
-        detectionPhotos: photos.filter(photo => photo.type !== 'closure'),
-        closurePhotos: photos.filter(photo => photo.type === 'closure')
+        comment: String(nc.auditorComment || '').trim(),
+        closureComment: String(nc.closureComment || '').trim(),
+        isClosed: isNcClosed(nc),
+        detectionPhotos: photos.filter(p => p.type === 'detection' && ncDetectionPaths.has(p.path)),
+        closurePhotos: photos.filter(p => p.type === 'closure' && ncClosurePaths.has(p.path))
     };
+}
+
+function buildAuditPdfFallbackBlockData(ans, loadedPhotos) {
+    const photos = loadedPhotos || [];
+    const comment = ans ? [(ans.comment || ans.detail || '').trim(), ...(Array.isArray(ans.additionalComments) ? ans.additionalComments : [])].filter(Boolean).join('\n\n') : '';
+    return {
+        comment: comment,
+        closureComment: '',
+        isClosed: false,
+        detectionPhotos: photos.filter(p => p.type === 'detection'),
+        closurePhotos: photos.filter(p => p.type === 'closure')
+    };
+}
+
+function estimateAuditPdfNcBlockHeight(doc, ncBlock, contentW) {
+    let h = 0;
+    h += 4; // Title spacing
+    
+    if (ncBlock.comment) {
+        doc.setFontSize(6.5);
+        const commentLines = doc.splitTextToSize(auditPdfStr(`Açıklama: ${ncBlock.comment}`), contentW - 12);
+        h += commentLines.length * 3 + 1;
+    }
+    
+    if (ncBlock.detectionPhotos.length > 0) {
+        h += 3 + Math.ceil(ncBlock.detectionPhotos.length / 4) * 20 + 1;
+    }
+    
+    if (ncBlock.closureComment) {
+        doc.setFontSize(6.5);
+        const closureLines = doc.splitTextToSize(auditPdfStr(`Çözüm Açıklaması: ${ncBlock.closureComment}`), contentW - 12);
+        h += closureLines.length * 3 + 1;
+    }
+    
+    if (ncBlock.closurePhotos.length > 0) {
+        h += 3 + Math.ceil(ncBlock.closurePhotos.length / 4) * 20 + 1;
+    }
+    
+    h += 2; // Bottom gap
+    return h;
 }
 
 function estimateAuditQuestionBlockHeight(doc, audit, ans, questionText, loadedPhotos) {
     const contentW = 180;
     const scoredAnswer = ans ? scoreAuditAnswer(audit, ans) : null;
     const scoreLabel = scoredAnswer ? scoredAnswer.displayScore : '0';
-    const comment = ans ? [(ans.comment || ans.detail || '').trim(), ...(Array.isArray(ans.additionalComments) ? ans.additionalComments : [])].filter(Boolean).join('\n\n') : '';
-    const noteText = String(comment).trim();
-    const resolution = getAuditPdfResolutionData(audit, ans, questionText, loadedPhotos);
+    const isNc = scoredAnswer ? scoredAnswer.isNonconformity : false;
+    
+    const ncs = findNcsForAuditAnswer(audit, ans, '', questionText);
+    const ncBlocks = [];
+    if (isNc) {
+        if (ncs.length > 0) {
+            ncs.forEach(nc => ncBlocks.push(buildAuditPdfNcBlockData(nc, loadedPhotos)));
+        } else {
+            ncBlocks.push(buildAuditPdfFallbackBlockData(ans, loadedPhotos));
+        }
+    } else {
+        ncBlocks.push(buildAuditPdfFallbackBlockData(ans, loadedPhotos));
+    }
+
     const is5S = String(audit?.auditType || '').toUpperCase().includes('5S');
-    const resolvedText = resolution.isResolved ? ' - \u00c7\u00d6Z\u00dcLD\u00dc' : '';
+    const allClosed = ncBlocks.length > 0 && ncBlocks.every(b => b.isClosed);
+    const resolvedText = allClosed ? ' - \u00c7\u00d6Z\u00dcLD\u00dc' : '';
     const headerPrefix = is5S
         ? `(${scoreLabel} Puan${resolvedText})`
-        : `[${resolution.isResolved ? '\u00c7\u00d6Z\u00dcLD\u00dc' : 'HAYIR'}]`;
+        : `[${allClosed ? '\u00c7\u00d6Z\u00dcLD\u00dc' : (isNc ? 'HAYIR' : 'EVET')}]`;
 
     doc.setFontSize(7.5);
     const headerLines = doc.splitTextToSize(auditPdfStr(`Soru #X ${headerPrefix}: ${questionText}`), contentW - 6);
     const headerH = 2 + headerLines.length * 3.5;
 
     let bodyH = 0;
-    if (noteText) {
-        doc.setFontSize(7);
-        const noteLines = doc.splitTextToSize(auditPdfStr(`Not: ${noteText}`), contentW - 6);
-        bodyH += 1 + noteLines.length * 3.5 + 1;
-    }
+    ncBlocks.forEach(block => {
+        bodyH += estimateAuditPdfNcBlockHeight(doc, block, contentW);
+    });
 
-    if (resolution.detectionPhotos.length > 0) {
-        bodyH += 6 + Math.ceil(resolution.detectionPhotos.length / 4) * 20;
-    }
-
-    const questionH = headerH + bodyH + (bodyH > 0 ? 3 : 2);
+    const questionH = headerH + bodyH + 3;
     return questionH + 2;
+}
+
+function drawAuditPdfNcBlock(doc, ncBlock, idx, totalNcs, startX, startY, contentW) {
+    let currentY = startY;
+    const margin = startX;
+
+    if (idx > 0) {
+        doc.setDrawColor(241, 245, 249);
+        doc.setLineWidth(0.2);
+        doc.line(margin, currentY, margin + contentW - 8, currentY);
+        currentY += 3;
+    }
+
+    setAuditPdfFont(doc, 'bold');
+    doc.setFontSize(7);
+    const titleSuffix = totalNcs > 1 ? ` #${idx + 1}` : '';
+    setAuditPdfRgb(doc, ncBlock.isClosed ? [22, 101, 52] : [225, 29, 72]);
+    auditPdfText(doc, `Uygunsuzluk${titleSuffix}${ncBlock.isClosed ? ' (Kapatıldı)' : ''}`, margin, currentY);
+    currentY += 4;
+
+    if (ncBlock.comment) {
+        setAuditPdfFont(doc, 'normal');
+        doc.setFontSize(6.5);
+        setAuditPdfRgb(doc, [71, 85, 105]);
+        const commentLines = doc.splitTextToSize(auditPdfStr(`Açıklama: ${ncBlock.comment}`), contentW - 12);
+        auditPdfText(doc, commentLines, margin + 4, currentY);
+        currentY += commentLines.length * 3 + 1;
+    }
+
+    if (ncBlock.detectionPhotos.length > 0) {
+        const photoW = 24;
+        const photoH = 18;
+        const gap = 3;
+        const imagesPerRow = 4;
+
+        for (let pIdx = 0; pIdx < ncBlock.detectionPhotos.length; pIdx++) {
+            const photo = ncBlock.detectionPhotos[pIdx];
+            const col = pIdx % imagesPerRow;
+            const row = Math.floor(pIdx / imagesPerRow);
+            const imgX = margin + 4 + col * (photoW + gap);
+            const imgY = currentY + row * (photoH + gap);
+
+            try {
+                doc.addImage(photo.dataUrl, 'JPEG', imgX, imgY, photoW, photoH);
+                doc.setDrawColor(226, 232, 240);
+                doc.rect(imgX, imgY, photoW, photoH);
+            } catch (e) {
+                console.warn('PDF NC photo load failed:', e);
+            }
+        }
+        currentY += Math.ceil(ncBlock.detectionPhotos.length / imagesPerRow) * (photoH + gap) + 1;
+    }
+
+    if (ncBlock.closureComment) {
+        setAuditPdfFont(doc, 'normal');
+        doc.setFontSize(6.5);
+        setAuditPdfRgb(doc, [22, 101, 52]);
+        const closureLines = doc.splitTextToSize(auditPdfStr(`Çözüm Açıklaması: ${ncBlock.closureComment}`), contentW - 12);
+        auditPdfText(doc, closureLines, margin + 4, currentY);
+        currentY += closureLines.length * 3 + 1;
+    }
+
+    if (ncBlock.closurePhotos.length > 0) {
+        const photoW = 24;
+        const photoH = 18;
+        const gap = 3;
+        const imagesPerRow = 4;
+
+        for (let pIdx = 0; pIdx < ncBlock.closurePhotos.length; pIdx++) {
+            const photo = ncBlock.closurePhotos[pIdx];
+            const col = pIdx % imagesPerRow;
+            const row = Math.floor(pIdx / imagesPerRow);
+            const imgX = margin + 4 + col * (photoW + gap);
+            const imgY = currentY + row * (photoH + gap);
+
+            try {
+                doc.addImage(photo.dataUrl, 'JPEG', imgX, imgY, photoW, photoH);
+                doc.setDrawColor(187, 247, 208);
+                doc.rect(imgX, imgY, photoW, photoH);
+            } catch (e) {
+                console.warn('PDF NC closure photo load failed:', e);
+            }
+        }
+        currentY += Math.ceil(ncBlock.closurePhotos.length / imagesPerRow) * (photoH + gap) + 1;
+    }
+
+    return currentY + 1;
 }
 
 function drawAuditPdfQuestionBlock(doc, audit, index, ans, categoryName, questionText, loadedPhotos, y) {
@@ -10008,15 +10245,26 @@ function drawAuditPdfQuestionBlock(doc, audit, index, ans, categoryName, questio
     const scoredAnswer = ans ? scoreAuditAnswer(audit, ans) : null;
     const isNc = scoredAnswer ? scoredAnswer.isNonconformity : false;
     const scoreLabel = scoredAnswer ? scoredAnswer.displayScore : '0';
-    const comment = ans ? [(ans.comment || ans.detail || '').trim(), ...(Array.isArray(ans.additionalComments) ? ans.additionalComments : [])].filter(Boolean).join('\n\n') : '';
-    const noteText = String(comment).trim();
-    const resolution = getAuditPdfResolutionData(audit, ans, questionText, loadedPhotos, categoryName);
-    const statusColorRgb = resolution.isResolved ? [34, 197, 94] : (isNc ? [227, 30, 36] : [34, 197, 94]);
+    const ncs = findNcsForAuditAnswer(audit, ans, categoryName, questionText);
+    
+    const ncBlocks = [];
+    if (isNc) {
+        if (ncs.length > 0) {
+            ncs.forEach(nc => ncBlocks.push(buildAuditPdfNcBlockData(nc, loadedPhotos)));
+        } else {
+            ncBlocks.push(buildAuditPdfFallbackBlockData(ans, loadedPhotos));
+        }
+    } else {
+        ncBlocks.push(buildAuditPdfFallbackBlockData(ans, loadedPhotos));
+    }
+
+    const allClosed = ncBlocks.length > 0 && ncBlocks.every(b => b.isClosed);
+    const statusColorRgb = allClosed ? [34, 197, 94] : (isNc ? [227, 30, 36] : [34, 197, 94]);
+    const statusStr = allClosed ? '\u00c7\u00d6Z\u00dcLD\u00dc' : (isNc ? 'HAYIR' : 'EVET');
 
     const is5S = String(audit?.auditType || '').toUpperCase().includes('5S');
-    const statusStr = resolution.isResolved ? '\u00c7\u00d6Z\u00dcLD\u00dc' : (isNc ? 'HAYIR' : 'EVET');
     const headerPrefix = is5S
-        ? `(${scoreLabel} Puan${resolution.isResolved ? ' - \u00c7\u00d6Z\u00dcLD\u00dc' : ''})`
+        ? `(${scoreLabel} Puan${allClosed ? ' - \u00c7\u00d6Z\u00dcLD\u00dc' : ''})`
         : `[${statusStr}]`;
     const fullHeader = auditPdfStr(`Soru #${index + 1} ${headerPrefix}: ${questionText}`);
 
@@ -10026,37 +10274,11 @@ function drawAuditPdfQuestionBlock(doc, audit, index, ans, categoryName, questio
     const headerH = 2 + headerLines.length * 3.5;
 
     let bodyH = 0;
-    let noteLines = [];
-    if (noteText) {
-        setAuditPdfFont(doc, 'normal');
-        doc.setFontSize(7);
-        noteLines = doc.splitTextToSize(auditPdfStr(`Not: ${noteText}`), contentW - 6);
-        bodyH += 1 + noteLines.length * 3.5 + 1;
-    }
-    if (resolution.detectionPhotos.length > 0) {
-        bodyH += 6 + Math.ceil(resolution.detectionPhotos.length / 4) * 20;
-    }
+    ncBlocks.forEach(block => {
+        bodyH += estimateAuditPdfNcBlockHeight(doc, block, contentW);
+    });
 
-    let closureLines = [];
-    if (resolution.closureNote) {
-        setAuditPdfFont(doc, 'normal');
-        doc.setFontSize(7.5);
-        closureLines = doc.splitTextToSize(
-            auditPdfStr(`\u00c7\u00f6z\u00fcm A\u00e7\u0131klamas\u0131: ${resolution.closureNote}`),
-            contentW - 12
-        );
-    }
-    const hasResolution = resolution.isResolved || resolution.closureNote || resolution.closurePhotos.length > 0;
-    let resolutionH = 0;
-    if (hasResolution) {
-        resolutionH = 12 + (closureLines.length > 0 ? closureLines.length * 4 + 3 : 0);
-        if (resolution.closurePhotos.length > 0) {
-            resolutionH += 6 + Math.ceil(resolution.closurePhotos.length / 2) * 47;
-        }
-        resolutionH += 3;
-    }
-
-    const questionH = headerH + bodyH + (bodyH > 0 ? 3 : 2);
+    const questionH = headerH + bodyH + 3;
     y = auditPdfEnsureSpace(doc, y, questionH + 4);
 
     doc.setDrawColor(226, 232, 240);
@@ -10069,7 +10291,7 @@ function drawAuditPdfQuestionBlock(doc, audit, index, ans, categoryName, questio
     let currentY = y + 4;
     setAuditPdfFont(doc, 'bold');
     doc.setFontSize(7.5);
-    setAuditPdfRgb(doc, resolution.isResolved || !isNc ? [22, 101, 52] : [153, 27, 27]);
+    setAuditPdfRgb(doc, allClosed || !isNc ? [22, 101, 52] : [153, 27, 27]);
     auditPdfText(doc, headerLines, margin + 4, currentY);
     currentY += headerH - 2;
 
@@ -10079,90 +10301,11 @@ function drawAuditPdfQuestionBlock(doc, audit, index, ans, categoryName, questio
         currentY += 3;
     }
 
-    if (noteText) {
-        setAuditPdfFont(doc, 'normal');
-        doc.setFontSize(7);
-        setAuditPdfRgb(doc, [51, 65, 85]);
-        auditPdfText(doc, noteLines, margin + 4, currentY);
-        currentY += noteLines.length * 3.5 + 2;
-    }
+    ncBlocks.forEach((block, idx) => {
+        currentY = drawAuditPdfNcBlock(doc, block, idx, ncBlocks.length, margin + 4, currentY, contentW);
+    });
 
-    if (resolution.detectionPhotos.length > 0) {
-        setAuditPdfFont(doc, 'bold');
-        doc.setFontSize(6.8);
-        setAuditPdfRgb(doc, [37, 99, 235]);
-        auditPdfText(doc, 'TESP\u0130T FOTO\u011eRAFLARI', margin + 4, currentY + 3);
-        currentY += 6;
-
-        resolution.detectionPhotos.forEach((photo, photoIndex) => {
-            const row = Math.floor(photoIndex / 4);
-            const column = photoIndex % 4;
-            const imgX = margin + 4 + column * 40;
-            const imgY = currentY + row * 20;
-            try {
-                doc.addImage(photo.dataUrl, 'JPEG', imgX, imgY, 38, 18);
-                doc.setDrawColor(147, 197, 253);
-                doc.rect(imgX, imgY, 38, 18);
-            } catch (e) { }
-        });
-    }
-
-    currentY = y + questionH;
-    if (hasResolution) {
-        currentY = auditPdfEnsureSpace(doc, currentY + 3, resolutionH + 2, 16);
-        doc.setFillColor(240, 253, 244);
-        doc.setDrawColor(134, 239, 172);
-        doc.setLineWidth(0.35);
-        doc.roundedRect(margin + 3, currentY, contentW - 6, resolutionH, 2, 2, 'FD');
-
-        let resolutionY = currentY + 6;
-        setAuditPdfFont(doc, 'bold');
-        doc.setFontSize(9);
-        setAuditPdfRgb(doc, [21, 128, 61]);
-        auditPdfText(doc, '\u00c7\u00d6Z\u00dcM VE KAPANI\u015e', margin + 6, resolutionY);
-        resolutionY += 6;
-
-        if (closureLines.length > 0) {
-            setAuditPdfFont(doc, 'normal');
-            doc.setFontSize(7.5);
-            setAuditPdfRgb(doc, [22, 101, 52]);
-            auditPdfText(doc, closureLines, margin + 6, resolutionY);
-            resolutionY += closureLines.length * 4 + 3;
-        } else if (resolution.isResolved && resolution.closurePhotos.length === 0) {
-            setAuditPdfFont(doc, 'normal');
-            doc.setFontSize(7.5);
-            setAuditPdfRgb(doc, [22, 101, 52]);
-            auditPdfText(doc, 'Durum: \u00c7\u00f6z\u00fcld\u00fc', margin + 6, resolutionY);
-            resolutionY += 5;
-        }
-
-        if (resolution.closurePhotos.length > 0) {
-            setAuditPdfFont(doc, 'bold');
-            doc.setFontSize(7.5);
-            setAuditPdfRgb(doc, [21, 128, 61]);
-            auditPdfText(doc, '\u00c7\u00d6Z\u00dcM FOTO\u011eRAFLARI', margin + 6, resolutionY + 3);
-            resolutionY += 6;
-
-            resolution.closurePhotos.forEach((photo, photoIndex) => {
-                const row = Math.floor(photoIndex / 2);
-                const column = photoIndex % 2;
-                const imgX = margin + 6 + column * 86;
-                const imgY = resolutionY + row * 47;
-                try {
-                    doc.addImage(photo.dataUrl, 'JPEG', imgX, imgY, 78, 42);
-                    doc.setDrawColor(74, 222, 128);
-                    doc.rect(imgX, imgY, 78, 42);
-                    setAuditPdfFont(doc, 'bold');
-                    doc.setFontSize(6);
-                    setAuditPdfRgb(doc, [21, 128, 61]);
-                    auditPdfText(doc, `\u00c7\u00f6z\u00fcm ${photoIndex + 1}`, imgX + 39, imgY + 45, { align: 'center' });
-                } catch (e) { }
-            });
-        }
-        currentY += resolutionH;
-    }
-
-    return currentY + 2;
+    return y + questionH + 2;
 }
 
 function hexToRgb(hex) {
