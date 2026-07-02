@@ -4192,6 +4192,13 @@ function openNCCloseModal(id) {
         btn.style.background = '';
     }
 
+    // Reset close button state (fixes stuck loading on 2nd+ use)
+    const closeBtn = document.querySelector('#nc-close-modal .btn-primary');
+    if (closeBtn) {
+        closeBtn.disabled = false;
+        closeBtn.innerHTML = '<i class="fas fa-check-circle"></i> UYGUNSUZLUĞU KAPAT';
+    }
+
     document.getElementById('nc-close-modal').style.display = 'flex';
 }
 
@@ -4341,6 +4348,7 @@ async function processNCClose() {
         console.error('NC Close Error:', err);
         alert('NC Close Error: ' + err.message + '\n' + err.stack);
         showToast('Fotoğraflar yüklenirken veya durum güncellenirken hata oluştu!');
+    } finally {
         if (saveBtn) {
             saveBtn.disabled = false;
             saveBtn.innerHTML = originalBtnHtml;
