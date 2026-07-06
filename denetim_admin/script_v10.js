@@ -784,6 +784,13 @@ async function loadUserProfile(firebaseUser) {
         }
         document.getElementById('user-display-lines').textContent = getUserLineSummary(currentUser);
         renderUserLineLogos(currentUser);
+        // Yetki matrisinin Firestore'dan yuklenmesini bekle (race condition engelleme)
+        if (!appData.permissionsLoaded) {
+            for (let i = 0; i < 30; i++) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                if (appData.permissionsLoaded) break;
+            }
+        }
         pushDebug('updatePermissionGatedUI called...');
         updatePermissionGatedUI();
         navigateToDefaultView(currentUser);
@@ -1155,6 +1162,7 @@ function initRealtimeSync() {
     // Permissions Listener
     db.collection('system_config').doc('permissions').onSnapshot(doc => {
         appData.rolePermissions = normalizeRolePermissions(doc.exists ? doc.data() : null);
+        appData.permissionsLoaded = true;
         permissionsDirty = false;
         if (!doc.exists) {
             console.warn('Yetki matrisi bulunamadı, RBAC varsayılanları yüklendi.');
