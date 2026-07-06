@@ -636,7 +636,7 @@ async function renderPersonalStats() {
                             ${renderUserRosterLineLogos(user)}
                         </div>
                         <div style="display:flex; flex-direction:column; min-width:0; overflow:hidden;">
-                            <strong style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapeAttr(user.name || user.displayName || user.username)}">${user.name || user.displayName || user.username}</strong>
+                            <strong class="stats-user-link" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#38bdf8; cursor:pointer; transition:color 0.2s;" title="Tıklayın: Detaylı Analiz & İstatistik Dehası Raporu" onclick="showAuditorDetailedStats('${user.id}')">${user.name || user.displayName || user.username}</strong>
                             <div style="font-size:0.65rem; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapeAttr(user.title || user.roleName || user.jobTitle || user.role || '')}">${user.title || user.roleName || user.jobTitle || user.role || ''}</div>
                         </div>
                     </div>
@@ -1963,3 +1963,293 @@ window.exportExcusesToExcel = async function() {
         if (typeof hideSpinner === 'function') hideSpinner();
     }
 };
+
+window.showAuditorDetailedStats = async function(userId) {
+    const user = (appData.users || []).find(u => String(u.id) === String(userId));
+    if (!user) {
+        alert("Personel bilgisi bulunamadı.");
+        return;
+    }
+
+    const existingModal = document.getElementById('auditor-detailed-stats-modal');
+    if (existingModal) existingModal.remove();
+
+    // Filter audits for this user using matchesIdentity style logic
+    const allAudits = appData.audits || [];
+    const userAudits = allAudits.filter(a => {
+        const normalizedAuditorId = a.auditorId?.trim() ?? '';
+        if (normalizedAuditorId.isNotEmpty && normalizedAuditorId === user.id.trim()) {
+            return true;
+        }
+        const normalizedAuditorName = a.auditorName?.trim().toLowerCase() ?? '';
+        if (normalizedAuditorName === '') return false;
+        return normalizedAuditorName === user.username.trim().toLowerCase() ||
+               normalizedAuditorName === (user.name || '').trim().toLowerCase();
+    });
+
+    const totalAudits = userAudits.length;
+    const completedAudits = userAudits.filter(a => a.isCompleted).length;
+    const activeDrafts = userAudits.filter(a => !a.isCompleted).length;
+
+    // Average Score calculation
+    let avgScore = 0;
+    const auditsWithScore = userAudits.filter(a => a.score !== undefined && a.score !== null);
+    if (auditsWithScore.length > 0) {
+        avgScore = Math.round(auditsWithScore.reduce((sum, a) => sum + (Number(a.score) || 0), 0) / auditsWithScore.length);
+    }
+
+    // Average Duration calculation
+    let avgDurationMin = 0;
+    const auditsWithDuration = userAudits.filter(a => a.startedAt && a.completedAt);
+    if (auditsWithDuration.length > 0) {
+        const totalDurationMs = auditsWithDuration.reduce((sum, a) => {
+            return sum + (new Date(a.completedAt) - new Date(a.startedAt));
+        }, 0);
+        avgDurationMin = Math.round(totalDurationMs / auditsWithDuration.length / 60000);
+    }
+
+    // Station Distribution (Top 5)
+    const stationCounts = {};
+    userAudits.forEach(a => {
+        if (!a.station) return;
+        stationCounts[a.station] = (stationCounts[a.station] || 0) + 1;
+    });
+    const topStations = Object.entries(stationCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+
+    // Line Distribution
+    const lineCounts = {};
+    userAudits.forEach(a => {
+        if (!a.line) return;
+        lineCounts[a.line] = (lineCounts[a.line] || 0) + 1;
+    });
+    const sortedLines = Object.entries(lineCounts).sort((a, b) => b[1] - a[1]);
+
+    // Audit Type Distribution
+    const typeCounts = {};
+    userAudits.forEach(a => {
+        const typeId = a.auditTypeId || 'diğer';
+        typeCounts[typeId] = (typeCounts[typeId] || 0) + 1;
+    });
+    const typeDistributionHtml = Object.entries(typeCounts).map(([typeId, count]) => {
+        const type = (appData.auditTypes || []).find(t => String(t.id) === String(typeId));
+        const title = type ? (type.title || type.name) : typeId;
+        const pct = totalAudits > 0 ? Math.round((count / totalAudits) * 100) : 0;
+        return `
+            <div style="margin-bottom:8px;">
+                <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:#fff; font-weight:600; margin-bottom:3px;">
+                    <span>${escapeAttr(title)}</span>
+                    <span>${count} adet (${pct}%)</span>
+                </div>
+                <div style="background:rgba(255,255,255,0.05); height:6px; border-radius:3px; overflow:hidden;">
+                    <div style="background:#007AFF; width:${pct}%; height:100%; border-radius:3px;"></div>
+                </div>
+            </div>
+        `;
+    }).join('') || '<div style="color:var(--text-dim); text-align:center; font-size:0.75rem; padding:15px 0;">Kayıt bulunmuyor.</div>';
+
+    // Roster Shift and Excuse Statistics for Selected Month
+    const rosterMonthData = await loadMonthlyRoster(statsSelectedYear, statsSelectedMonth);
+    const userRoster = rosterMonthData[user.id] || { days: {} };
+    const daysInMonth = new Date(statsSelectedYear, statsSelectedMonth, 0).getDate();
+    
+    let shiftWorkCount = 0;
+    let shiftOffCount = 0;
+    let excuseCount = 0;
+    const excuseList = [];
+
+    const activeShifts = (shiftsList && shiftsList.length > 0) ? shiftsList : [];
+
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dayKey = day.toString();
+        const dayData = userRoster.days?.[dayKey];
+        if (dayData) {
+            const shiftCode = dayData.shift;
+            const excuse = dayData.excuse;
+            
+            if (shiftCode) {
+                const shiftObj = activeShifts.find(s => s.code === shiftCode);
+                const isWork = shiftObj ? shiftObj.type === 'work' : ['S', 'A', 'G', 'N', 'S8', 'S10'].includes(shiftCode);
+                if (isWork) shiftWorkCount++;
+                else shiftOffCount++;
+            }
+            if (excuse) {
+                excuseCount++;
+                excuseList.push({ day, excuse });
+            }
+        }
+    }
+
+    const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+    const monthName = months[statsSelectedMonth - 1];
+
+    const topStationsHtml = topStations.map(([station, count], idx) => {
+        const pct = totalAudits > 0 ? Math.round((count / totalAudits) * 100) : 0;
+        return `
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                <span style="font-size:0.72rem; font-weight:800; color:#38bdf8; background:rgba(56,189,248,0.1); width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; border-radius:50%;">${idx + 1}</span>
+                <div style="flex:1; min-width:0;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:#fff; font-weight:600; margin-bottom:2px;">
+                        <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:80%;" title="${escapeAttr(station)}">${escapeAttr(station)}</span>
+                        <span>${count} (${pct}%)</span>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.05); height:4px; border-radius:2px; overflow:hidden;">
+                        <div style="background:#10b981; width:${pct}%; height:100%; border-radius:2px;"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('') || '<div style="color:var(--text-dim); text-align:center; font-size:0.75rem; padding:15px 0;">Kayıt bulunmuyor.</div>';
+
+    const lineBreakdownHtml = sortedLines.map(([line, count]) => {
+        const pct = totalAudits > 0 ? Math.round((count / totalAudits) * 100) : 0;
+        const color = (appData.lineColors && appData.lineColors[line]) || '#2563eb';
+        return `
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 8px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.03); border-radius:6px; font-size:0.72rem; font-weight:700;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <span style="display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:50%; background:${color}; color:#fff; font-size:0.6rem; font-weight:900;">${line}</span>
+                    <span style="color:#cbd5e1;">Hat Denetimi</span>
+                </div>
+                <span style="color:#fff;">${count} Adet (${pct}%)</span>
+            </div>
+        `;
+    }).join('') || '<div style="color:var(--text-dim); text-align:center; font-size:0.75rem; padding:15px 0;">Kayıt bulunmuyor.</div>';
+
+    const excuseListHtml = excuseList.map(exc => `
+        <div style="padding:6px 10px; background:rgba(217,119,6,0.06); border:1px solid rgba(217,119,6,0.15); border-radius:6px; margin-bottom:5px; font-size:0.7rem; color:#f59e0b; display:flex; align-items:flex-start; gap:6px;">
+            <i class="fas fa-exclamation-triangle" style="margin-top:2px; flex-shrink:0;"></i>
+            <div>
+                <strong>${exc.day} ${monthName}:</strong> ${escapeAttr(exc.excuse)}
+            </div>
+        </div>
+    `).join('') || '<div style="color:var(--text-dim); text-align:center; font-size:0.72rem; font-style:italic; padding:10px 0;">Bu ay mazeret beyan edilmemiş.</div>';
+
+    // Total Working Scheduled vs Excuse ratios
+    const excuseRate = shiftWorkCount > 0 ? Math.round((excuseCount / shiftWorkCount) * 100) : 0;
+
+    const modalHtml = `
+        <div id="auditor-detailed-stats-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.7); backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; z-index:99999; opacity:0; transition:opacity 0.2s ease;">
+            <div style="background:#0b1e36; border:1px solid rgba(255,255,255,0.1); border-radius:16px; width:780px; max-width:95%; max-height:90vh; box-shadow:0 15px 35px rgba(0,0,0,0.6); transform:scale(0.95); transition:transform 0.2s ease; overflow-y:auto; font-family:inherit; display:flex; flex-direction:column;">
+                
+                <!-- Header -->
+                <div style="background:rgba(255,255,255,0.02); padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div style="width:40px; height:40px; border-radius:50%; background:rgba(56,189,248,0.1); color:#38bdf8; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1.2rem; border:1px solid rgba(56,189,248,0.25);">
+                            ${(user.name || user.displayName || user.username)[0].toUpperCase()}
+                        </div>
+                        <div style="text-align: left;">
+                            <h3 style="margin:0; font-size:1.05rem; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:0.3px;">${user.name || user.displayName || user.username}</h3>
+                            <span style="font-size:0.75rem; color:#ea580c; font-weight:700; background:rgba(234,88,12,0.08); padding:2px 8px; border-radius:4px; margin-top:4px; display:inline-block;">${user.title || user.roleName || user.jobTitle || user.role || 'Saha Denetçisi'}</span>
+                        </div>
+                    </div>
+                    <i class="fas fa-times" style="font-size:1.1rem; color:var(--text-dim); cursor:pointer; padding:6px; transition:color 0.2s;" onclick="document.getElementById('auditor-detailed-stats-modal').closeModal()" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--text-dim)'"></i>
+                </div>
+                
+                <!-- Body -->
+                <div style="padding:20px; overflow-y:auto; display:flex; flex-direction:column; gap:20px;">
+                    
+                    <!-- KPI Cards Grid -->
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px;">
+                        <!-- Total -->
+                        <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:12px; border-radius:10px; text-align:center;">
+                            <div style="font-size:0.68rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Toplam Denetim</div>
+                            <div style="font-size:1.4rem; font-weight:900; color:#fff;">${totalAudits}</div>
+                            <div style="font-size:0.6rem; color:var(--text-dim); margin-top:2px;">${completedAudits} tamamlanan | ${activeDrafts} taslak</div>
+                        </div>
+                        <!-- Average Compliance Score -->
+                        <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:12px; border-radius:10px; text-align:center;">
+                            <div style="font-size:0.68rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Uyum Başarı Skoru</div>
+                            <div style="font-size:1.4rem; font-weight:900; color:#10b981;">%${avgScore}</div>
+                            <div style="font-size:0.6rem; color:var(--text-dim); margin-top:2px;">Genel Uyum Ortalaması</div>
+                        </div>
+                        <!-- Average Duration -->
+                        <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:12px; border-radius:10px; text-align:center;">
+                            <div style="font-size:0.68rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Ortalama Denetim Süresi</div>
+                            <div style="font-size:1.4rem; font-weight:900; color:#38bdf8;">${avgDurationMin} <span style="font-size:0.8rem; font-weight:700;">dk</span></div>
+                            <div style="font-size:0.6rem; color:var(--text-dim); margin-top:2px;">Aktif Saha Denetim Hızı</div>
+                        </div>
+                        <!-- Roster & excuse info -->
+                        <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:12px; border-radius:10px; text-align:center;">
+                            <div style="font-size:0.68rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Aylık Vardiya & Mazeret</div>
+                            <div style="font-size:1.4rem; font-weight:900; color:#f59e0b;">${shiftWorkCount} <span style="font-size:0.8rem; font-weight:700;">Gün</span></div>
+                            <div style="font-size:0.6rem; color:var(--text-dim); margin-top:2px;">${excuseCount} mazeret (%${excuseRate} oran)</div>
+                        </div>
+                    </div>
+
+                    <!-- Split Panels -->
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; @media(max-width:700px){grid-template-columns:1fr;}">
+                        <!-- Left Panel (Top Stations & Lines) -->
+                        <div style="display:flex; flex-direction:column; gap:14px;">
+                            <!-- Top Stations -->
+                            <div style="background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03); border-radius:10px; padding:14px;">
+                                <div style="font-size:0.75rem; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid rgba(255,255,255,0.04); padding-bottom:6px; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+                                    <i class="fas fa-trophy" style="color:#f59e0b;"></i> En Çok Denetlenen İstasyonlar
+                                </div>
+                                ${topStationsHtml}
+                            </div>
+                            
+                            <!-- Lines Breakdown -->
+                            <div style="background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03); border-radius:10px; padding:14px;">
+                                <div style="font-size:0.75rem; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid rgba(255,255,255,0.04); padding-bottom:6px; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+                                    <i class="fas fa-subway" style="color:#38bdf8;"></i> Hatlara Göre Dağılım
+                                </div>
+                                <div style="display:flex; flex-direction:column; gap:6px;">
+                                    ${lineBreakdownHtml}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel (Audit types & Excuses) -->
+                        <div style="display:flex; flex-direction:column; gap:14px;">
+                            <!-- Audit Types Breakdown -->
+                            <div style="background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03); border-radius:10px; padding:14px;">
+                                <div style="font-size:0.75rem; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid rgba(255,255,255,0.04); padding-bottom:6px; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+                                    <i class="fas fa-chart-pie" style="color:#007AFF;"></i> Denetim Tipi Dağılımı
+                                </div>
+                                ${typeDistributionHtml}
+                            </div>
+                            
+                            <!-- Excuses Detail -->
+                            <div style="background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03); border-radius:10px; padding:14px;">
+                                <div style="font-size:0.75rem; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid rgba(255,255,255,0.04); padding-bottom:6px; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+                                    <i class="fas fa-file-invoice" style="color:#f59e0b;"></i> ${monthName} Ayı Mazeret Kayıtları
+                                </div>
+                                <div style="max-height:150px; overflow-y:auto; padding-right:4px;">
+                                    ${excuseListHtml}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div style="padding:14px 20px; background:rgba(0,0,0,0.2); display:flex; justify-content:flex-end; border-top:1px solid rgba(255,255,255,0.05); flex-shrink:0;">
+                    <button style="background:#007AFF; color:#fff; border:none; padding:8px 18px; border-radius:6px; font-size:0.8rem; font-weight:700; cursor:pointer; transition:background 0.2s;" onmouseover="this.style.background='#0062cc'" onmouseout="this.style.background='#007AFF'" onclick="document.getElementById('auditor-detailed-stats-modal').closeModal()">Kapat</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modal = document.getElementById('auditor-detailed-stats-modal');
+    const content = modal.querySelector('div');
+
+    modal.closeModal = function() {
+        modal.style.opacity = '0';
+        content.style.transform = 'scale(0.95)';
+        setTimeout(() => modal.remove(), 200);
+    };
+
+    // Close on overlay click
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) modal.closeModal();
+    });
+
+    // Trigger animations
+    requestAnimationFrame(() => {
+        modal.style.opacity = '1';
+        content.style.transform = 'scale(1)';
+    });
+};
+
