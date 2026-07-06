@@ -315,6 +315,7 @@ const ROLE_TITLE_TO_RBAC = {
 };
 
 let personnelSelectedLines = [];
+let personnelSelectedAuditTypes = [];
 let announcementSelectedLines = [];
 
 let appData = {
@@ -868,12 +869,24 @@ function initPersonnelRoleSelect() {
 
 function populatePersonnelPickers() {
     const linePicker = document.getElementById('personnel-line-picker');
-    if (!linePicker) return;
-    const current = linePicker.value;
-    const available = (appData.lines || []).filter(line => !personnelSelectedLines.includes(line));
-    linePicker.innerHTML = '<option value="">Hat seçip ekleyin...</option>' +
-        available.map(line => `<option value="${escapeAttr(line)}">${escapeAttr(line)}</option>`).join('');
-    linePicker.value = current && available.includes(current) ? current : '';
+    if (linePicker) {
+        const current = linePicker.value;
+        const available = (appData.lines || []).filter(line => !personnelSelectedLines.includes(line));
+        linePicker.innerHTML = '<option value="">Hat seçip ekleyin...</option>' +
+            available.map(line => `<option value="${escapeAttr(line)}">${escapeAttr(line)}</option>`).join('');
+        linePicker.value = current && available.includes(current) ? current : '';
+    }
+
+    // Populate Audit Type Picker
+    const typePicker = document.getElementById('personnel-audit-type-picker');
+    if (typePicker) {
+        const currentType = typePicker.value;
+        const allTypes = Array.isArray(appData.auditTypes) ? appData.auditTypes : [];
+        const availableTypes = allTypes.filter(t => t.isActive && !t.isDeleted && !personnelSelectedAuditTypes.includes(t.id));
+        typePicker.innerHTML = '<option value="">Denetim tipi seçip ekleyin...</option>' +
+            availableTypes.map(t => `<option value="${escapeAttr(t.id)}">${escapeAttr(t.title || t.name)}</option>`).join('');
+        typePicker.value = currentType && availableTypes.some(t => t.id === currentType) ? currentType : '';
+    }
 }
 
 function renderPersonnelTags() {
@@ -954,6 +967,32 @@ function removePersonnelLine(line) {
     renderPersonnelTags();
 }
 
+function renderPersonnelAuditTypesTags() {
+    const tagsEl = document.getElementById('personnel-audit-types-tags');
+    if (!tagsEl) return;
+    const allTypes = Array.isArray(appData.auditTypes) ? appData.auditTypes : [];
+    tagsEl.innerHTML = personnelSelectedAuditTypes.map(typeId => {
+        const type = allTypes.find(t => String(t.id) === String(typeId));
+        const title = type ? (type.title || type.name) : typeId;
+        return `<span class="personnel-tag"><span>${escapeAttr(title)}</span><button type="button" onclick="removePersonnelAuditType('${jsArg(typeId)}')" aria-label="Kaldır">×</button></span>`;
+    }).join('');
+    populatePersonnelPickers();
+}
+
+function addPersonnelAuditTypeFromPicker(selectEl) {
+    const value = selectEl?.value;
+    if (value && !personnelSelectedAuditTypes.includes(value)) {
+        personnelSelectedAuditTypes.push(value);
+        renderPersonnelAuditTypesTags();
+    }
+    if (selectEl) selectEl.value = '';
+}
+
+function removePersonnelAuditType(typeId) {
+    personnelSelectedAuditTypes = personnelSelectedAuditTypes.filter(item => item !== typeId);
+    renderPersonnelAuditTypesTags();
+}
+
 function splitPersonName(user) {
     const full = String(user?.firstName || user?.name || user?.username || '').trim();
     if (user?.firstName || user?.lastName) {
@@ -978,7 +1017,9 @@ function resetPersonnelForm() {
     const titleInput = document.getElementById('personnel-title');
     if (titleInput) titleInput.value = '';
     personnelSelectedLines = [];
+    personnelSelectedAuditTypes = [];
     renderPersonnelTags();
+    renderPersonnelAuditTypesTags();
     updatePersonnelScopeUI();
     const passInput = document.getElementById('new-user-pass');
     const passHint = document.getElementById('new-user-pass-hint');
@@ -11202,7 +11243,9 @@ function openAddUserModal(userId) {
             const titleInput = document.getElementById('personnel-title');
             if (titleInput) titleInput.value = user.title || '';
             personnelSelectedLines = Array.isArray(user.authorizedLines) ? [...user.authorizedLines] : [];
+            personnelSelectedAuditTypes = Array.isArray(user.authorizedAuditTypes) ? [...user.authorizedAuditTypes] : [];
             renderPersonnelTags();
+            renderPersonnelAuditTypesTags();
             updatePersonnelScopeUI();
         }
 
@@ -11287,6 +11330,7 @@ async function processNewUser(event) {
         isGlobalScope,
         authorizedLines: isGlobalScope ? [] : [...personnelSelectedLines],
         authorizedStations: [],
+        authorizedAuditTypes: [...personnelSelectedAuditTypes],
         updatedAt: new Date().toISOString()
     };
 
@@ -14118,6 +14162,12 @@ function renderPeople() {
                 <td style="font-size:0.75rem; color:var(--text-dim); padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border-main);">
                     <div style="font-weight:700; color: var(--text-secondary);">${escapeAttr(user.email || '-')}</div>
                     ${user.title ? `<div style="font-size:0.65rem; opacity:0.8; margin-top:2px; font-weight:500;">${escapeAttr(user.title)}</div>` : ''}
+                    <div style="font-size:0.65rem; opacity:0.7; margin-top:3px; font-weight:600; color:var(--primary);">
+                        <i class="fas fa-clipboard-list" style="margin-right:2px;"></i> Tipler: ${Array.isArray(user.authorizedAuditTypes) && user.authorizedAuditTypes.length ? user.authorizedAuditTypes.map(id => {
+                            const type = (appData.auditTypes || []).find(t => String(t.id) === String(id));
+                            return type ? (type.title || type.name) : id;
+                        }).join(', ') : 'Tümü'}
+                    </div>
                 </td>
                 <td style="padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border-main);">${lineLogos}</td>
                 <td style="padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border-main); text-align:center;">

@@ -2949,6 +2949,13 @@
                         </div>
                     </div>
                 </div>
+                <div class="personnel-field" style="margin-top: 1rem;">
+                    <label for="personnel-audit-type-picker">Yetkili Olduğu Denetim Tipleri (Boş bırakılırsa tümünü görebilir)</label>
+                    <select id="personnel-audit-type-picker" onchange="addPersonnelAuditTypeFromPicker(this)">
+                        <option value="">Denetim tipi seçip ekleyin...</option>
+                    </select>
+                    <div id="personnel-audit-types-tags" class="personnel-tags" style="margin-top: 0.5rem;"></div>
+                </div>
                 <div class="personnel-form-footer">
                     <button type="button" class="personnel-btn personnel-btn--ghost"
                         onclick="closeUserModal()">Vazgeç</button>
