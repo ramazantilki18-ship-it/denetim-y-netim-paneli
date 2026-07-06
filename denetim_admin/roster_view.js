@@ -2008,15 +2008,14 @@ window.showAuditorDetailedStats = async function(userId) {
         avgDurationMin = Math.round(totalDurationMs / auditsWithDuration.length / 60000);
     }
 
-    // Station Distribution (Top 5)
+    // Station Distribution (All Stations)
     const stationCounts = {};
     userAudits.forEach(a => {
         if (!a.station) return;
         stationCounts[a.station] = (stationCounts[a.station] || 0) + 1;
     });
-    const topStations = Object.entries(stationCounts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5);
+    const allStations = Object.entries(stationCounts)
+        .sort((a, b) => b[1] - a[1]);
 
     // Line Distribution
     const lineCounts = {};
@@ -2084,7 +2083,7 @@ window.showAuditorDetailedStats = async function(userId) {
     const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
     const monthName = months[statsSelectedMonth - 1];
 
-    const topStationsHtml = topStations.map(([station, count], idx) => {
+    const allStationsHtml = allStations.map(([station, count], idx) => {
         const pct = totalAudits > 0 ? Math.round((count / totalAudits) * 100) : 0;
         return `
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
@@ -2181,12 +2180,14 @@ window.showAuditorDetailedStats = async function(userId) {
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; @media(max-width:700px){grid-template-columns:1fr;}">
                         <!-- Left Panel (Top Stations & Lines) -->
                         <div style="display:flex; flex-direction:column; gap:14px;">
-                            <!-- Top Stations -->
+                            <!-- All Stations -->
                             <div style="background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03); border-radius:10px; padding:14px;">
                                 <div style="font-size:0.75rem; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid rgba(255,255,255,0.04); padding-bottom:6px; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
-                                    <i class="fas fa-trophy" style="color:#f59e0b;"></i> En Çok Denetlenen İstasyonlar
+                                    <i class="fas fa-list-ol" style="color:#38bdf8;"></i> İstasyon Bazlı Denetim Sayıları
                                 </div>
-                                ${topStationsHtml}
+                                <div style="max-height:180px; overflow-y:auto; padding-right:4px;">
+                                    ${allStationsHtml}
+                                </div>
                             </div>
                             
                             <!-- Lines Breakdown -->
