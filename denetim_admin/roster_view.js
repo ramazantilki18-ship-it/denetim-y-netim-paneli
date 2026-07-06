@@ -1028,13 +1028,13 @@ window.showAuditTimesDetail = function(userName, dateText, infosStr) {
     const infosArray = infosStr.split('~').filter(Boolean);
     let timesListHtml = '';
     if (infosArray.length === 0) {
-        timesListHtml = '<p style="color:var(--text-dim); text-align:center; font-style:italic; margin: 15px 0;">Bu güne ait denetim kaydı bulunamadı.</p>';
+        timesListHtml = '<p style="color:var(--text-dim); text-align:center; font-style:italic; margin: 15px 0; font-size: 0.75rem;">Bu güne ait denetim kaydı bulunamadı.</p>';
     } else {
         // Rota Adımları Header
         timesListHtml = `
-            <div style="font-size:0.78rem; font-weight:800; color:var(--text-secondary); margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:8px; text-transform:uppercase; letter-spacing:0.8px;">
+            <div style="font-size:0.72rem; font-weight:800; color:var(--text-secondary); margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">
                 <span>Rota Adımları</span>
-                <span style="background:rgba(255,255,255,0.08); padding:2px 8px; border-radius:20px; font-size:0.68rem; color:#fff; font-weight:700;">${infosArray.length} Nokta</span>
+                <span style="background:rgba(255,255,255,0.08); padding:1px 6px; border-radius:20px; font-size:0.62rem; color:#fff; font-weight:700;">${infosArray.length} Adım</span>
             </div>
         `;
         
@@ -1072,31 +1072,26 @@ window.showAuditTimesDetail = function(userName, dateText, infosStr) {
             const badgeText = isSpecialNonStation ? 'Teknik' : 'İstasyon';
 
             return `
-                <div class="modal-audit-item" id="audit-item-${idxNum}" style="display:flex; flex-direction:column; align-items:stretch; background:rgba(255,255,255,0.02); padding:12px 14px; border-radius:10px; margin-bottom:10px; border:1px solid rgba(255,255,255,0.05); gap: 6px; cursor:${hasCoords ? 'pointer' : 'default'}; transition:all 0.25s ease;" 
+                <div class="modal-audit-item" id="audit-item-${idxNum}" style="display:flex; flex-direction:column; align-items:stretch; background:rgba(255,255,255,0.02); padding:8px 10px; border-radius:8px; margin-bottom:6px; border:1px solid rgba(255,255,255,0.04); gap: 4px; cursor:${hasCoords ? 'pointer' : 'default'}; transition:all 0.25s ease;" 
                      ${hasCoords ? `onclick="panToModalMarker(${idxNum})"` : ''}
-                     onmouseover="this.style.background='rgba(255,255,255,0.06)'" 
-                     onmouseout="if(!this.classList.contains('active')) this.style.background='rgba(255,255,255,0.02)'">
+                     onmouseover="this.style.background='rgba(255,255,255,0.05)', this.style.borderColor='rgba(255,255,255,0.1)'" 
+                     onmouseout="if(!this.classList.contains('active') && !this.classList.contains('active-special')) { this.style.background='rgba(255,255,255,0.02)'; this.style.borderColor='rgba(255,255,255,0.04)'; }">
                     
                     <!-- Denetim Sırası ve Rozet -->
                     <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <span style="display:flex; align-items:center; justify-content:center; width:22px; height:22px; background:${badgeColor}; color:#fff; font-size:0.75rem; font-weight:900; border-radius:50%; box-shadow:0 2px 4px rgba(0,0,0,0.3);">${idxNum}</span>
-                            <span style="font-size:0.68rem; font-weight:700; text-transform:uppercase; color:${badgeColor}; letter-spacing:0.5px;">${badgeText}</span>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span style="font-size:0.62rem; font-weight:700; text-transform:uppercase; color:${badgeColor}; letter-spacing:0.3px;">${badgeText}</span>
                         </div>
-                        ${hasCoords ? '<i class="fas fa-map-marked-alt" style="color:#10b981; font-size:0.85rem;" title="Haritada Odaklan"></i>' : '<i class="fas fa-ban" style="color:var(--text-dim); opacity:0.3; font-size:0.8rem;" title="Koordinat Yok"></i>'}
                     </div>
 
                     <!-- İstasyon Adı -->
-                    <div style="font-size:0.85rem; color:#fff; font-weight:700; text-align:left; word-wrap:break-word; margin-top:2px;">
-                        ${station}
+                    <div style="font-size:0.78rem; color:#fff; font-weight:700; text-align:left; word-wrap:break-word; margin-top:1px;">
+                        ${idxNum}. ${station}
                     </div>
 
-                    <!-- Hat ve Saat Kırılımı -->
-                    <div style="display:flex; align-items:center; justify-content:space-between; margin-top:4px; font-size:0.72rem;">
-                        <span style="color:var(--text-dim); font-weight:600; display:flex; align-items:center; gap:4px;">
-                            <i class="fas fa-route" style="color:${appData.lineColors?.[lineName] || '#64748b'};"></i> ${lineName || 'Belirsiz Hat'}
-                        </span>
-                        <span style="color:#38bdf8; font-weight:700; font-family:monospace; display:flex; align-items:center; gap:4px;">
+                    <!-- Saat Kırılımı -->
+                    <div style="display:flex; align-items:center; margin-top:2px; font-size:0.66rem;">
+                        <span style="color:#38bdf8; font-weight:700; font-family:monospace; display:flex; align-items:center; gap:3px;">
                             <i class="far fa-clock"></i> ${timeDisplay}
                         </span>
                     </div>
@@ -1167,26 +1162,26 @@ window.showAuditTimesDetail = function(userName, dateText, infosStr) {
                 border-right-color: rgba(15, 23, 42, 0.85) !important;
             }
         </style>
-        <div id="dynamic-audit-times-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.7); backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; z-index:99999; opacity:0; transition:opacity 0.2s ease;">
-            <div style="background:#0b1e36; border:1px solid rgba(255,255,255,0.1); border-radius:14px; width:820px; max-width:95%; box-shadow:0 12px 30px rgba(0,0,0,0.5); transform:scale(0.9); transition:transform 0.2s ease; overflow:hidden; font-family:inherit; display:flex; flex-direction:column;">
+        <div id="dynamic-audit-times-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.6); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; z-index:99999; opacity:0; transition:opacity 0.2s ease;">
+            <div style="background:#0b1e36; border:1px solid rgba(255,255,255,0.08); border-radius:12px; width:740px; max-width:92%; box-shadow:0 10px 25px rgba(0,0,0,0.4); transform:scale(0.95); transition:transform 0.2s ease; overflow:hidden; font-family:inherit; display:flex; flex-direction:column;">
                 <style>
                     .modal-detail-body {
                         display: flex;
                         flex-wrap: nowrap;
-                        height: 420px;
+                        height: 360px;
                         overflow: hidden;
                     }
                     .modal-detail-left {
-                        width: 320px;
-                        border-right: 1px solid rgba(255,255,255,0.05);
-                        padding: 18px;
+                        width: 270px;
+                        border-right: 1px solid rgba(255,255,255,0.04);
+                        padding: 12px;
                         overflow-y: auto;
                         height: 100%;
                         box-sizing: border-box;
                     }
                     .modal-detail-right {
                         flex: 1;
-                        min-width: 300px;
+                        min-width: 250px;
                         height: 100%;
                         background: #071426;
                         position: relative;
@@ -1195,31 +1190,31 @@ window.showAuditTimesDetail = function(userName, dateText, infosStr) {
                         .modal-detail-body {
                             flex-direction: column;
                             height: auto;
-                            max-height: 70vh;
+                            max-height: 65vh;
                             overflow-y: auto;
                         }
                         .modal-detail-left {
                             width: 100%;
                             border-right: none;
-                            border-bottom: 1px solid rgba(255,255,255,0.05);
+                            border-bottom: 1px solid rgba(255,255,255,0.04);
                             height: auto;
-                            max-height: 180px;
-                            padding: 12px;
+                            max-height: 160px;
+                            padding: 10px;
                         }
                         .modal-detail-right {
                             width: 100%;
-                            height: 280px;
+                            height: 240px;
                             flex: none;
                             min-width: unset;
                         }
                     }
                 </style>
-                <div style="background:rgba(255,255,255,0.02); padding:18px; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+                <div style="background:rgba(255,255,255,0.01); padding:12px 16px; border-bottom:1px solid rgba(255,255,255,0.04); display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
                     <div style="text-align: left;">
-                        <h4 style="margin:0; font-size:0.95rem; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:0.5px;">Denetim Detayları ve Lokasyonları</h4>
-                        <p style="margin:4px 0 0 0; font-size:0.75rem; color:var(--text-secondary); opacity:0.8;">${userName} - ${dateText}</p>
+                        <h4 style="margin:0; font-size:0.85rem; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:0.3px;">Denetim Detayları ve Lokasyonları</h4>
+                        <p style="margin:2px 0 0 0; font-size:0.7rem; color:var(--text-secondary); opacity:0.85;">${userName} - ${dateText}</p>
                     </div>
-                    <i class="fas fa-times" style="font-size:1.1rem; color:var(--text-dim); cursor:pointer; padding:6px; transition:color 0.2s;" onclick="document.getElementById('dynamic-audit-times-modal').closeModal()" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--text-dim)'"></i>
+                    <i class="fas fa-times" style="font-size:0.95rem; color:var(--text-dim); cursor:pointer; padding:4px; transition:color 0.2s;" onclick="document.getElementById('dynamic-audit-times-modal').closeModal()" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--text-dim)'"></i>
                 </div>
                 
                 <div class="modal-detail-body">
@@ -1234,8 +1229,8 @@ window.showAuditTimesDetail = function(userName, dateText, infosStr) {
                     </div>
                 </div>
                 
-                <div style="padding:14px 18px; background:rgba(0,0,0,0.2); display:flex; justify-content:flex-end; border-top:1px solid rgba(255,255,255,0.05); flex-shrink:0;">
-                    <button style="background:#007AFF; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-size:0.8rem; font-weight:700; cursor:pointer; transition:background 0.2s;" onmouseover="this.style.background='#0062cc'" onmouseout="this.style.background='#007AFF'" onclick="document.getElementById('dynamic-audit-times-modal').closeModal()">Kapat</button>
+                <div style="padding:10px 16px; background:rgba(0,0,0,0.15); display:flex; justify-content:flex-end; border-top:1px solid rgba(255,255,255,0.04); flex-shrink:0;">
+                    <button style="background:#007AFF; color:#fff; border:none; padding:6px 12px; border-radius:6px; font-size:0.75rem; font-weight:700; cursor:pointer; transition:background 0.2s;" onmouseover="this.style.background='#0062cc'" onmouseout="this.style.background='#007AFF'" onclick="document.getElementById('dynamic-audit-times-modal').closeModal()">Kapat</button>
                 </div>
             </div>
         </div>
