@@ -1787,14 +1787,38 @@ function navigateToDefaultView(user = currentUser) {
         'reports-view',
         'planning-view'
     ];
+    let matched = false;
     for (const viewId of viewOrder) {
         if (canShowNavView(viewId, user)) {
             switchView(viewId);
+            matched = true;
             return;
         }
     }
-    // Fallback if none matched
-    switchView('dashboard-view');
+    if (!matched) {
+        showNoAccessMessage();
+    }
+}
+
+function showNoAccessMessage() {
+    const mainApp = document.getElementById('main-app');
+    if (mainApp) {
+        mainApp.innerHTML = `
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100vw; height: 100vh; background: var(--bg-main); color: var(--text-primary); gap: 1.5rem; font-family: sans-serif; position: fixed; top: 0; left: 0; z-index: 9999;">
+                <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); padding: 2rem; border-radius: 16px; display: flex; flex-direction: column; align-items: center; max-width: 420px; text-align: center;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 3.5rem; color: #ef4444; margin-bottom: 1rem;"></i>
+                    <h2 style="margin: 0 0 0.5rem 0; font-size: 1.4rem; font-weight: 800; color: var(--text-primary);">Erişim Yetkiniz Bulunmuyor</h2>
+                    <p style="margin: 0; color: var(--text-dim); font-size: 0.85rem; line-height: 1.5;">
+                        Hesabınız için bu panele erişim yetkisi tanımlanmamıştır. <br>Lütfen sistem yöneticinizle iletişime geçerek rol ve hat yetkilerinizi kontrol ettirin.
+                    </p>
+                    <button class="btn-secondary" onclick="firebase.auth().signOut()" style="margin-top: 1.5rem; padding: 10px 24px; border-radius: 10px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 0.85rem;">
+                        <i class="fas fa-sign-out-alt"></i> Çıkış Yap
+                    </button>
+                </div>
+            </div>
+        `;
+        mainApp.style.display = 'flex';
+    }
 }
 
 function updatePermissionGatedUI() {
