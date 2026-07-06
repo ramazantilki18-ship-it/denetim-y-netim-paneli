@@ -11560,6 +11560,7 @@ function updateCharts(data) {
                 }
             }
         });
+    }
     } catch (err) {
         console.error("Error in updateCharts:", err);
         showToast("Grafikler güncellenirken hata oluştu: " + err.message);
