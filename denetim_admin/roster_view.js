@@ -1205,7 +1205,7 @@ window.showAuditTimesDetail = function(userName, dateText, infosStr) {
                 <div style="background:rgba(255,255,255,0.01); padding:12px 16px; border-bottom:1px solid rgba(255,255,255,0.04); display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
                     <div style="text-align: left;">
                         <h4 style="margin:0; font-size:0.85rem; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:0.3px;">Denetim Detayları ve Lokasyonları</h4>
-                        <p style="margin:2px 0 0 0; font-size:0.7rem; color:var(--text-secondary); opacity:0.85;">${userName} - ${dateText}</p>
+                        <p style="margin:3px 0 0 0; font-size:0.8rem; font-weight:600; color:var(--text-secondary); opacity:0.9;">${userName} - ${dateText}</p>
                     </div>
                     <i class="fas fa-times" style="font-size:0.95rem; color:var(--text-dim); cursor:pointer; padding:4px; transition:color 0.2s;" onclick="document.getElementById('dynamic-audit-times-modal').closeModal()" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--text-dim)'"></i>
                 </div>
