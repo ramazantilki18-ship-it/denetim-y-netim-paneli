@@ -660,9 +660,9 @@ function initAuthListener() {
             mainApp.style.display = 'none';
             currentUser = null;
 
-            // Reset active views and navigation highlights to default (dashboard-view)
+            // Reset active views to none (prevents flicker on reload)
             document.querySelectorAll('.view-section').forEach(view => {
-                view.style.display = view.id === 'dashboard-view' ? 'block' : 'none';
+                view.style.display = 'none';
             });
             document.querySelectorAll('.nav-item').forEach(item => {
                 const onClickAttr = item.getAttribute('onclick') || '';
