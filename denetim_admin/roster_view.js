@@ -1077,15 +1077,8 @@ window.showAuditTimesDetail = function(userName, dateText, infosStr) {
                      onmouseover="this.style.background='rgba(255,255,255,0.05)', this.style.borderColor='rgba(255,255,255,0.1)'" 
                      onmouseout="if(!this.classList.contains('active') && !this.classList.contains('active-special')) { this.style.background='rgba(255,255,255,0.02)'; this.style.borderColor='rgba(255,255,255,0.04)'; }">
                     
-                    <!-- Denetim Sırası ve Rozet -->
-                    <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-                        <div style="display:flex; align-items:center; gap:6px;">
-                            <span style="font-size:0.62rem; font-weight:700; text-transform:uppercase; color:${badgeColor}; letter-spacing:0.3px;">${badgeText}</span>
-                        </div>
-                    </div>
-
                     <!-- İstasyon Adı -->
-                    <div style="font-size:0.78rem; color:#fff; font-weight:700; text-align:left; word-wrap:break-word; margin-top:1px;">
+                    <div style="font-size:0.78rem; color:#fff; font-weight:700; text-align:left; word-wrap:break-word; margin-top:2px;">
                         ${idxNum}. ${station}
                     </div>
 
