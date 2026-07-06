@@ -1670,16 +1670,21 @@ function populateAuditPageFilters() {
 }
 
 function renderAll() {
-    populateDashboardFilters();
-    populateAuditPageFilters();
-    populateStatsFilters();
-    updateStats();
-    renderRecentTable();
-    renderAllAuditsTable();
-    renderPeople();
-    renderStationMatrix();
-    updateCharts(appData);
-    renderAuditorPerformance();
+    try {
+        populateDashboardFilters();
+        populateAuditPageFilters();
+        populateStatsFilters();
+        updateStats();
+        renderRecentTable();
+        renderAllAuditsTable();
+        renderPeople();
+        renderStationMatrix();
+        updateCharts(appData);
+        renderAuditorPerformance();
+    } catch (err) {
+        console.error("Error in renderAll:", err);
+        showToast("Dashboard yüklenirken hata oluştu: " + err.message);
+    }
 }
 
 const VIEW_TITLES = {
@@ -6333,47 +6338,52 @@ function normalizeDashboardStatLayout() {
 }
 
 function updateStats() {
-    normalizeDashboardStatLayout();
+    try {
+        normalizeDashboardStatLayout();
 
-    // Basic Dashboard Stats using SaaS Control Hub Filters
-    const { audits, ncs } = getFilteredDashboardData();
+        // Basic Dashboard Stats using SaaS Control Hub Filters
+        const { audits, ncs } = getFilteredDashboardData();
 
-    const totalAudits = audits.length;
-    const avgScore = totalAudits > 0 ? audits.reduce((sum, a) => sum + (a.score || 0), 0) / totalAudits : 0;
+        const totalAudits = audits.length;
+        const avgScore = totalAudits > 0 ? audits.reduce((sum, a) => sum + (a.score || 0), 0) / totalAudits : 0;
 
-    const openNCLen = ncs.filter(nc => !isNcClosed(nc)).length; // all non-closed ones
-    const delayedNCLen = ncs.filter(isNcOverdue).length;
-    const controlNCLen = ncs.filter(isNcWaitingControl).length;
-    const closedNCLen = ncs.filter(isNcClosed).length;
-    const totalNCLen = ncs.length;
-    const closureRate = totalNCLen > 0 ? (closedNCLen / totalNCLen) * 100 : 0;
+        const openNCLen = ncs.filter(nc => !isNcClosed(nc)).length; // all non-closed ones
+        const delayedNCLen = ncs.filter(isNcOverdue).length;
+        const controlNCLen = ncs.filter(isNcWaitingControl).length;
+        const closedNCLen = ncs.filter(isNcClosed).length;
+        const totalNCLen = ncs.length;
+        const closureRate = totalNCLen > 0 ? (closedNCLen / totalNCLen) * 100 : 0;
 
-    if (document.getElementById('stat-total-audits')) document.getElementById('stat-total-audits').innerText = totalAudits + ' Denetim';
-    if (document.getElementById('stat-avg-score')) document.getElementById('stat-avg-score').innerText = '%' + Math.round(avgScore);
+        if (document.getElementById('stat-total-audits')) document.getElementById('stat-total-audits').innerText = totalAudits + ' Denetim';
+        if (document.getElementById('stat-avg-score')) document.getElementById('stat-avg-score').innerText = '%' + Math.round(avgScore);
 
-    if (document.getElementById('stat-total-nc')) document.getElementById('stat-total-nc').innerText = openNCLen;
-    if (document.getElementById('stat-active-nc')) document.getElementById('stat-active-nc').innerText = totalNCLen + ' Toplam';
+        if (document.getElementById('stat-total-nc')) document.getElementById('stat-total-nc').innerText = openNCLen;
+        if (document.getElementById('stat-active-nc')) document.getElementById('stat-active-nc').innerText = totalNCLen + ' Toplam';
 
-    if (document.getElementById('stat-open-nc')) document.getElementById('stat-open-nc').innerText = openNCLen;
-    if (document.getElementById('stat-delayed-nc')) document.getElementById('stat-delayed-nc').innerText = delayedNCLen;
-    if (document.getElementById('stat-control-nc')) document.getElementById('stat-control-nc').innerText = controlNCLen;
-    if (document.getElementById('stat-closed-nc')) document.getElementById('stat-closed-nc').innerText = closedNCLen + ' Adet';
-    if (document.getElementById('stat-closure-rate')) document.getElementById('stat-closure-rate').innerText = '%' + Math.round(closureRate);
+        if (document.getElementById('stat-open-nc')) document.getElementById('stat-open-nc').innerText = openNCLen;
+        if (document.getElementById('stat-delayed-nc')) document.getElementById('stat-delayed-nc').innerText = delayedNCLen;
+        if (document.getElementById('stat-control-nc')) document.getElementById('stat-control-nc').innerText = controlNCLen;
+        if (document.getElementById('stat-closed-nc')) document.getElementById('stat-closed-nc').innerText = closedNCLen + ' Adet';
+        if (document.getElementById('stat-closure-rate')) document.getElementById('stat-closure-rate').innerText = '%' + Math.round(closureRate);
 
-    // On-time closure performance
-    const closedNCs = ncs.filter(isNcClosed);
-    const ontimeCount = closedNCs.filter(nc => {
-        if (!nc.dueDate) return true; // no deadline = on-time
-        const closedDate = nc.closedAt || nc.closureDate || nc.updatedAt;
-        if (!closedDate) return true;
-        return new Date(closedDate) <= new Date(nc.dueDate);
-    }).length;
-    const ontimeRate = closedNCs.length > 0 ? (ontimeCount / closedNCs.length) * 100 : 0;
-    if (document.getElementById('stat-ontime-count')) document.getElementById('stat-ontime-count').innerText = ontimeCount + ' / ' + closedNCs.length;
-    if (document.getElementById('stat-ontime-rate')) document.getElementById('stat-ontime-rate').innerText = '%' + Math.round(ontimeRate);
+        // On-time closure performance
+        const closedNCs = ncs.filter(isNcClosed);
+        const ontimeCount = closedNCs.filter(nc => {
+            if (!nc.dueDate) return true; // no deadline = on-time
+            const closedDate = nc.closedAt || nc.closureDate || nc.updatedAt;
+            if (!closedDate) return true;
+            return new Date(closedDate) <= new Date(nc.dueDate);
+        }).length;
+        const ontimeRate = closedNCs.length > 0 ? (ontimeCount / closedNCs.length) * 100 : 0;
+        if (document.getElementById('stat-ontime-count')) document.getElementById('stat-ontime-count').innerText = ontimeCount + ' / ' + closedNCs.length;
+        if (document.getElementById('stat-ontime-rate')) document.getElementById('stat-ontime-rate').innerText = '%' + Math.round(ontimeRate);
 
-    // Advanced Stats View (Kurumsal Analiz)
-    renderAdvancedStats();
+        // Advanced Stats View (Kurumsal Analiz)
+        renderAdvancedStats();
+    } catch (err) {
+        console.error("Error in updateStats:", err);
+        showToast("İstatistikler güncellenirken hata oluştu: " + err.message);
+    }
 }
 
 function statsToDate(value) {
@@ -11160,21 +11170,22 @@ function renderStationMatrix() {
 }
 
 function updateCharts(data) {
-    const chartDefaults = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
-            x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
-        }
-    };
+    try {
+        const chartDefaults = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+            }
+        };
 
-    const { audits: filteredAudits, ncs: filteredNCs } = getFilteredDashboardData();
+        const { audits: filteredAudits, ncs: filteredNCs } = getFilteredDashboardData();
 
-    // Dashboard - Trend (Last 6 months)
-    const perfCtx = document.getElementById('performanceChart')?.getContext('2d');
-    if (perfCtx && filteredAudits.length > 0) {
+        // Dashboard - Trend (Last 6 months)
+        const perfCtx = document.getElementById('performanceChart')?.getContext('2d');
+        if (perfCtx && filteredAudits.length > 0) {
         if (performanceChart) performanceChart.destroy();
 
         // Group audits by year and month for correct chronological sorting
@@ -11549,6 +11560,9 @@ function updateCharts(data) {
                 }
             }
         });
+    } catch (err) {
+        console.error("Error in updateCharts:", err);
+        showToast("Grafikler güncellenirken hata oluştu: " + err.message);
     }
 }
 
