@@ -2083,23 +2083,18 @@ window.showAuditorDetailedStats = async function(userId) {
     const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
     const monthName = months[statsSelectedMonth - 1];
 
-    const allStationsHtml = allStations.map(([station, count], idx) => {
-        const pct = totalAudits > 0 ? Math.round((count / totalAudits) * 100) : 0;
+    const maxStationCount = allStations.length > 0 ? allStations[0][1] : 1;
+    const stationBarChartHtml = allStations.length > 0 ? allStations.map(([station, count]) => {
+        const barHeight = Math.max(Math.round((count / maxStationCount) * 130), 6);
+        const barColor = count === maxStationCount ? '#10b981' : (count >= maxStationCount * 0.6 ? '#38bdf8' : (count >= maxStationCount * 0.3 ? '#f59e0b' : '#ef4444'));
         return `
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                <span style="font-size:0.72rem; font-weight:800; color:#38bdf8; background:rgba(56,189,248,0.1); width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; border-radius:50%;">${idx + 1}</span>
-                <div style="flex:1; min-width:0;">
-                    <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:#fff; font-weight:600; margin-bottom:2px;">
-                        <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:80%;" title="${escapeAttr(station)}">${escapeAttr(station)}</span>
-                        <span>${count} (${pct}%)</span>
-                    </div>
-                    <div style="background:rgba(255,255,255,0.05); height:4px; border-radius:2px; overflow:hidden;">
-                        <div style="background:#10b981; width:${pct}%; height:100%; border-radius:2px;"></div>
-                    </div>
-                </div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; min-width:32px; flex-shrink:0;">
+                <span style="font-size:0.62rem; font-weight:800; color:#fff;">${count}</span>
+                <div style="width:22px; height:${barHeight}px; background:${barColor}; border-radius:4px 4px 0 0; transition:height 0.3s ease; box-shadow:0 -2px 6px ${barColor}33;"></div>
+                <span style="font-size:0.55rem; color:var(--text-dim); font-weight:600; writing-mode:vertical-rl; text-orientation:mixed; transform:rotate(180deg); max-height:70px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeAttr(station)}">${escapeAttr(station)}</span>
             </div>
         `;
-    }).join('') || '<div style="color:var(--text-dim); text-align:center; font-size:0.75rem; padding:15px 0;">Kayıt bulunmuyor.</div>';
+    }).join('') : '<div style="color:var(--text-dim); text-align:center; font-size:0.75rem; padding:15px 0; width:100%;">Kayıt bulunmuyor.</div>';
 
     const lineBreakdownHtml = sortedLines.map(([line, count]) => {
         const pct = totalAudits > 0 ? Math.round((count / totalAudits) * 100) : 0;
@@ -2176,20 +2171,25 @@ window.showAuditorDetailedStats = async function(userId) {
                         </div>
                     </div>
 
-                    <!-- Split Panels -->
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; @media(max-width:700px){grid-template-columns:1fr;}">
-                        <!-- Left Panel (Top Stations & Lines) -->
-                        <div style="display:flex; flex-direction:column; gap:14px;">
-                            <!-- All Stations -->
-                            <div style="background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03); border-radius:10px; padding:14px;">
-                                <div style="font-size:0.75rem; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid rgba(255,255,255,0.04); padding-bottom:6px; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
-                                    <i class="fas fa-list-ol" style="color:#38bdf8;"></i> İstasyon Bazlı Denetim Sayıları
-                                </div>
-                                <div style="max-height:180px; overflow-y:auto; padding-right:4px;">
-                                    ${allStationsHtml}
-                                </div>
+                    <!-- Station Bar Chart (Full Width) -->
+                    <div style="background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03); border-radius:10px; padding:14px;">
+                        <div style="font-size:0.75rem; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid rgba(255,255,255,0.04); padding-bottom:6px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between;">
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <i class="fas fa-chart-bar" style="color:#38bdf8;"></i> İstasyon Bazlı Denetim Sayıları
                             </div>
-                            
+                            <span style="font-size:0.62rem; color:var(--text-dim); font-weight:600;">${allStations.length} İstasyon</span>
+                        </div>
+                        <div style="overflow-x:auto; padding-bottom:4px;">
+                            <div style="display:flex; align-items:flex-end; gap:6px; min-height:180px; border-bottom:1px solid rgba(255,255,255,0.04); padding-bottom:6px;">
+                                ${stationBarChartHtml}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Split Panels -->
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                        <!-- Left Panel (Lines) -->
+                        <div style="display:flex; flex-direction:column; gap:14px;">
                             <!-- Lines Breakdown -->
                             <div style="background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03); border-radius:10px; padding:14px;">
                                 <div style="font-size:0.75rem; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid rgba(255,255,255,0.04); padding-bottom:6px; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
