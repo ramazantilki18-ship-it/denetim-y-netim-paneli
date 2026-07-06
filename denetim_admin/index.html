@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kurumsal Denetim | Admin Kontrol Paneli</title>
-    <link rel="stylesheet" href="style_v4.css?v=165">
+    <link rel="stylesheet" href="style_v4.css?v=166">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
@@ -2568,6 +2568,50 @@
                                 class="fas fa-print"></i> Yazdır / PDF Al</button>
                     </div>
 
+                    <!-- Report 3.5: 5S Audit Report -->
+                    <div class="report-card"
+                        style="background: var(--bg-card); border: 1px solid var(--border-main); border-radius: 14px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; gap: 1rem; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);"
+                        onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 24px rgba(0, 0, 0, 0.08)';"
+                        onmouseout="this.style.transform='none'; this.style.boxShadow='0 4px 12px rgba(0, 0, 0, 0.05)';">
+                        <div style="display: flex; gap: 1rem; align-items: flex-start;">
+                            <div class="report-icon"
+                                style="width: 48px; height: 48px; border-radius: 12px; background: rgba(245, 158, 11, 0.12); color: #f59e0b; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
+                                <i class="fas fa-file-contract"></i></div>
+                            <div class="report-info" style="min-width: 0;">
+                                <h3
+                                    style="font-weight: 800; font-size: 1rem; color: var(--text-primary); margin-bottom: 0.25rem;">
+                                    5S Denetim Raporu</h3>
+                                <p style="font-size: 0.78rem; color: var(--text-dim); line-height: 1.4;">Haftalık bazda hat ve istasyon detaylı olumlu/olumsuz soru sayılarını ve başarı skorlarını indirin.</p>
+                            </div>
+                        </div>
+
+                        <!-- 5S Report Inline Filters (Single Line Centered Row Layout) -->
+                        <div class="report-5s-filters" onclick="event.stopPropagation()"
+                            style="display: flex; gap: 1rem; background: rgba(0, 0, 0, 0.15); padding: 0.75rem; border-radius: 10px; border: 1px solid var(--border-main); align-items: center; justify-content: center; flex-wrap: nowrap;">
+                            <div style="width: 130px; display: flex; flex-direction: column; gap: 0.25rem; flex-shrink: 0;">
+                                <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-secondary); white-space: nowrap; text-align: center;">Hat Seçimi</label>
+                                <select id="report-5s-line" style="width: 100%; height: 32px; background: var(--bg-main); color: var(--text-primary); border: 1px solid var(--border-main); border-radius: 8px; padding: 0 0.5rem; font-size: 0.72rem; outline: none; box-sizing: border-box; text-align: center; text-align-last: center;"></select>
+                            </div>
+                            <!-- Unified Date Picker for 5S Report -->
+                            <div class="custom-select-wrapper" id="custom-wrap-report-5s-unified-date" style="position: relative; width: 150px; display: flex; flex-direction: column; gap: 0.25rem; flex-shrink: 0;">
+                                <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-secondary); white-space: nowrap; text-align: center;">Tarih Aralığı</label>
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-report-5s-unified-date')" style="border-color: var(--border-main) !important; height: 32px; box-sizing: border-box; justify-content: center;">
+                                    <span class="custom-select-label" id="report-5s-unified-date-label" style="font-size: 0.72rem;">Tüm Zamanlar</span>
+                                    <i class="fas fa-calendar-alt" style="font-size: 0.75rem; color: var(--text-secondary);"></i>
+                                </div>
+                                <div class="custom-select-options-card" id="custom-options-report-5s-unified-date"
+                                    style="width: 320px; padding: 0.8rem; overflow-y: visible; max-height: unset; z-index: 1000; right: 50%; transform: translateX(50%); left: auto;">
+                                    <!-- Dynamic content will go here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="btn-primary" onclick="export5SAuditsToExcel()"
+                            style="width: 100%; border-radius: 10px; padding: 10px; font-weight: 700; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; display: flex; align-items: center; justify-content: center; gap: 6px; border: none; cursor: pointer; transition: opacity 0.2s;"
+                            onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'"><i
+                                class="fas fa-file-excel"></i> İndir (Excel)</button>
+                    </div>
+
                     <!-- Report 4: Department Comparison -->
                     <div class="report-card"
                         style="background: var(--bg-card); border: 1px solid var(--border-main); border-radius: 14px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; gap: 1rem; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);"
@@ -3517,6 +3561,14 @@
                     <input type="number" id="location-radius-input" placeholder="Örn: 50" value="50"
                         style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-primary); font-size: 0.85rem; font-weight: 700;">
                 </div>
+
+                <!-- İstasyon Dışı / Teknik Nokta (Checkbox) -->
+                <div class="input-group" style="display: flex; align-items: center; gap: 8px; background: rgba(217, 119, 6, 0.05); padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(217, 119, 6, 0.15); margin-top: 4px;">
+                    <input type="checkbox" id="location-non-station-check" style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--primary);">
+                    <label for="location-non-station-check" style="font-size: 0.76rem; font-weight: 700; color: var(--text-primary); cursor: pointer; user-select: none; line-height: 1.2;">
+                        İstasyon Dışı / Teknik Nokta (Harita rotasından hariç tut ve çizgiyle bağlama)
+                    </label>
+                </div>
             </div>
             <div class="modal-footer"
                 style="padding: 0.75rem 1.25rem; border-top: 1px solid var(--border-main); display: flex; justify-content: flex-end; gap: 0.75rem;">
@@ -3548,6 +3600,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"
         crossorigin="anonymous"></script>
     <script src="metro_data.js"></script>
-    <script src="script_v10.js?v=152"></script>
-    <script src="roster_view.js?v=57"></script>
+    <script src="script_v10.js?v=164"></script>
+    <script src="roster_view.js?v=82"></script>
 </body>

@@ -12634,7 +12634,7 @@ body:not(.light-mode) #performance-matrix-container table thead th {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.8rem;
-    min-width: 1200px; /* Force overflow scroll for matrix */
+    min-width: 1480px; /* Prevent column shrinking and enable smooth horizontal scrolling */
 }
 
 .matrix-table th, 
@@ -12687,6 +12687,14 @@ body:not(.light-mode) .matrix-user-hdr {
 
 body:not(.light-mode) .matrix-user-cell {
     background: #0f172a !important; /* Force solid dark background in dark mode when scrolling */
+}
+
+body.light-mode .matrix-user-hdr {
+    background: #f8fafc !important; /* Soft light slate background */
+}
+
+body.light-mode .matrix-user-cell {
+    background: #ffffff !important; /* Pure solid white background for light mode sticky column */
 }
 
 .matrix-day-hdr, 
@@ -12906,4 +12914,9 @@ body.light-mode .legend-group {
     .legend-shifts-container {
         gap: 2px;
     }
+}
+
+.map-tech-icon {
+    background: transparent !important;
+    border: none !important;
 }

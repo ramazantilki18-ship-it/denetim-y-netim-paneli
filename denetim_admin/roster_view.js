@@ -446,11 +446,6 @@ async function renderPersonalStats() {
                     <span class="matrix-excuse-dot" style="display:inline-block; background:#d97706; border-radius:50%; width:14px; height:14px; box-shadow:0 1px 2px rgba(0,0,0,0.15);" title="Mazeret"></span>
                     <span class="legend-hours-text" style="margin-top:0px;">Mazeret</span>
                 </div>
-                <!-- Eksik -->
-                <div style="display:inline-flex; flex-direction:column; align-items:center; gap:1px; vertical-align:top; min-width:20px; margin-top:2px;">
-                    <span class="matrix-deficit-dot" style="display:inline-block; background:#ef4444; border-radius:50%; width:14px; height:14px; box-shadow:0 1px 2px rgba(0,0,0,0.15);" title="Mazeret Yok"></span>
-                    <span class="legend-hours-text" style="margin-top:0px;">Mazeret Yok</span>
-                </div>
             </div>
         </div>
     `;
@@ -548,17 +543,27 @@ async function renderPersonalStats() {
             dailyAudits.sort((a, b) => new Date(a.date) - new Date(b.date));
             const pad = (num) => String(num).padStart(2, '0');
             const auditInfos = dailyAudits.map(a => {
-                const d = new Date(a.date);
+                const d = new Date(a.date || a.startedAt || a.createdAt);
                 const time = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                let endTime = '';
+                if (a.completedAt) {
+                    const de = new Date(a.completedAt);
+                    endTime = `${pad(de.getHours())}:${pad(de.getMinutes())}`;
+                }
                 const station = a.station || 'Belirtilmedi';
                 const lName = a.line || '';
-                return `${time}|${station}|${lName}`;
+                return `${time}|${station}|${lName}|${endTime}|${a.id}`;
             });
             const auditInfosStr = auditInfos.join('~');
             const hoverTooltip = dailyAudits.map(a => {
-                const d = new Date(a.date);
+                const d = new Date(a.date || a.startedAt || a.createdAt);
                 const time = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-                return `${time} (${a.station || 'Belirtilmedi'})`;
+                let endT = '';
+                if (a.completedAt) {
+                    const de = new Date(a.completedAt);
+                    endT = `-${pad(de.getHours())}:${pad(de.getMinutes())}`;
+                }
+                return `${time}${endT} (${a.station || 'Belirtilmedi'})`;
             }).join(', ');
             const auditCount = dailyAudits.length;
             totalUserAuditsForMonth += auditCount;
@@ -570,6 +575,10 @@ async function renderPersonalStats() {
             // Deficit highlight: working but 0 audits with no excuse
             const matchedShift = activeShifts.find(s => s.code === shift);
             const isWorking = matchedShift ? matchedShift.type === 'work' : ['S', 'A', 'G', 'N', 'S8', 'S10'].includes(shift);
+            
+            const targetAuditCount = (matchedShift && matchedShift.requiredAuditCount !== undefined && matchedShift.requiredAuditCount !== null)
+                ? parseInt(matchedShift.requiredAuditCount)
+                : 10; // Default fallback to 10 if not defined
             
             if (isWorking && auditCount === 0 && !excuse) {
                 cellClass += ' cell-deficit-red';
@@ -605,16 +614,14 @@ async function renderPersonalStats() {
                         
                         <!-- Audit Count Box (Bottom) -->
                         ${auditCount > 0 ? `
-                            <div class="matrix-audit-box" style="background: ${auditCount >= 10 ? '#166534' : '#991b1b'}; color:white; font-size:0.7rem; font-weight:800; border-radius:3px; min-width:16px; width:auto; height:16px; padding:0 3px; display:inline-flex; align-items:center; justify-content:center; box-shadow:0 1px 2px rgba(0,0,0,0.15); line-height:1; cursor:pointer;" title="Denetimler: ${hoverTooltip}" onclick="showAuditTimesDetail('${userName.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}', '${day} ${months[statsSelectedMonth - 1]} ${statsSelectedYear}', '${auditInfosStr}')">${auditCount}</div>
+                            <div class="matrix-audit-box" style="background: ${auditCount >= targetAuditCount ? '#166534' : '#991b1b'}; color:white; font-size:0.7rem; font-weight:800; border-radius:3px; min-width:16px; width:auto; height:16px; padding:0 3px; display:inline-flex; align-items:center; justify-content:center; box-shadow:0 1px 2px rgba(0,0,0,0.15); line-height:1; cursor:pointer;" title="Denetimler: ${hoverTooltip}" onclick="showAuditTimesDetail('${userName.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}', '${day} ${months[statsSelectedMonth - 1]} ${statsSelectedYear}', '${auditInfosStr}')">${auditCount}</div>
                         ` : `
                             <div class="matrix-audit-box-empty" style="font-size:0.7rem; color:var(--text-dim); opacity:0.35; line-height:1;">-</div>
                         `}
                         
-                        <!-- Excuse or Deficit Dot (Bottom-Right Corner) -->
+                        <!-- Excuse Dot (Bottom-Right Corner) -->
                         ${excuse ? `
                             <span class="matrix-excuse-dot" style="position:absolute; bottom:2px; right:2px; background:#d97706; border-radius:50%; width:8px; height:8px; box-shadow:0 1px 2px rgba(0,0,0,0.15);" title="Mazeret: ${escapeAttr(excuse)}"></span>
-                        ` : (isWorking && auditCount === 0) ? `
-                            <span class="matrix-deficit-dot" style="position:absolute; bottom:2px; right:2px; background:#ef4444; border-radius:50%; width:8px; height:8px; box-shadow:0 1px 2px rgba(0,0,0,0.15);" title="Mazeret Yok (Eksik)"></span>
                         ` : ''}
                     </div>
                 </td>
@@ -688,8 +695,8 @@ async function renderPersonalStats() {
             </div>
 
             <!-- Legend Bar -->
-            <div class="matrix-legend-bar" style="display:flex; justify-content:center; padding:0.4rem 1.25rem; background:transparent !important; border:none !important; overflow-x:auto;">
-                <div class="matrix-legend" style="display:flex; justify-content:center; align-items:flex-start; gap:1.25rem; font-size:0.74rem; white-space:nowrap; width:100%;">
+            <div class="matrix-legend-bar" style="display:flex; justify-content:flex-start; padding:0.4rem 1.25rem; background:transparent !important; border:none !important; overflow-x:auto; width:100%;">
+                <div class="matrix-legend" style="display:flex; align-items:flex-start; gap:1.25rem; font-size:0.74rem; white-space:nowrap; margin:0 auto; padding:0 10px;">
                     ${legendItemsHtml}
                 </div>
             </div>
@@ -721,6 +728,7 @@ window.changeStatsFilters = function(year, month, line) {
 
 window.exportMatrixToExcel = async function() {
     try {
+        const pad = (num) => String(num).padStart(2, '0');
         const monthlyRosterMap = await loadMonthlyRoster(statsSelectedYear, statsSelectedMonth);
         const audits = appData.audits || [];
         const daysInMonth = new Date(statsSelectedYear, statsSelectedMonth, 0).getDate();
@@ -814,12 +822,8 @@ window.exportMatrixToExcel = async function() {
         };
 
         const wsData = [];
-        wsData.push(["KURUMSAL DENETİM SİSTEMİ - DETAYLI PUANTAJ VE DENETİM RAPORU"]);
-        wsData.push([`Dönem: ${months[statsSelectedMonth - 1]} ${statsSelectedYear}`]);
-        wsData.push([`Filtre: Hat - ${statsSelectedLine}`]);
-        wsData.push([]); // blank row
 
-        // Headers (9 Columns)
+        // Headers (10 Columns)
         const headers = [
             "Personel Adı", 
             "Hat", 
@@ -827,19 +831,14 @@ window.exportMatrixToExcel = async function() {
             "Tarih", 
             "Gün",
             "Denetim Sayısı", 
+            "Toplam Süre (Dk)",
             "Denetim Detayları (Saat - İstasyon)",
             "Vardiya", 
             "Mazeret"
         ];
         wsData.push(headers);
 
-        const endColIndex = 8;
-        const merges = [
-            { s: { r: 0, c: 0 }, e: { r: 0, c: endColIndex } },
-            { s: { r: 1, c: 0 }, e: { r: 1, c: endColIndex } },
-            { s: { r: 2, c: 0 }, e: { r: 2, c: endColIndex } }
-        ];
-
+        const tempRows = [];
         // Data rows (Vertical format: User * Day)
         activeUsers.forEach(user => {
             const userRoster = monthlyRosterMap[user.id] || { days: {} };
@@ -866,11 +865,20 @@ window.exportMatrixToExcel = async function() {
                 if (auditCount > 0) {
                     // Sort audits chronologically
                     dailyAudits.sort((a, b) => new Date(a.date) - new Date(b.date));
-                    const pad = (num) => String(num).padStart(2, '0');
+                    let dailyTotalDuration = 0;
                     const auditDetails = dailyAudits.map(a => {
-                        const d = new Date(a.date);
+                        const d = new Date(a.date || a.startedAt || a.createdAt);
                         const time = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-                        return `${time} (${a.station || 'Belirtilmedi'})`;
+                        let endTimeStr = '';
+                        if (a.completedAt) {
+                            const de = new Date(a.completedAt);
+                            const endTime = `${pad(de.getHours())}:${pad(de.getMinutes())}`;
+                            const diffMs = de - d;
+                            const diffMins = Math.round(diffMs / 60000);
+                            endTimeStr = ` - ${endTime} (${diffMins} dk)`;
+                            dailyTotalDuration += diffMins;
+                        }
+                        return `${time}${endTimeStr} (${a.station || 'Belirtilmedi'})`;
                     }).join(', ');
 
                     const matchedShift = activeShifts.find(s => s.code === shift);
@@ -895,20 +903,32 @@ window.exportMatrixToExcel = async function() {
                     // Audit details string
                     const detailsLabel = auditDetails;
 
-                    wsData.push([
-                        userName,
-                        userLines,
-                        userTitle,
-                        dateOnlyStr,
-                        dayNameStr,
-                        auditCount,
-                        detailsLabel,
-                        vardiyaLabel,
-                        mazeretLabel
-                    ]);
+                    const totalDurationLabel = dailyTotalDuration > 0 ? dailyTotalDuration : 0;
+
+                    tempRows.push({
+                        dateObj: dateObj,
+                        data: [
+                            userName,
+                            userLines,
+                            userTitle,
+                            dateOnlyStr,
+                            dayNameStr,
+                            auditCount,
+                            totalDurationLabel,
+                            detailsLabel,
+                            vardiyaLabel,
+                            mazeretLabel
+                        ]
+                    });
                 }
             }
         });
+
+        // Sort all rows chronologically (oldest to newest)
+        tempRows.sort((a, b) => a.dateObj - b.dateObj);
+
+        // Push sorted rows to worksheet data
+        tempRows.forEach(r => wsData.push(r.data));
 
         // Create sheet
         const wb = XLSX.utils.book_new();
@@ -958,24 +978,20 @@ window.exportMatrixToExcel = async function() {
             const rowData = wsData[rowIdx];
             if (!rowData) continue;
 
-            const isTitleRow = rowIdx < 3;
-            const isHeaderRow = rowIdx === 4;
+            const isHeaderRow = rowIdx === 0;
 
-            if (isTitleRow) {
-                cell.s = styleTitle;
-            } else if (isHeaderRow) {
+            if (isHeaderRow) {
                 cell.s = styleHeader;
             } else {
-                const isLeftAligned = col === 'G'; // Col G is index 6 (Denetim Detayları)
+                const isLeftAligned = col === 'H'; // Col H is index 7 (Denetim Detayları)
                 cell.s = styleRegular(isLeftAligned);
             }
         }
 
-        ws['!merges'] = merges;
 
-        // Column widths - ignore title rows (0-3) for sizing
+        // Column widths
         const colWidths = [];
-        for (let r = 4; r < wsData.length; r++) {
+        for (let r = 1; r < wsData.length; r++) {
             const row = wsData[r];
             row.forEach((cell, i) => {
                 const value = cell ? cell.toString() : "";
@@ -1014,32 +1030,76 @@ window.showAuditTimesDetail = function(userName, dateText, infosStr) {
     if (infosArray.length === 0) {
         timesListHtml = '<p style="color:var(--text-dim); text-align:center; font-style:italic; margin: 15px 0;">Bu güne ait denetim kaydı bulunamadı.</p>';
     } else {
-        timesListHtml = infosArray.map((item, idx) => {
+        // Rota Adımları Header
+        timesListHtml = `
+            <div style="font-size:0.78rem; font-weight:800; color:var(--text-secondary); margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:8px; text-transform:uppercase; letter-spacing:0.8px;">
+                <span>Rota Adımları</span>
+                <span style="background:rgba(255,255,255,0.08); padding:2px 8px; border-radius:20px; font-size:0.68rem; color:#fff; font-weight:700;">${infosArray.length} Nokta</span>
+            </div>
+        `;
+        
+        timesListHtml += infosArray.map((item, idx) => {
             const parts = item.split('|');
             const time = parts[0];
             const station = parts[1] || 'Belirtilmedi';
             const lineName = parts[2] || '';
+            const endTime = parts[3] || '';
+            const auditId = parts[4] || '';
             const idxNum = idx + 1;
             
             // Check if coordinates exist for indicator badge
             const locKey = `${lineName}_${station}`;
-            const hasCoords = appData.stationLocations?.[locKey]?.latitude !== undefined;
+            const loc = appData.stationLocations?.[locKey];
+            const hasCoords = loc?.latitude !== undefined;
+            const isSpecialNonStation = loc && loc.isNonStation === true;
+
+            const audit = (appData.audits || []).find(x => x.id === auditId);
+            let durationText = '';
+
+            if (audit) {
+                // Toplam dakika hesaplama
+                if (audit.startedAt && audit.completedAt) {
+                    const diffMs = new Date(audit.completedAt) - new Date(audit.startedAt);
+                    const diffMins = Math.round(diffMs / 60000);
+                    durationText = ` (${diffMins} dk)`;
+                }
+            }
+
+            const timeDisplay = endTime ? `${time} - ${endTime}${durationText}` : time;
+            
+            // Badge color depending on location type (matches map markers)
+            const badgeColor = isSpecialNonStation ? '#a855f7' : '#ea580c';
+            const badgeText = isSpecialNonStation ? 'Teknik' : 'İstasyon';
 
             return `
-                <div class="modal-audit-item" style="display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,0.03); padding:10px 14px; border-radius:8px; margin-bottom:8px; border:1px solid rgba(255,255,255,0.05); gap: 12px; cursor:${hasCoords ? 'pointer' : 'default'}; transition:all 0.2s;" 
+                <div class="modal-audit-item" id="audit-item-${idxNum}" style="display:flex; flex-direction:column; align-items:stretch; background:rgba(255,255,255,0.02); padding:12px 14px; border-radius:10px; margin-bottom:10px; border:1px solid rgba(255,255,255,0.05); gap: 6px; cursor:${hasCoords ? 'pointer' : 'default'}; transition:all 0.25s ease;" 
                      ${hasCoords ? `onclick="panToModalMarker(${idxNum})"` : ''}
-                     onmouseover="this.style.background='rgba(255,255,255,0.08)'" 
-                     onmouseout="this.style.background='rgba(255,255,255,0.03)'">
-                    <div style="display:flex; flex-direction:column; gap:2px; min-width: 0; flex: 1; text-align: left;">
-                        <span style="font-size:0.7rem; color:var(--text-secondary); font-weight:600; display:flex; align-items:center; gap:4px;">
-                            ${idxNum}. Denetim 
-                            ${hasCoords ? '<i class="fas fa-map-marker-alt" style="color:#22c55e;"></i>' : '<i class="fas fa-map-marker-alt" style="color:var(--text-dim); opacity:0.4;"></i>'}
-                        </span>
-                        <span style="font-size:0.85rem; color:#fff; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapeAttr(station)}">${station}</span>
+                     onmouseover="this.style.background='rgba(255,255,255,0.06)'" 
+                     onmouseout="if(!this.classList.contains('active')) this.style.background='rgba(255,255,255,0.02)'">
+                    
+                    <!-- Denetim Sırası ve Rozet -->
+                    <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="display:flex; align-items:center; justify-content:center; width:22px; height:22px; background:${badgeColor}; color:#fff; font-size:0.75rem; font-weight:900; border-radius:50%; box-shadow:0 2px 4px rgba(0,0,0,0.3);">${idxNum}</span>
+                            <span style="font-size:0.68rem; font-weight:700; text-transform:uppercase; color:${badgeColor}; letter-spacing:0.5px;">${badgeText}</span>
+                        </div>
+                        ${hasCoords ? '<i class="fas fa-map-marked-alt" style="color:#10b981; font-size:0.85rem;" title="Haritada Odaklan"></i>' : '<i class="fas fa-ban" style="color:var(--text-dim); opacity:0.3; font-size:0.8rem;" title="Koordinat Yok"></i>'}
                     </div>
-                    <span style="font-size:0.85rem; color:#007AFF; font-weight:800; font-family:monospace; background:rgba(0,122,255,0.12); padding:3px 8px; border-radius:4px; display:inline-flex; align-items:center; gap:4px; flex-shrink:0;">
-                        <i class="far fa-clock"></i> ${time}
-                    </span>
+
+                    <!-- İstasyon Adı -->
+                    <div style="font-size:0.85rem; color:#fff; font-weight:700; text-align:left; word-wrap:break-word; margin-top:2px;">
+                        ${station}
+                    </div>
+
+                    <!-- Hat ve Saat Kırılımı -->
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-top:4px; font-size:0.72rem;">
+                        <span style="color:var(--text-dim); font-weight:600; display:flex; align-items:center; gap:4px;">
+                            <i class="fas fa-route" style="color:${appData.lineColors?.[lineName] || '#64748b'};"></i> ${lineName || 'Belirsiz Hat'}
+                        </span>
+                        <span style="color:#38bdf8; font-weight:700; font-family:monospace; display:flex; align-items:center; gap:4px;">
+                            <i class="far fa-clock"></i> ${timeDisplay}
+                        </span>
+                    </div>
                 </div>
             `;
         }).join('');
@@ -1047,6 +1107,37 @@ window.showAuditTimesDetail = function(userName, dateText, infosStr) {
 
     const modalHtml = `
         <style>
+            .modal-audit-item.active {
+                border-color: #ea580c !important;
+                background: rgba(234, 88, 12, 0.08) !important;
+                box-shadow: 0 4px 12px rgba(234, 88, 12, 0.2) !important;
+            }
+            .modal-audit-item.active-special {
+                border-color: #a855f7 !important;
+                background: rgba(168, 85, 247, 0.08) !important;
+                box-shadow: 0 4px 12px rgba(168, 85, 247, 0.2) !important;
+            }
+            /* Custom Modern dark popups for Leaflet */
+            .leaflet-popup-content-wrapper {
+                background: #0b1e36 !important;
+                color: #fff !important;
+                border: 1px solid rgba(255,255,255,0.1) !important;
+                border-radius: 10px !important;
+                font-family: inherit !important;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
+            }
+            .leaflet-popup-tip {
+                background: #0b1e36 !important;
+                border: 1px solid rgba(255,255,255,0.1) !important;
+            }
+            .leaflet-popup-content {
+                margin: 12px 14px !important;
+                font-size: 0.74rem !important;
+                line-height: 1.45 !important;
+            }
+            .leaflet-popup-close-button {
+                color: #94a3b8 !important;
+            }
             .map-audit-label {
                 background: #ea580c !important;
                 border: 1px solid #ff7a45 !important;
@@ -1077,7 +1168,52 @@ window.showAuditTimesDetail = function(userName, dateText, infosStr) {
             }
         </style>
         <div id="dynamic-audit-times-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.7); backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; z-index:99999; opacity:0; transition:opacity 0.2s ease;">
-            <div style="background:#0b1e36; border:1px solid rgba(255,255,255,0.1); border-radius:14px; width:820px; max-width:90%; box-shadow:0 12px 30px rgba(0,0,0,0.5); transform:scale(0.9); transition:transform 0.2s ease; overflow:hidden; font-family:inherit; display:flex; flex-direction:column;">
+            <div style="background:#0b1e36; border:1px solid rgba(255,255,255,0.1); border-radius:14px; width:820px; max-width:95%; box-shadow:0 12px 30px rgba(0,0,0,0.5); transform:scale(0.9); transition:transform 0.2s ease; overflow:hidden; font-family:inherit; display:flex; flex-direction:column;">
+                <style>
+                    .modal-detail-body {
+                        display: flex;
+                        flex-wrap: nowrap;
+                        height: 420px;
+                        overflow: hidden;
+                    }
+                    .modal-detail-left {
+                        width: 320px;
+                        border-right: 1px solid rgba(255,255,255,0.05);
+                        padding: 18px;
+                        overflow-y: auto;
+                        height: 100%;
+                        box-sizing: border-box;
+                    }
+                    .modal-detail-right {
+                        flex: 1;
+                        min-width: 300px;
+                        height: 100%;
+                        background: #071426;
+                        position: relative;
+                    }
+                    @media (max-width: 700px) {
+                        .modal-detail-body {
+                            flex-direction: column;
+                            height: auto;
+                            max-height: 70vh;
+                            overflow-y: auto;
+                        }
+                        .modal-detail-left {
+                            width: 100%;
+                            border-right: none;
+                            border-bottom: 1px solid rgba(255,255,255,0.05);
+                            height: auto;
+                            max-height: 180px;
+                            padding: 12px;
+                        }
+                        .modal-detail-right {
+                            width: 100%;
+                            height: 280px;
+                            flex: none;
+                            min-width: unset;
+                        }
+                    }
+                </style>
                 <div style="background:rgba(255,255,255,0.02); padding:18px; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
                     <div style="text-align: left;">
                         <h4 style="margin:0; font-size:0.95rem; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:0.5px;">Denetim Detayları ve Lokasyonları</h4>
@@ -1086,14 +1222,14 @@ window.showAuditTimesDetail = function(userName, dateText, infosStr) {
                     <i class="fas fa-times" style="font-size:1.1rem; color:var(--text-dim); cursor:pointer; padding:6px; transition:color 0.2s;" onclick="document.getElementById('dynamic-audit-times-modal').closeModal()" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--text-dim)'"></i>
                 </div>
                 
-                <div style="display:flex; flex-wrap:wrap; height:420px; overflow:hidden;">
+                <div class="modal-detail-body">
                     <!-- Left List -->
-                    <div style="width:320px; border-right:1px solid rgba(255,255,255,0.05); padding:18px; overflow-y:auto; height:100%; box-sizing:border-box;">
+                    <div class="modal-detail-left">
                         ${timesListHtml}
                     </div>
                     
                     <!-- Right Map -->
-                    <div style="flex:1; min-width:300px; height:100%; background:#071426; position:relative;">
+                    <div class="modal-detail-right">
                         <div id="modal-audit-map" style="width:100%; height:100%;"></div>
                     </div>
                 </div>
@@ -1138,6 +1274,8 @@ window.showAuditTimesDetail = function(userName, dateText, infosStr) {
             const time = parts[0];
             const station = parts[1];
             const line = parts[2] || '';
+            const endTime = parts[3] || '';
+            const auditId = parts[4] || '';
             
             const locKey = `${line}_${station}`;
             const locData = appData.stationLocations?.[locKey];
@@ -1148,6 +1286,8 @@ window.showAuditTimesDetail = function(userName, dateText, infosStr) {
                     station: station,
                     line: line,
                     time: time,
+                    endTime: endTime,
+                    auditId: auditId,
                     index: idx + 1
                 });
             }
@@ -1158,12 +1298,17 @@ window.showAuditTimesDetail = function(userName, dateText, infosStr) {
             zoomLevel = 13;
         }
 
-        const map = L.map('modal-audit-map').setView(mapCenter, zoomLevel);
+        const map = L.map('modal-audit-map', { attributionControl: false }).setView(mapCenter, zoomLevel);
         
         // Add OpenStreetMap tile layer
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
+
+        // Invalidate size to ensure proper rendering on responsive/mobile container layouts
+        setTimeout(() => {
+            map.invalidateSize();
+        }, 150);
 
         // Draw transit lines and small station markers for all lines involved in the audits
         const uniqueLines = [...new Set(points.map(p => p.line))];
@@ -1179,25 +1324,48 @@ window.showAuditTimesDetail = function(userName, dateText, infosStr) {
                 const loc = appData.stationLocations?.[locKey];
                 if (loc && loc.latitude && loc.longitude) {
                     const latlng = [loc.latitude, loc.longitude];
-                    lineLatLngs.push(latlng);
+                    
+                    const isSpecialNonStation = loc && loc.isNonStation === true;
+                    if (!isSpecialNonStation) {
+                        lineLatLngs.push(latlng);
+                    }
                     
                     // Draw small indicator and label only if the station is NOT audited today
                     const isAudited = points.some(p => p.station === st && p.line === lineName);
                     if (!isAudited) {
-                        L.circleMarker(latlng, {
-                            radius: 4,
-                            color: appData.lineColors?.[lineName] || '#64748b',
-                            fillColor: '#0b1e36',
-                            fillOpacity: 1,
-                            weight: 2
-                        }).addTo(map)
-                          .bindPopup(`<b>İstasyon:</b> ${st}<br><b>Hat:</b> ${lineName}`)
-                          .bindTooltip(st, {
-                              permanent: false, // Visible on hover/click to keep map clean and prevent overlaps
-                              direction: 'right',
-                              offset: [6, 0],
-                              className: 'map-station-label'
-                          });
+                        if (isSpecialNonStation) {
+                            // Small, dark slate circle marker for technical points (visible, dark, doesn't overlap)
+                            L.circleMarker(latlng, {
+                                radius: 5.5,
+                                color: '#ef4444', // Parlak kırmızı kenarlık
+                                fillColor: '#b91c1c', // Koyu kırmızı dolgu
+                                fillOpacity: 1,
+                                weight: 2
+                            }).addTo(map)
+                              .bindPopup(`<b>Teknik Alan:</b> ${st}<br><b>Hat:</b> ${lineName}`)
+                              .bindTooltip(st, {
+                                  permanent: false,
+                                  direction: 'right',
+                                  offset: [8, 0],
+                                  className: 'map-station-label'
+                              });
+                        } else {
+                            // Normal station circleMarker
+                            L.circleMarker(latlng, {
+                                radius: 4,
+                                color: appData.lineColors?.[lineName] || '#64748b',
+                                fillColor: '#0b1e36',
+                                fillOpacity: 1,
+                                weight: 2
+                            }).addTo(map)
+                              .bindPopup(`<b>İstasyon:</b> ${st}<br><b>Hat:</b> ${lineName}`)
+                              .bindTooltip(st, {
+                                  permanent: false,
+                                  direction: 'right',
+                                  offset: [6, 0],
+                                  className: 'map-station-label'
+                              });
+                        }
                     }
                 }
             });
@@ -1214,26 +1382,76 @@ window.showAuditTimesDetail = function(userName, dateText, infosStr) {
             }
         });
 
-        // Custom orange marker icon for actual completed audits
+        // Custom orange marker icon for actual completed audits (proportional small size)
         const orangeIcon = L.icon({
             iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png',
             shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-            iconSize: [25, 41],
-            iconAnchor: [12, 41],
-            popupAnchor: [1, -34],
-            shadowSize: [41, 41]
+            iconSize: [18, 30],
+            iconAnchor: [9, 30],
+            popupAnchor: [1, -26],
+            shadowSize: [30, 30]
+        });
+
+        // Custom violet marker icon for special non-station points (proportional small size)
+        const violetIcon = L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [18, 30],
+            iconAnchor: [9, 30],
+            popupAnchor: [1, -26],
+            shadowSize: [30, 30]
         });
 
         points.forEach(pt => {
-            const marker = L.marker([pt.lat, pt.lng], { icon: orangeIcon })
+            const locKey = `${pt.line}_${pt.station}`;
+            const loc = appData.stationLocations?.[locKey];
+            const isSpecialNonStation = loc && loc.isNonStation === true;
+            const markerIcon = isSpecialNonStation ? violetIcon : orangeIcon;
+
+            const audit = (appData.audits || []).find(x => x.id === pt.auditId);
+            let popupContent = `<b>${pt.index}. Denetim</b><br><b>İstasyon:</b> ${pt.station}<br><b>Hat:</b> ${pt.line}`;
+
+            if (audit) {
+                const score = getAuditDisplayScore(audit);
+                const { nonConformities } = getAuditConformityCounts(audit);
+                let timeRange = pt.time;
+                let durationText = '';
+                if (pt.endTime) {
+                    timeRange = `${pt.time} - ${pt.endTime}`;
+                    const diffMs = new Date(audit.completedAt) - new Date(audit.startedAt);
+                    const diffMins = Math.round(diffMs / 60000);
+                    durationText = ` (${diffMins} dk)`;
+                }
+                popupContent += `<br><b>Saat:</b> ${timeRange}${durationText}<br><b>Skor:</b> %${score.toFixed(1)}<br><b>Uygunsuzluk:</b> ${nonConformities}`;
+            } else {
+                popupContent += `<br><b>Saat:</b> ${pt.time}`;
+            }
+
+            const marker = L.marker([pt.lat, pt.lng], { icon: markerIcon })
                 .addTo(map)
-                .bindPopup(`<b>${pt.index}. Denetim</b><br><b>İstasyon:</b> ${pt.station}<br><b>Hat:</b> ${pt.line}<br><b>Saat:</b> ${pt.time}`);
+                .bindPopup(popupContent);
+            
+            // Link marker click to list card highlighting
+            marker.on('click', function() {
+                document.querySelectorAll('.modal-audit-item').forEach(item => {
+                    item.classList.remove('active', 'active-special');
+                });
+                const activeCard = document.getElementById(`audit-item-${pt.index}`);
+                if (activeCard) {
+                    if (isSpecialNonStation) {
+                        activeCard.classList.add('active-special');
+                    } else {
+                        activeCard.classList.add('active');
+                    }
+                    activeCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            });
             
             // Add permanent label for audited stations
             marker.bindTooltip(`${pt.index}. ${pt.station}`, {
                 permanent: true,
                 direction: 'top',
-                offset: [0, -35],
+                offset: [0, -25],
                 className: 'map-audit-label'
             });
 
@@ -1247,6 +1465,22 @@ window.showAuditTimesDetail = function(userName, dateText, infosStr) {
                 map.setView([pt.lat, pt.lng], 15);
                 const marker = markers[idx - 1];
                 if (marker) marker.openPopup();
+
+                // Highlight the list card
+                document.querySelectorAll('.modal-audit-item').forEach(item => {
+                    item.classList.remove('active', 'active-special');
+                });
+                const activeCard = document.getElementById(`audit-item-${idx}`);
+                if (activeCard) {
+                    const loc = appData.stationLocations?.[`${pt.line}_${pt.station}`];
+                    const isSpecial = loc && loc.isNonStation === true;
+                    if (isSpecial) {
+                        activeCard.classList.add('active-special');
+                    } else {
+                        activeCard.classList.add('active');
+                    }
+                    activeCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
             }
         };
 

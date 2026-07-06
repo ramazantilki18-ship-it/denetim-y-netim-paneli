@@ -382,7 +382,8 @@ const unifiedDateFilters = {
     dashboard: { years: [], months: [], weeks: [], days: [], activeTab: 'year', labelId: 'unified-date-label', containerId: 'custom-options-unified-date', applyFn: () => renderAll() },
     stats: { years: [], months: [], weeks: [], days: [], activeTab: 'year', labelId: 'stats-unified-date-label', containerId: 'custom-options-stats-unified-date', applyFn: () => updateStats() },
     audits: { years: [], months: [], weeks: [], days: [], activeTab: 'year', labelId: 'audits-unified-date-label', containerId: 'custom-options-audits-unified-date', applyFn: () => renderAllAuditsTable() },
-    nc: { years: [], months: [], weeks: [], days: [], activeTab: 'year', labelId: 'nc-unified-date-label', containerId: 'custom-options-nc-unified-date', applyFn: () => renderNCs() }
+    nc: { years: [], months: [], weeks: [], days: [], activeTab: 'year', labelId: 'nc-unified-date-label', containerId: 'custom-options-nc-unified-date', applyFn: () => renderNCs() },
+    report5S: { years: [], months: [], weeks: [], days: [], activeTab: 'year', labelId: 'report-5s-unified-date-label', containerId: 'custom-options-report-5s-unified-date', applyFn: () => {} }
 };
 
 function getISOWeekNumber(d) {
@@ -1525,12 +1526,13 @@ function populateStatsFilters() {
             const auditorMap = new Map();
             accessibleAudits.forEach(audit => {
                 if (!audit.auditorName) return;
-                const key = normalizeTurkish(audit.auditorName);
-                if (!auditorMap.has(key)) auditorMap.set(key, audit.auditorName);
+                const displayName = getAuditorDisplayName(audit.auditorName);
+                const key = normalizeTurkish(displayName);
+                if (!auditorMap.has(key)) auditorMap.set(key, displayName);
             });
             const auditors = [...auditorMap.values()];
-            auditors.sort((a, b) => getAuditorDisplayName(a).localeCompare(getAuditorDisplayName(b), 'tr')).forEach(auditor => {
-                userSelect.add(new Option(getAuditorDisplayName(auditor), auditor));
+            auditors.sort((a, b) => a.localeCompare(b, 'tr')).forEach(auditor => {
+                userSelect.add(new Option(auditor, auditor));
             });
             setMultiSelectValues(userSelect, currentUsers);
             if (hasUsers) {
@@ -1644,12 +1646,13 @@ function populateAuditPageFilters() {
         const auditorMap = new Map();
         accessibleAudits.forEach(audit => {
             if (!audit.auditorName) return;
-            const key = normalizeTurkish(audit.auditorName);
-            if (!auditorMap.has(key)) auditorMap.set(key, audit.auditorName);
+            const displayName = getAuditorDisplayName(audit.auditorName);
+            const key = normalizeTurkish(displayName);
+            if (!auditorMap.has(key)) auditorMap.set(key, displayName);
         });
         const auditors = [...auditorMap.values()];
-        auditors.sort((a, b) => getAuditorDisplayName(a).localeCompare(getAuditorDisplayName(b), 'tr')).forEach(auditor => {
-            userSelect.add(new Option(getAuditorDisplayName(auditor), auditor));
+        auditors.sort((a, b) => a.localeCompare(b, 'tr')).forEach(auditor => {
+            userSelect.add(new Option(auditor, auditor));
         });
         setMultiSelectValues(userSelect, currentUsers);
         if (hasUsers) {
@@ -1941,6 +1944,9 @@ function switchView(viewId) {
         }
         if (viewId === 'logs-view') {
             renderLogsList();
+        }
+        if (viewId === 'reports-view') {
+            init5SReportFilters();
         }
     } else {
         console.warn('View not found:', viewId);
@@ -2387,6 +2393,12 @@ function openLocationEditModal(line, station, currentLat, currentLng, currentRad
     document.getElementById('location-lng-input').value = currentLng || '';
     document.getElementById('location-radius-input').value = currentRadius || '50';
     document.getElementById('location-quick-paste').value = '';
+    
+    // Load isNonStation checkbox status
+    const locKey = `${line}_${station}`;
+    const locData = appData.stationLocations?.[locKey];
+    document.getElementById('location-non-station-check').checked = locData && locData.isNonStation === true;
+    
     document.getElementById('location-modal').style.display = 'flex';
 }
 
@@ -2398,6 +2410,7 @@ function closeLocationModal() {
     document.getElementById('location-lng-input').value = '';
     document.getElementById('location-radius-input').value = '';
     document.getElementById('location-quick-paste').value = '';
+    document.getElementById('location-non-station-check').checked = false;
 }
 
 async function saveLocationCoords() {
@@ -2406,6 +2419,7 @@ async function saveLocationCoords() {
     const latVal = document.getElementById('location-lat-input').value.trim();
     const lngVal = document.getElementById('location-lng-input').value.trim();
     const radiusVal = document.getElementById('location-radius-input').value.trim();
+    const nonStationVal = document.getElementById('location-non-station-check').checked;
 
     if (!line || !station) {
         showToast('Hata: Hat ve istasyon bilgileri eksik.');
@@ -2422,7 +2436,8 @@ async function saveLocationCoords() {
             updatedLocations[locKey] = {
                 latitude: parseFloat(latVal),
                 longitude: parseFloat(lngVal),
-                radius: radiusVal ? parseFloat(radiusVal) : 50
+                radius: radiusVal ? parseFloat(radiusVal) : 50,
+                isNonStation: nonStationVal
             };
         } else {
             delete updatedLocations[locKey];
@@ -5746,9 +5761,16 @@ function initAnalysisFilters() {
         lineSelect.appendChild(opt);
     });
 
-    // Unique auditors from audits
-    const auditors = [...new Set(accessibleAudits.map(a => a.auditorName).filter(Boolean))];
-    auditors.forEach(a => {
+    // Unique auditors from audits (Deduplicated with display names)
+    const auditorMap = new Map();
+    accessibleAudits.forEach(audit => {
+        if (!audit.auditorName) return;
+        const displayName = getAuditorDisplayName(audit.auditorName);
+        const key = normalizeTurkish(displayName);
+        if (!auditorMap.has(key)) auditorMap.set(key, displayName);
+    });
+    const auditors = [...auditorMap.values()];
+    auditors.sort((a, b) => a.localeCompare(b, 'tr')).forEach(a => {
         const opt = document.createElement('option');
         opt.value = a;
         opt.textContent = a;
@@ -5966,6 +5988,254 @@ function exportAuditsToExcel() {
     } catch (err) {
         console.error('Excel export error:', err);
         showToast('Excel dışa aktarma hatası!');
+    }
+}
+
+function init5SReportFilters() {
+    try {
+        const lineSelect = document.getElementById('report-5s-line');
+        if (!lineSelect) return;
+
+        // 1. Hatları dolduralım
+        lineSelect.innerHTML = '<option value="all">Tüm Hatlar</option>';
+        const lines = typeof getScopedAuditLines === 'function' ? getScopedAuditLines() : [];
+        lines.forEach(l => {
+            const opt = document.createElement('option');
+            opt.value = l;
+            opt.textContent = l;
+            lineSelect.appendChild(opt);
+        });
+
+        // 2. Birleşik Tarih Seçiciyi sıfırlayıp başlatalım
+        clearUnifiedDateFilters('report5S');
+        renderUnifiedDateOptions('report5S');
+    } catch (err) {
+        console.error('5S Report filter init error:', err);
+    }
+}
+
+function toggleReport5SPeriodInputs() {
+    // Deprecated
+}
+
+function export5SAuditsToExcel() {
+    try {
+        const allAudits = (typeof accessibleAudits !== 'undefined' && Array.isArray(accessibleAudits)) ? accessibleAudits : (appData.audits || []);
+        if (!allAudits.length) {
+            showToast('Dışa aktarılacak denetim kaydı bulunmuyor.');
+            return;
+        }
+
+        // Get filter selections from the card
+        const selectedLine = document.getElementById('report-5s-line')?.value || 'all';
+        const selectedYears = unifiedDateFilters.report5S.years || [];
+        const selectedMonths = unifiedDateFilters.report5S.months || [];
+        const selectedWeeks = unifiedDateFilters.report5S.weeks || [];
+        const selectedDays = unifiedDateFilters.report5S.days || [];
+
+        // 1. Filter 5S audits and apply Line filter
+        let filtered = allAudits.filter(audit => {
+            // Check if it is a 5S audit
+            const type = (appData.auditTypes || []).find(t => String(t.id) === String(audit.auditTypeId));
+            const typeName = type ? (type.name || type.title || '') : (audit.auditType || audit.type || '');
+            const is5S = typeName.toUpperCase().includes('5S') || String(audit.auditTypeId || '').toLowerCase().includes('5s');
+            if (!is5S) return false;
+
+            // Line Filter
+            if (selectedLine !== 'all' && audit.line !== selectedLine) return false;
+
+            // Date validation
+            if (!audit.date) return false;
+            return true;
+        });
+
+        // 2. Apply Unified Date Filters (Tüm Zamanlar / Seçili Dönemler)
+        if (selectedYears.length) {
+            filtered = filtered.filter(a => selectedYears.includes(new Date(a.date).getFullYear().toString()));
+        }
+        if (selectedMonths.length) {
+            filtered = filtered.filter(a => selectedMonths.includes((new Date(a.date).getMonth() + 1).toString()));
+        }
+        if (selectedWeeks.length) {
+            filtered = filtered.filter(a => selectedWeeks.includes(getISOWeekNumber(new Date(a.date)).toString()));
+        }
+        if (selectedDays.length) {
+            filtered = filtered.filter(a => selectedDays.includes(getLocalDateString(a.date)));
+        }
+
+        const monthNames = {
+            '01': 'Ocak', '02': 'Şubat', '03': 'Mart', '04': 'Nisan', '05': 'Mayıs', '06': 'Haziran',
+            '07': 'Temmuz', '08': 'Ağustos', '09': 'Eylül', '10': 'Ekim', '11': 'Kasım', '12': 'Aralık'
+        };
+
+        if (!filtered.length) {
+            showToast('Seçilen filtrelere uygun 5S denetim kaydı bulunamadı.');
+            return;
+        }
+
+        // 3. Group by Period + Week + Auditor + Line + Station
+        const groups = {};
+        filtered.forEach(audit => {
+            const d = new Date(audit.date);
+            const rawAuditor = audit.auditorName || 'Bilinmeyen';
+            const auditorName = getAuditorDisplayName(rawAuditor);
+            const userObj = getAuditorUserObject(rawAuditor) || {};
+            const title = userObj.title || userObj.jobTitle || 'Saha Denetçisi';
+            const line = audit.line || 'Bilinmeyen';
+            const station = audit.station || 'Bilinmeyen';
+            const weekNum = getISOWeekNumber(d);
+            const weekText = `${weekNum}. Hafta`;
+
+            const auditYear = d.getFullYear();
+            const monthVal = String(d.getMonth() + 1).padStart(2, '0');
+            const periodText = `${monthNames[monthVal]} ${auditYear}`;
+            const sortVal = auditYear * 100 + weekNum;
+
+            // Group by Period, Week, Auditor, Line and Station
+            const groupKey = `${periodText} | ${weekText} | ${auditorName} | ${line} | ${station}`;
+
+            if (!groups[groupKey]) {
+                groups[groupKey] = {
+                    periodText,
+                    weekText,
+                    auditorName,
+                    title,
+                    line,
+                    station,
+                    sortVal,
+                    audits: []
+                };
+            }
+            groups[groupKey].audits.push(audit);
+        });
+
+        const reportRows = Object.values(groups).map(g => {
+            let totalOlumlu = 0;
+            let totalOlumsuz = 0;
+            let scoreSum = 0;
+
+            g.audits.forEach(audit => {
+                const metrics = buildAuditDetailMetrics(audit);
+                const answers = metrics.rows || [];
+                totalOlumlu += answers.filter(r => !r.isOutOfScope && !r.isNonconformity).length;
+                totalOlumsuz += answers.filter(r => !r.isOutOfScope && r.isNonconformity).length;
+                scoreSum += getAuditDisplayScore(audit);
+            });
+
+            const avgScore = scoreSum / g.audits.length;
+
+            return {
+                sortVal: g.sortVal,
+                auditorName: g.auditorName,
+                line: g.line,
+                station: g.station,
+                data: [
+                    g.auditorName,
+                    g.title,
+                    g.periodText,
+                    g.weekText,
+                    g.line,
+                    g.station,
+                    g.audits.length,
+                    totalOlumlu,
+                    totalOlumsuz,
+                    Number(avgScore.toFixed(1))
+                ]
+            };
+        });
+
+        // Sort by Date (newest first), then Line, then Station
+        reportRows.sort((a, b) => {
+            if (b.sortVal !== a.sortVal) return b.sortVal - a.sortVal;
+            if (a.line !== b.line) return a.line.localeCompare(b.line, 'tr');
+            if (a.station !== b.station) return a.station.localeCompare(b.station, 'tr');
+            return a.auditorName.localeCompare(b.auditorName, 'tr');
+        });
+
+        // Build Excel worksheet array
+        const wsData = [
+            ["Personel Adı", "Ünvan", "Rapor Dönemi", "Yapılan Hafta", "Hat", "İstasyon", "Denetim Sayısı", "Olumlu Madde Adeti", "Olumsuz Madde Adeti", "Yüzde Puanı (%)"]
+        ];
+
+        reportRows.forEach(r => wsData.push(r.data));
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+        // Column widths
+        ws['!cols'] = [
+            { wch: 22 }, // Personel Adı
+            { wch: 20 }, // Ünvan
+            { wch: 18 }, // Rapor Dönemi
+            { wch: 15 }, // Yapılan Hafta
+            { wch: 10 }, // Hat
+            { wch: 20 }, // İstasyon
+            { wch: 16 }, // Denetim Sayısı
+            { wch: 18 }, // Olumlu Madde Adeti
+            { wch: 18 }, // Olumsuz Madde Adeti
+            { wch: 16 }  // Yüzde Puanı (%)
+        ];
+
+        // Styling definitions
+        const styleHeader = {
+            fill: { fgColor: { rgb: "071A33" } },
+            font: { bold: true, color: { rgb: "FFFFFF" }, sz: 10, name: "Segoe UI" },
+            alignment: { horizontal: "center", vertical: "center", wrapText: true },
+            border: {
+                top: { style: "thin", color: { rgb: "CBD5E1" } },
+                bottom: { style: "thin", color: { rgb: "CBD5E1" } },
+                left: { style: "thin", color: { rgb: "CBD5E1" } },
+                right: { style: "thin", color: { rgb: "CBD5E1" } }
+            }
+        };
+
+        const styleRegular = {
+            font: { sz: 10, name: "Segoe UI" },
+            alignment: { horizontal: "center", vertical: "center" },
+            border: {
+                top: { style: "thin", color: { rgb: "CBD5E1" } },
+                bottom: { style: "thin", color: { rgb: "CBD5E1" } },
+                left: { style: "thin", color: { rgb: "CBD5E1" } },
+                right: { style: "thin", color: { rgb: "CBD5E1" } }
+            }
+        };
+
+        const styleLeft = {
+            font: { sz: 10, name: "Segoe UI" },
+            alignment: { horizontal: "left", vertical: "center" },
+            border: {
+                top: { style: "thin", color: { rgb: "CBD5E1" } },
+                bottom: { style: "thin", color: { rgb: "CBD5E1" } },
+                left: { style: "thin", color: { rgb: "CBD5E1" } },
+                right: { style: "thin", color: { rgb: "CBD5E1" } }
+            }
+        };
+
+        // Apply styles
+        for (let cellRef in ws) {
+            if (cellRef[0] === '!') continue;
+            const col = cellRef.replace(/[0-9]/g, '');
+            const rowIdx = parseInt(cellRef.replace(/[^0-9]/g, '')) - 1;
+            const cell = ws[cellRef];
+            if (!cell) continue;
+
+            if (rowIdx === 0) {
+                cell.s = styleHeader;
+            } else {
+                if (col === 'A' || col === 'B' || col === 'F') {
+                    cell.s = styleLeft;
+                } else {
+                    cell.s = styleRegular;
+                }
+            }
+        }
+
+        XLSX.utils.book_append_sheet(wb, ws, "5S Denetim Raporu");
+        XLSX.writeFile(wb, `Metro_Istanbul_5S_Denetim_${periodType.charAt(0).toUpperCase() + periodType.slice(1)}_Raporu.xlsx`);
+        showToast('5S raporu başarıyla indirildi!');
+    } catch (err) {
+        console.error('5S Excel export error:', err);
+        showToast('5S Excel dışa aktarma hatası!');
     }
 }
 
@@ -8815,7 +9085,7 @@ function renderAllAuditsTable() {
         audits = audits.filter(a => filterStations.includes(a.station));
     }
     if (filterUsers.length) {
-        audits = audits.filter(a => filterUsers.some(f => normalizeTurkish(f) === normalizeTurkish(a.auditorName)));
+        audits = audits.filter(a => filterUsers.some(f => normalizeTurkish(f) === normalizeTurkish(getAuditorDisplayName(a.auditorName))));
     }
     if (filterStatuses.length) {
         audits = audits.filter(a => filterStatuses.includes(getAuditStatusKey(a)));
@@ -13219,8 +13489,42 @@ function normalizeTurkish(str) {
         .toLowerCase().trim();
 }
 
+// Mapped name dictionary to ensure clean Turkish character rendering for matching issues
+const AUDITOR_NAME_ALIASES = {
+    'yalcin.asil': 'Yalçın Asil',
+    'yalcinasil': 'Yalçın Asil',
+    'saadet.gulmez': 'Saadet Gülmez',
+    'saadetgulmez': 'Saadet Gülmez',
+    'mehmetakif': 'Mehmet Akif',
+    'mehmet.akif': 'Mehmet Akif',
+    'mehmet.akif.ersoy': 'Mehmet Akif Ersoy',
+    'sahin.kaya': 'Şahin Kaya',
+    'sahinkaya': 'Şahin Kaya',
+    'ismail': 'İsmail',
+    'gokhan': 'Gökhan',
+    'oguz': 'Oğuz',
+    'huseyin': 'Hüseyin'
+};
+
 function getAuditorDisplayName(auditorName) {
     if (!auditorName || auditorName === 'Bilinmeyen' || auditorName === 'Bilinmiyor') return auditorName;
+
+    // 1. Önce takma ad sözlüğümüzden (Aliases) sorgulayalım
+    const cleanKey = auditorName.split('@')[0].toLowerCase().trim().replace(/\s+/g, '');
+    const cleanDotKey = auditorName.split('@')[0].toLowerCase().trim();
+    
+    if (AUDITOR_NAME_ALIASES[cleanKey]) {
+        return AUDITOR_NAME_ALIASES[cleanKey];
+    }
+    if (AUDITOR_NAME_ALIASES[cleanDotKey]) {
+        return AUDITOR_NAME_ALIASES[cleanDotKey];
+    }
+    const normalizedKey = normalizeTurkish(auditorName).replace(/\s+/g, '');
+    if (AUDITOR_NAME_ALIASES[normalizedKey]) {
+        return AUDITOR_NAME_ALIASES[normalizedKey];
+    }
+
+    // 2. Veritabanı profilleriyle eşleştirme
     const searchName = normalizeTurkish(auditorName);
     const user = (appData.users || []).find(u => {
         const username = normalizeTurkish(u.username || '');
@@ -13236,15 +13540,46 @@ function getAuditorDisplayName(auditorName) {
     });
     if (user) return getUserDisplayName(user);
 
-    // Akıllı Geri Çekilme (Smart Fallback): Eğer veritabanında eşleşme bulunamadıysa ve "isim.soyisim" formatındaysa temizle ve ad soyad yap
-    if (typeof auditorName === 'string' && auditorName.includes('.') && !auditorName.includes(' ')) {
+    // 3. Akıllı Geri Çekilme (Smart Fallback)
+    if (typeof auditorName === 'string') {
         const cleanName = auditorName.split('@')[0];
-        if (cleanName.includes('.')) {
+        
+        // Eğer "isim.soyisim" formatındaysa
+        if (cleanName.includes('.') && !cleanName.includes(' ')) {
             return cleanName.split('.')
-                .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+                .map(part => {
+                    let capitalized = part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+                    // Yaygın Türkçe isim/soyisim düzeltmeleri
+                    return capitalized
+                        .replace(/^Yalcin$/, 'Yalçın')
+                        .replace(/^Asil$/, 'Asil')
+                        .replace(/^Saadet$/, 'Saadet')
+                        .replace(/^Gulmez$/, 'Gülmez')
+                        .replace(/^Sahin$/, 'Şahin')
+                        .replace(/^Kaya$/, 'Kaya')
+                        .replace(/^Gokhan$/, 'Gökhan')
+                        .replace(/^Oguz$/, 'Oğuz')
+                        .replace(/^Huseyin$/, 'Hüseyin')
+                        .replace(/^Bulent$/, 'Bülent')
+                        .replace(/^Ozcan$/, 'Özcan')
+                        .replace(/^Ozkan$/, 'Özkan')
+                        .replace(/^Umit$/, 'Ümit')
+                        .replace(/^Cuneyt$/, 'Cüneyt')
+                        .replace(/^Fatih$/, 'Fatih')
+                        .replace(/^Murat$/, 'Murat')
+                        .replace(/^Ahmet$/, 'Ahmet')
+                        .replace(/^Mehmet$/, 'Mehmet');
+                })
                 .join(' ');
+        } else {
+            // "mehmetakif" gibi birleşik kelimeleri ayırma
+            const search = cleanName.toLowerCase().replace(/\s+/g, '');
+            if (search === 'mehmetakif') return 'Mehmet Akif';
+            if (search === 'yalcinasil') return 'Yalçın Asil';
+            if (search === 'saadetgulmez') return 'Saadet Gülmez';
         }
     }
+
     return auditorName;
 }
 
@@ -15892,12 +16227,13 @@ function populateDashboardFilters() {
         const auditorMap = new Map();
         accessibleAudits.forEach(audit => {
             if (!audit.auditorName) return;
-            const key = normalizeTurkish(audit.auditorName);
-            if (!auditorMap.has(key)) auditorMap.set(key, audit.auditorName);
+            const displayName = getAuditorDisplayName(audit.auditorName);
+            const key = normalizeTurkish(displayName);
+            if (!auditorMap.has(key)) auditorMap.set(key, displayName);
         });
         const auditors = [...auditorMap.values()];
-        auditors.sort((a, b) => getAuditorDisplayName(a).localeCompare(getAuditorDisplayName(b), 'tr')).forEach(auditor => {
-            userSelect.add(new Option(getAuditorDisplayName(auditor), auditor));
+        auditors.sort((a, b) => a.localeCompare(b, 'tr')).forEach(auditor => {
+            userSelect.add(new Option(auditor, auditor));
         });
         setMultiSelectValues(userSelect, currentUsers);
         if (hasUsers) {
@@ -15976,8 +16312,8 @@ function getFilteredDashboardData() {
 
     // Apply Auditor Filter
     if (userFilters.length) {
-        audits = audits.filter(a => userFilters.some(f => normalizeTurkish(f) === normalizeTurkish(a.auditorName)));
-        ncs = ncs.filter(nc => userFilters.some(f => normalizeTurkish(f) === normalizeTurkish(nc.auditorName)));
+        audits = audits.filter(a => userFilters.some(f => normalizeTurkish(f) === normalizeTurkish(getAuditorDisplayName(a.auditorName))));
+        ncs = ncs.filter(nc => userFilters.some(f => normalizeTurkish(f) === normalizeTurkish(getAuditorDisplayName(nc.auditorName))));
     }
 
     // Apply Unified Date Filters: Year
