@@ -1863,19 +1863,7 @@ function updatePermissionGatedUI() {
 
 function switchView(viewId) {
     console.log('Switching to view:', viewId);
-    if (!canOperationalRoleAccessView(viewId)) {
-        const message = isFieldAuditorActionOwner()
-            ? 'Saha Denetçisi + Aksiyon Sorumlusu web panelinde yalnızca Denetimler, Uygunsuzluklar ve Görev Planlama sayfalarına erişebilir.'
-            : 'Saha Denetçisi web panelinde yalnızca Denetimler ve Uygunsuzluklar sayfalarına erişebilir.';
-        showToast(message);
-        return;
-    }
-    if (viewId === 'feedbacks-view' && !isSuperAdmin()) {
-        showToast('Geri bildirimler sayfası yalnızca Süper Admin tarafından görüntülenebilir.');
-        return;
-    }
-    const requiredPerm = NAV_VIEW_PERMISSIONS[viewId];
-    if (requiredPerm && !hasPermission(requiredPerm)) {
+    if (!canShowNavView(viewId)) {
         showToast('Bu sayfaya erişim yetkiniz bulunmuyor.');
         return;
     }
