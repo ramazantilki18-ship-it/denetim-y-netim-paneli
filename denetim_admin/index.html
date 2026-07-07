@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kurumsal Denetim | Admin Kontrol Paneli</title>
-    <link rel="stylesheet" href="style_v4.css?v=172">
+    <link rel="stylesheet" href="style_v4.css?v=175">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
@@ -56,55 +56,6 @@
             flex-shrink: 0 !important;
         }
 
-        #user-display-name {
-            font-size: 0.75rem !important;
-            font-weight: 750 !important;
-            color: #ffffff !important;
-            white-space: nowrap !important;
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
-            max-width: 130px !important;
-            width: auto !important;
-            display: block !important;
-            text-align: center !important;
-            line-height: 1.2 !important;
-        }
-
-        body.light-mode #user-display-name {
-            color: #ffffff !important;
-        }
-
-        #user-display-role {
-            display: block !important;
-            visibility: visible !important;
-            opacity: 0.8 !important;
-            color: #94a3b8 !important;
-            background: none !important;
-            border: none !important;
-            padding: 0 !important;
-            border-radius: 0 !important;
-            font-size: 0.65rem !important;
-            font-weight: 500 !important;
-            max-width: 130px !important;
-            width: auto !important;
-            height: auto !important;
-            white-space: nowrap !important;
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
-            flex-shrink: 0 !important;
-            text-align: center !important;
-            margin-top: 1px !important;
-            line-height: 1.2 !important;
-            letter-spacing: 0.1px !important;
-            box-shadow: none !important;
-            text-shadow: none !important;
-        }
-
-        body.light-mode #user-display-role {
-            color: #94a3b8 !important;
-            background: none !important;
-            border: none !important;
-        }
     </style>
 </head>
 
@@ -192,17 +143,6 @@
                     <li><a href="#" class="nav-item" onclick="switchView('reports-view')" title="Raporlar"><i
                                 class="fas fa-file-invoice"></i> <span>Raporlar</span></a></li>
 
-                    <li class="sidebar-user-card" style="margin-top: auto; padding: 0.5rem 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; border-top: 1px solid var(--glass-border);">
-                        <div style="display: flex; flex-direction: column; align-items: center; text-align: center; min-width: 0; flex: 1; gap: 0.1rem;">
-                            <span id="user-display-name" style="font-weight: 750; font-size: 0.75rem; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2;">Yükleniyor...</span>
-                            <span id="user-display-role" style="font-size: 0.65rem; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; line-height: 1.2;">...</span>
-                            <div id="user-display-lines-logos" style="display: flex; gap: 0.2rem; align-items: center; justify-content: center; flex-wrap: wrap; margin-top: 0.1rem; width: 100%;"></div>
-                            <span id="user-display-lines" style="display: none;"></span>
-                        </div>
-                        <button onclick="handleLogout()" title="Çıkış Yap" style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444; cursor: pointer; padding: 0.4rem; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; border-radius: 6px; flex-shrink: 0;" onmouseover="this.style.color='#ffffff'; this.style.background='#ef4444';" onmouseout="this.style.color='#ef4444'; this.style.background='rgba(239, 68, 68, 0.08)';">
-                            <i class="fas fa-sign-out-alt" style="font-size: 1rem;"></i>
-                        </button>
-                    </li>
 
                     <div id="management-divider" class="nav-divider"
                         style="margin: 1rem 0; height: 1px; background: var(--glass-border);"></div>
@@ -255,6 +195,7 @@
         <main class="main-content">
 
 
+
             <!-- DASHBOARD VIEW -->
             <div id="dashboard-view" class="view-section" style="display: none;">
                 <style>
@@ -301,6 +242,20 @@
                         align-items: flex-start !important;
                     }
                 </style>
+
+                <!-- Top User Profile Bar -->
+                <div class="top-user-profile-bar">
+                    <span id="user-display-name">Yükleniyor...</span>
+                    <div class="profile-divider"></div>
+                    <span id="user-display-role">...</span>
+                    <div class="profile-divider"></div>
+                    <div id="user-display-lines-logos" style="display: flex; gap: 0.25rem; align-items: center;"></div>
+                    <span id="user-display-lines" style="display: none;"></span>
+                    <button onclick="handleLogout()" title="Çıkış Yap" class="premium-logout">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+
                 <!-- Custom Select Styles -->
                 <style>
                     /* Custom Select Styles */
