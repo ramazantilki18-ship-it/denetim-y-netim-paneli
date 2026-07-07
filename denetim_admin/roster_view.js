@@ -2052,14 +2052,13 @@ window.showAuditorDetailedStats = async function(userId) {
     }).join('');
 
     // Hourly activity distribution calculation
-    const hourlyIntervals = { 'Sabah (06-12)': 0, 'Öğle (12-18)': 0, 'Akşam (18-24)': 0, 'Gece (00-06)': 0 };
+    const hourlyIntervals = { 'Sabah (06-12)': 0, 'Öğle (12-18)': 0, 'Akşam (18-24)': 0 };
     userAudits.forEach(a => {
         const d = new Date(a.date || a.startedAt || a.createdAt);
         const hr = d.getHours();
         if (hr >= 6 && hr < 12) hourlyIntervals['Sabah (06-12)']++;
         else if (hr >= 12 && hr < 18) hourlyIntervals['Öğle (12-18)']++;
         else if (hr >= 18 && hr < 24) hourlyIntervals['Akşam (18-24)']++;
-        else hourlyIntervals['Gece (00-06)']++;
     });
     const maxHourIntervalCount = Math.max(...Object.values(hourlyIntervals), 1);
     const hourlyDistributionHtml = Object.entries(hourlyIntervals).map(([interval, count]) => {
