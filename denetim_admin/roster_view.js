@@ -2008,6 +2008,73 @@ window.showAuditorDetailedStats = async function(userId) {
         avgDurationMin = Math.round(totalDurationMs / auditsWithDuration.length / 60000);
     }
 
+    // Advanced conformity metrics calculation
+    let totalConformities = 0;
+    let totalNonConformities = 0;
+    userAudits.forEach(a => {
+        const answers = Array.isArray(a.answers) ? a.answers : [];
+        answers.forEach(ans => {
+            if (ans.isOutOfScope === true) return;
+            const isNc = ans.isNonconformity === true || (ans.score !== undefined && Number(ans.score) <= 3);
+            if (isNc) {
+                const addCount = Array.isArray(ans.additionalNonconformities) ? ans.additionalNonconformities.length : 0;
+                totalNonConConformities = (typeof totalNonConConformities === 'undefined' ? 0 : totalNonConConformities) + 1 + addCount;
+            } else {
+                totalConformities++;
+            }
+        });
+    });
+    // Ensure safety in variable declarations
+    const finalNCs = typeof totalNonConConformities !== 'undefined' ? totalNonConConformities : 0;
+    const totalCheckedPoints = totalConformities + finalNCs;
+    const defectRatio = totalCheckedPoints > 0 ? Math.round((finalNCs / totalCheckedPoints) * 100) : 0;
+
+    // Weekly activity distribution calculation
+    const weekdayCounts = [0, 0, 0, 0, 0, 0, 0];
+    userAudits.forEach(a => {
+        const d = new Date(a.date || a.startedAt || a.createdAt);
+        weekdayCounts[d.getDay()]++;
+    });
+    const maxWeekdayCount = Math.max(...weekdayCounts, 1);
+    const weekdays = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+    const weekdayDistributionHtml = [1, 2, 3, 4, 5, 6, 0].map(dayIdx => {
+        const count = weekdayCounts[dayIdx];
+        const pct = Math.round((count / maxWeekdayCount) * 100);
+        return `
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                <span style="font-size:0.7rem; color:var(--text-secondary); width:65px; font-weight:600; text-align:right;">${weekdays[dayIdx]}</span>
+                <div style="flex:1; background:rgba(255,255,255,0.03); height:8px; border-radius:4px; overflow:hidden;">
+                    <div style="background:#8b5cf6; width:${pct}%; height:100%; border-radius:4px;"></div>
+                </div>
+                <span style="font-size:0.7rem; color:#fff; font-weight:700; width:30px; text-align:left; margin-left:4px;">${count}</span>
+            </div>
+        `;
+    }).join('');
+
+    // Hourly activity distribution calculation
+    const hourlyIntervals = { 'Sabah (06-12)': 0, 'Öğle (12-18)': 0, 'Akşam (18-24)': 0, 'Gece (00-06)': 0 };
+    userAudits.forEach(a => {
+        const d = new Date(a.date || a.startedAt || a.createdAt);
+        const hr = d.getHours();
+        if (hr >= 6 && hr < 12) hourlyIntervals['Sabah (06-12)']++;
+        else if (hr >= 12 && hr < 18) hourlyIntervals['Öğle (12-18)']++;
+        else if (hr >= 18 && hr < 24) hourlyIntervals['Akşam (18-24)']++;
+        else hourlyIntervals['Gece (00-06)']++;
+    });
+    const maxHourIntervalCount = Math.max(...Object.values(hourlyIntervals), 1);
+    const hourlyDistributionHtml = Object.entries(hourlyIntervals).map(([interval, count]) => {
+        const pct = Math.round((count / maxHourIntervalCount) * 100);
+        return `
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                <span style="font-size:0.7rem; color:var(--text-secondary); width:85px; font-weight:600; text-align:right;">${interval}</span>
+                <div style="flex:1; background:rgba(255,255,255,0.03); height:8px; border-radius:4px; overflow:hidden;">
+                    <div style="background:#f43f5e; width:${pct}%; height:100%; border-radius:4px;"></div>
+                </div>
+                <span style="font-size:0.7rem; color:#fff; font-weight:700; width:30px; text-align:left; margin-left:4px;">${count}</span>
+            </div>
+        `;
+    }).join('');
+
     // Station Distribution (All Stations)
     const stationCounts = {};
     userAudits.forEach(a => {
@@ -2144,30 +2211,36 @@ window.showAuditorDetailedStats = async function(userId) {
                 <div style="padding:20px; overflow-y:auto; display:flex; flex-direction:column; gap:20px;">
                     
                     <!-- KPI Cards Grid -->
-                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px;">
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px;">
                         <!-- Total -->
-                        <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:12px; border-radius:10px; text-align:center;">
-                            <div style="font-size:0.68rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Toplam Denetim</div>
-                            <div style="font-size:1.4rem; font-weight:900; color:#fff;">${totalAudits}</div>
-                            <div style="font-size:0.6rem; color:var(--text-dim); margin-top:2px;">${completedAudits} tamamlanan | ${activeDrafts} taslak</div>
+                        <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:10px; border-radius:10px; text-align:center;">
+                            <div style="font-size:0.65rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Toplam Denetim</div>
+                            <div style="font-size:1.3rem; font-weight:900; color:#fff;">${totalAudits}</div>
+                            <div style="font-size:0.58rem; color:var(--text-dim); margin-top:2px;">${completedAudits} tamam | ${activeDrafts} taslak</div>
                         </div>
                         <!-- Average Compliance Score -->
-                        <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:12px; border-radius:10px; text-align:center;">
-                            <div style="font-size:0.68rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Uyum Başarı Skoru</div>
-                            <div style="font-size:1.4rem; font-weight:900; color:#10b981;">%${avgScore}</div>
-                            <div style="font-size:0.6rem; color:var(--text-dim); margin-top:2px;">Genel Uyum Ortalaması</div>
+                        <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:10px; border-radius:10px; text-align:center;">
+                            <div style="font-size:0.65rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Uyum Başarı Skoru</div>
+                            <div style="font-size:1.3rem; font-weight:900; color:#10b981;">%${avgScore}</div>
+                            <div style="font-size:0.58rem; color:var(--text-dim); margin-top:2px;">Uyum Ortalaması</div>
+                        </div>
+                        <!-- Defect Detection / NC rate -->
+                        <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:10px; border-radius:10px; text-align:center;">
+                            <div style="font-size:0.65rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Uygunsuzluk Yakalama</div>
+                            <div style="font-size:1.3rem; font-weight:900; color:#ef4444;">%${defectRatio}</div>
+                            <div style="font-size:0.58rem; color:var(--text-dim); margin-top:2px;">${finalNCs} NC / ${totalCheckedPoints} Nokta</div>
                         </div>
                         <!-- Average Duration -->
-                        <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:12px; border-radius:10px; text-align:center;">
-                            <div style="font-size:0.68rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Ortalama Denetim Süresi</div>
-                            <div style="font-size:1.4rem; font-weight:900; color:#38bdf8;">${avgDurationMin} <span style="font-size:0.8rem; font-weight:700;">dk</span></div>
-                            <div style="font-size:0.6rem; color:var(--text-dim); margin-top:2px;">Aktif Saha Denetim Hızı</div>
+                        <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:10px; border-radius:10px; text-align:center;">
+                            <div style="font-size:0.65rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Ortalama Süre</div>
+                            <div style="font-size:1.3rem; font-weight:900; color:#38bdf8;">${avgDurationMin} <span style="font-size:0.75rem; font-weight:700;">dk</span></div>
+                            <div style="font-size:0.58rem; color:var(--text-dim); margin-top:2px;">Saha Denetim Hızı</div>
                         </div>
                         <!-- Roster & excuse info -->
-                        <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:12px; border-radius:10px; text-align:center;">
-                            <div style="font-size:0.68rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Aylık Vardiya & Mazeret</div>
-                            <div style="font-size:1.4rem; font-weight:900; color:#f59e0b;">${shiftWorkCount} <span style="font-size:0.8rem; font-weight:700;">Gün</span></div>
-                            <div style="font-size:0.6rem; color:var(--text-dim); margin-top:2px;">${excuseCount} mazeret (%${excuseRate} oran)</div>
+                        <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:10px; border-radius:10px; text-align:center;">
+                            <div style="font-size:0.65rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Aylık Vardiya</div>
+                            <div style="font-size:1.3rem; font-weight:900; color:#f59e0b;">${shiftWorkCount} <span style="font-size:0.75rem; font-weight:700;">Gün</span></div>
+                            <div style="font-size:0.58rem; color:var(--text-dim); margin-top:2px;">${excuseCount} mazeret (%${excuseRate})</div>
                         </div>
                     </div>
 
@@ -2188,27 +2261,29 @@ window.showAuditorDetailedStats = async function(userId) {
 
                     <!-- Split Panels -->
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
-                        <!-- Left Panel (Lines) -->
+                        <!-- Left Panel (Weekly activity) -->
                         <div style="display:flex; flex-direction:column; gap:14px;">
-                            <!-- Lines Breakdown -->
+                            <!-- Weekly Activity Distribution -->
                             <div style="background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03); border-radius:10px; padding:14px;">
                                 <div style="font-size:0.75rem; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid rgba(255,255,255,0.04); padding-bottom:6px; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
-                                    <i class="fas fa-subway" style="color:#38bdf8;"></i> Hatlara Göre Dağılım
+                                    <i class="fas fa-calendar-week" style="color:#8b5cf6;"></i> Haftalık Aktivite Yoğunluğu
                                 </div>
-                                <div style="display:flex; flex-direction:column; gap:6px;">
-                                    ${lineBreakdownHtml}
+                                <div style="display:flex; flex-direction:column; gap:2px;">
+                                    ${weekdayDistributionHtml}
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Right Panel (Audit types & Excuses) -->
+                        <!-- Right Panel (Excuses & Hourly Activity) -->
                         <div style="display:flex; flex-direction:column; gap:14px;">
-                            <!-- Audit Types Breakdown -->
+                            <!-- Hourly Activity Distribution -->
                             <div style="background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03); border-radius:10px; padding:14px;">
                                 <div style="font-size:0.75rem; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid rgba(255,255,255,0.04); padding-bottom:6px; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
-                                    <i class="fas fa-chart-pie" style="color:#007AFF;"></i> Denetim Tipi Dağılımı
+                                    <i class="fas fa-clock" style="color:#f43f5e;"></i> Günlük Saat Kırılımı
                                 </div>
-                                ${typeDistributionHtml}
+                                <div style="display:flex; flex-direction:column; gap:2px;">
+                                    ${hourlyDistributionHtml}
+                                </div>
                             </div>
                             
                             <!-- Excuses Detail -->
@@ -2216,7 +2291,7 @@ window.showAuditorDetailedStats = async function(userId) {
                                 <div style="font-size:0.75rem; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid rgba(255,255,255,0.04); padding-bottom:6px; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
                                     <i class="fas fa-file-invoice" style="color:#f59e0b;"></i> ${monthName} Ayı Mazeret Kayıtları
                                 </div>
-                                <div style="max-height:150px; overflow-y:auto; padding-right:4px;">
+                                <div style="max-height:130px; overflow-y:auto; padding-right:4px;">
                                     ${excuseListHtml}
                                 </div>
                             </div>
