@@ -2331,10 +2331,9 @@ window.showAuditorDetailedStats = async function(userId) {
     // Initialize Leaflet Map for Monthly Visited Stations
     setTimeout(() => {
         try {
-            const map = L.map('auditor-monthly-map').setView([41.0082, 28.9784], 10);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                maxZoom: 20,
-                attribution: '&copy; CARTO'
+            const map = L.map('auditor-monthly-map', { attributionControl: false }).setView([41.0082, 28.9784], 10);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 20
             }).addTo(map);
 
             const points = [];
@@ -2378,9 +2377,10 @@ window.showAuditorDetailedStats = async function(userId) {
             stationList.forEach(st => {
                 const markerColor = st.count > 5 ? '#10b981' : (st.count > 2 ? '#38bdf8' : '#ea580c');
                 const customIcon = L.divIcon({
-                    html: `<div style="background:${markerColor}; width:12px; height:12px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 8px rgba(0,0,0,0.5);"></div>`,
+                    html: `<div style="background:${markerColor}; color:#fff; width:22px; height:22px; border-radius:50%; border:2px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,0.3); display:inline-flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:800; line-height:1; font-family:sans-serif;">${st.count}</div>`,
                     className: 'custom-station-dot',
-                    iconSize: [12, 12]
+                    iconSize: [22, 22],
+                    iconAnchor: [11, 11]
                 });
                 const lastAuditText = st.lastAudit ? formatDate(st.lastAudit) : '-';
                 const popupHtml = `
