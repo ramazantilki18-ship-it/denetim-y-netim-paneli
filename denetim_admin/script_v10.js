@@ -6291,7 +6291,7 @@ function export5SAuditsToExcel() {
         }
 
         XLSX.utils.book_append_sheet(wb, ws, "5S Denetim Raporu");
-        XLSX.writeFile(wb, `Metro_Istanbul_5S_Denetim_${periodType.charAt(0).toUpperCase() + periodType.slice(1)}_Raporu.xlsx`);
+        XLSX.writeFile(wb, `Metro_Istanbul_5S_Denetim_Raporu.xlsx`);
         showToast('5S raporu başarıyla indirildi!');
     } catch (err) {
         console.error('5S Excel export error:', err);
