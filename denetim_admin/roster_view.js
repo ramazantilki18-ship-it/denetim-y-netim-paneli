@@ -2200,9 +2200,6 @@ window.showAuditorDetailedStats = async function(userId) {
                 <!-- Header -->
                 <div style="background:rgba(255,255,255,0.02); padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
                     <div style="display:flex; align-items:center; gap:12px;">
-                        <div style="width:40px; height:40px; border-radius:50%; background:rgba(56,189,248,0.1); color:#38bdf8; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1.2rem; border:1px solid rgba(56,189,248,0.25);">
-                            ${(user.name || user.displayName || user.username)[0].toUpperCase()}
-                        </div>
                         <div style="text-align: left;">
                             <h3 style="margin:0; font-size:1.05rem; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:0.3px;">${user.name || user.displayName || user.username}</h3>
                             <span style="font-size:0.75rem; color:#ea580c; font-weight:700; background:rgba(234,88,12,0.08); padding:2px 8px; border-radius:4px; margin-top:4px; display:inline-block;">${user.title || user.roleName || user.jobTitle || user.role || 'Saha Denetçisi'}</span>
@@ -2248,7 +2245,7 @@ window.showAuditorDetailedStats = async function(userId) {
                         </div>
                     </div>
 
-                    <!-- Auditor Visited Stations Map (Full Width) -->
+                    <!-- Auditor Visited Stations Map (Full Width with Legend) -->
                     <div style="background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03); border-radius:10px; padding:14px;">
                         <div style="font-size:0.75rem; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid rgba(255,255,255,0.04); padding-bottom:6px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between;">
                             <div style="display:flex; align-items:center; gap:6px;">
@@ -2256,7 +2253,10 @@ window.showAuditorDetailedStats = async function(userId) {
                             </div>
                             <span id="auditor-map-count" style="font-size:0.62rem; color:var(--text-dim); font-weight:600;">Yükleniyor...</span>
                         </div>
-                        <div id="auditor-monthly-map" style="width:100%; height:260px; border-radius:8px; background:#071426;"></div>
+                        <div style="display:flex; gap:12px; height:260px; align-items:stretch;">
+                            <div id="auditor-monthly-map" style="flex:1.7; min-width:200px; height:100%; border-radius:8px; background:#071426; border:1px solid rgba(255,255,255,0.04);"></div>
+                            <div id="auditor-map-legend" style="flex:1; height:100%; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.04); border-radius:8px; padding:10px; overflow-y:auto; box-sizing:border-box; display:flex; flex-direction:column; gap:4px;"></div>
+                        </div>
                     </div>
 
                     <!-- Split Panels -->
@@ -2347,8 +2347,10 @@ window.showAuditorDetailedStats = async function(userId) {
                 const locData = appData.stationLocations?.[locKey];
                 
                 if (locData && locData.latitude && locData.longitude) {
-                    if (!uniqueStations[locKey]) {
-                        uniqueStations[locKey] = {
+                    const cleanKey = locKey.replace(/[^a-zA-Z0-9]/g, '_');
+                    if (!uniqueStations[cleanKey]) {
+                        uniqueStations[cleanKey] = {
+                            key: cleanKey,
                             lat: locData.latitude,
                             lng: locData.longitude,
                             station: station,
@@ -2357,10 +2359,10 @@ window.showAuditorDetailedStats = async function(userId) {
                             lastAudit: null
                         };
                     }
-                    uniqueStations[locKey].count++;
+                    uniqueStations[cleanKey].count++;
                     const auditDate = new Date(a.date || a.startedAt || a.createdAt);
-                    if (!uniqueStations[locKey].lastAudit || auditDate > uniqueStations[locKey].lastAudit) {
-                        uniqueStations[locKey].lastAudit = auditDate;
+                    if (!uniqueStations[cleanKey].lastAudit || auditDate > uniqueStations[cleanKey].lastAudit) {
+                        uniqueStations[cleanKey].lastAudit = auditDate;
                     }
                 }
             });
@@ -2368,11 +2370,15 @@ window.showAuditorDetailedStats = async function(userId) {
             const pad = (num) => String(num).padStart(2, '0');
             const formatDate = (d) => `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 
-            const stationList = Object.values(uniqueStations);
+            const stationList = Object.values(uniqueStations).sort((a, b) => b.count - a.count);
             const countLabel = document.getElementById('auditor-map-count');
             if (countLabel) {
                 countLabel.innerText = `${stationList.length} Farklı İstasyon`;
             }
+
+            const markersStore = {};
+            const legendContainer = document.getElementById('auditor-map-legend');
+            let legendHtml = '';
 
             stationList.forEach(st => {
                 const markerColor = st.count > 5 ? '#10b981' : (st.count > 2 ? '#38bdf8' : '#ea580c');
@@ -2400,7 +2406,44 @@ window.showAuditorDetailedStats = async function(userId) {
                     offset: [0, -12]
                 });
                 points.push([st.lat, st.lng]);
+                markersStore[st.key] = marker;
+
+                // Build sidebar item HTML
+                legendHtml += `
+                    <div class="legend-station-item" data-key="${st.key}" style="display:flex; align-items:center; justify-content:space-between; padding:5px 8px; border-radius:6px; background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03); cursor:pointer; transition:all 0.2s; box-sizing:border-box;">
+                        <span style="font-size:0.7rem; color:#cbd5e1; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:80%;" title="${escapeAttr(st.station)}">${escapeAttr(st.station)}</span>
+                        <span style="font-size:0.68rem; font-weight:800; color:#fff; background:${markerColor}; padding:1px 5px; border-radius:4px; min-width:14px; text-align:center;">${st.count}</span>
+                    </div>
+                `;
             });
+
+            if (legendContainer) {
+                legendContainer.innerHTML = legendHtml || '<div style="color:var(--text-dim); text-align:center; font-size:0.72rem; font-style:italic; padding:20px 0;">Ziyaret geçmişi bulunmuyor.</div>';
+
+                // Bind dynamic hover and click events
+                legendContainer.querySelectorAll('.legend-station-item').forEach(item => {
+                    const key = item.getAttribute('data-key');
+                    const marker = markersStore[key];
+                    if (!marker) return;
+
+                    item.addEventListener('mouseenter', () => {
+                        item.style.background = 'rgba(255,255,255,0.06)';
+                        item.style.borderColor = 'rgba(255,255,255,0.1)';
+                        marker.openTooltip();
+                    });
+
+                    item.addEventListener('mouseleave', () => {
+                        item.style.background = 'rgba(255,255,255,0.01)';
+                        item.style.borderColor = 'rgba(255,255,255,0.03)';
+                        marker.closeTooltip();
+                    });
+
+                    item.addEventListener('click', () => {
+                        map.setView(marker.getLatLng(), 14);
+                        marker.openPopup();
+                    });
+                });
+            }
 
             if (points.length > 0) {
                 map.fitBounds(points, { padding: [30, 30] });
