@@ -2248,19 +2248,15 @@ window.showAuditorDetailedStats = async function(userId) {
                         </div>
                     </div>
 
-                    <!-- Station Bar Chart (Full Width) -->
+                    <!-- Auditor Visited Stations Map (Full Width) -->
                     <div style="background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03); border-radius:10px; padding:14px;">
                         <div style="font-size:0.75rem; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid rgba(255,255,255,0.04); padding-bottom:6px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between;">
                             <div style="display:flex; align-items:center; gap:6px;">
-                                <i class="fas fa-chart-bar" style="color:#38bdf8;"></i> İstasyon Bazlı Denetim Sayıları
+                                <i class="fas fa-map-marked-alt" style="color:#10b981;"></i> Denetlenen İstasyonlar Haritası
                             </div>
-                            <span style="font-size:0.62rem; color:var(--text-dim); font-weight:600;">${allStations.length} İstasyon</span>
+                            <span id="auditor-map-count" style="font-size:0.62rem; color:var(--text-dim); font-weight:600;">Yükleniyor...</span>
                         </div>
-                        <div style="overflow-x:auto; padding-bottom:4px;">
-                            <div style="display:flex; align-items:flex-end; gap:6px; min-height:180px; border-bottom:1px solid rgba(255,255,255,0.04); padding-bottom:6px;">
-                                ${stationBarChartHtml}
-                            </div>
-                        </div>
+                        <div id="auditor-monthly-map" style="width:100%; height:260px; border-radius:8px; background:#071426;"></div>
                     </div>
 
                     <!-- Split Panels -->
@@ -2331,5 +2327,85 @@ window.showAuditorDetailedStats = async function(userId) {
         modal.style.opacity = '1';
         content.style.transform = 'scale(1)';
     });
+
+    // Initialize Leaflet Map for Monthly Visited Stations
+    setTimeout(() => {
+        try {
+            const map = L.map('auditor-monthly-map').setView([41.0082, 28.9784], 10);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                maxZoom: 20,
+                attribution: '&copy; CARTO'
+            }).addTo(map);
+
+            const points = [];
+            const uniqueStations = {};
+            
+            userAudits.forEach(a => {
+                if (!a.station) return;
+                const station = a.station;
+                const line = a.line || '';
+                const locKey = `${line}_${station}`;
+                const locData = appData.stationLocations?.[locKey];
+                
+                if (locData && locData.latitude && locData.longitude) {
+                    if (!uniqueStations[locKey]) {
+                        uniqueStations[locKey] = {
+                            lat: locData.latitude,
+                            lng: locData.longitude,
+                            station: station,
+                            line: line,
+                            count: 0,
+                            lastAudit: null
+                        };
+                    }
+                    uniqueStations[locKey].count++;
+                    const auditDate = new Date(a.date || a.startedAt || a.createdAt);
+                    if (!uniqueStations[locKey].lastAudit || auditDate > uniqueStations[locKey].lastAudit) {
+                        uniqueStations[locKey].lastAudit = auditDate;
+                    }
+                }
+            });
+
+            const pad = (num) => String(num).padStart(2, '0');
+            const formatDate = (d) => `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+            const stationList = Object.values(uniqueStations);
+            const countLabel = document.getElementById('auditor-map-count');
+            if (countLabel) {
+                countLabel.innerText = `${stationList.length} Farklı İstasyon`;
+            }
+
+            stationList.forEach(st => {
+                const markerColor = st.count > 5 ? '#10b981' : (st.count > 2 ? '#38bdf8' : '#ea580c');
+                const customIcon = L.divIcon({
+                    html: `<div style="background:${markerColor}; width:12px; height:12px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 8px rgba(0,0,0,0.5);"></div>`,
+                    className: 'custom-station-dot',
+                    iconSize: [12, 12]
+                });
+                const lastAuditText = st.lastAudit ? formatDate(st.lastAudit) : '-';
+                const popupHtml = `
+                    <div style="font-family:inherit; color:#fff; padding:2px; min-width:140px;">
+                        <div style="font-weight:800; font-size:0.75rem; margin-bottom:4px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:3px; color:#fff;">${st.station}</div>
+                        <div style="font-size:0.68rem; margin-bottom:2px; color:#94a3b8;"><strong>Hat:</strong> ${st.line || '-'}</div>
+                        <div style="font-size:0.68rem; margin-bottom:2px; color:#94a3b8;"><strong>Denetim Sayısı:</strong> <span style="color:#38bdf8; font-weight:700;">${st.count} kez</span></div>
+                        <div style="font-size:0.68rem; color:#94a3b8;"><strong>Son Denetim:</strong> ${lastAuditText}</div>
+                    </div>
+                `;
+                const marker = L.marker([st.lat, st.lng], { icon: customIcon }).addTo(map);
+                marker.bindPopup(popupHtml);
+                points.push([st.lat, st.lng]);
+            });
+
+            if (points.length > 0) {
+                map.fitBounds(points, { padding: [30, 30] });
+            }
+        } catch (err) {
+            console.error("Leaflet detailed stats map initialization error:", err);
+            const container = document.getElementById('auditor-monthly-map');
+            if (container) {
+                container.innerHTML = `<div style="color:var(--text-dim); text-align:center; font-size:0.75rem; padding:50px 0;">Harita yüklenemedi: ${err.message}</div>`;
+            }
+        }
+    }, 250);
 };
 
