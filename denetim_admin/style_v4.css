@@ -13310,3 +13310,10 @@ body.light-mode .matrix-today-box {
     border: 2px solid #ea580c !important;
     box-shadow: 0 0 8px rgba(234, 88, 12, 0.5) !important;
 }
+
+/* Hide top user profile bar on mobile view */
+@media (max-width: 768px) {
+    .top-user-profile-bar {
+        display: none !important;
+    }
+}

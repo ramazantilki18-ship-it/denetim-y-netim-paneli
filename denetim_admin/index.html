@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kurumsal Denetim | Admin Kontrol Paneli</title>
-    <link rel="stylesheet" href="style_v4.css?v=175">
+    <link rel="stylesheet" href="style_v4.css?v=176">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
@@ -118,8 +118,12 @@
                     <i class="fas fa-sun" id="sidebar-theme-toggle-icon"></i>
                 </button>
                 <div class="sidebar-header-actions">
+                    <span id="user-display-name-mobile" class="user-display-name-mobile">...</span>
                     <button class="btn-outline premium-theme-toggle" onclick="toggleDarkMode()" title="Temayı Değiştir">
                         <i class="fas fa-sun"></i>
+                    </button>
+                    <button class="btn-outline premium-logout" onclick="handleLogout()" title="Çıkış Yap">
+                        <i class="fas fa-sign-out-alt"></i>
                     </button>
                 </div>
             </div>
