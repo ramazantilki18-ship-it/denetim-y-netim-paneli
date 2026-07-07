@@ -1183,11 +1183,11 @@ window.showAuditTimesDetail = function(userName, dateText, infosStr) {
     const infosArray = infosStr.split('~').filter(Boolean);
     let timesListHtml = '';
     if (infosArray.length === 0) {
-        timesListHtml = '<p style="color:var(--text-dim); text-align:center; font-style:italic; margin: 15px 0; font-size: 0.75rem;">Bu güne ait denetim kaydı bulunamadı.</p>';
+        timesListHtml = '<p style="color:#94a3b8; text-align:center; font-style:italic; margin: 15px 0; font-size: 0.75rem;">Bu güne ait denetim kaydı bulunamadı.</p>';
     } else {
         // Rota Adımları Header
         timesListHtml = `
-            <div style="font-size:0.72rem; font-weight:800; color:var(--text-secondary); margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">
+            <div style="font-size:0.72rem; font-weight:800; color:#94a3b8; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">
                 <span>Rota Adımları</span>
                 <span style="background:rgba(255,255,255,0.08); padding:1px 6px; border-radius:20px; font-size:0.62rem; color:#fff; font-weight:700;">${infosArray.length} Adım</span>
             </div>
@@ -1360,9 +1360,9 @@ window.showAuditTimesDetail = function(userName, dateText, infosStr) {
                 <div style="background:rgba(255,255,255,0.01); padding:12px 16px; border-bottom:1px solid rgba(255,255,255,0.04); display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
                     <div style="text-align: left;">
                         <h4 style="margin:0; font-size:0.85rem; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:0.3px;">Denetim Detayları ve Lokasyonları</h4>
-                        <p style="margin:3px 0 0 0; font-size:0.8rem; font-weight:600; color:var(--text-secondary); opacity:0.9;">${userName} - ${dateText}</p>
+                        <p style="margin:3px 0 0 0; font-size:0.8rem; font-weight:600; color:#cbd5e1; opacity:0.9;">${userName} - ${dateText}</p>
                     </div>
-                    <i class="fas fa-times" style="font-size:0.95rem; color:var(--text-dim); cursor:pointer; padding:4px; transition:color 0.2s;" onclick="document.getElementById('dynamic-audit-times-modal').closeModal()" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--text-dim)'"></i>
+                    <i class="fas fa-times" style="font-size:0.95rem; color:#94a3b8; cursor:pointer; padding:4px; transition:color 0.2s;" onclick="document.getElementById('dynamic-audit-times-modal').closeModal()" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'"></i>
                 </div>
                 
                 <div class="modal-detail-body">
