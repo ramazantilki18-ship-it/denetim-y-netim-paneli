@@ -2394,7 +2394,7 @@ window.showAuditorDetailedStats = async function(userId) {
                 const marker = L.marker([st.lat, st.lng], { icon: customIcon }).addTo(map);
                 marker.bindPopup(popupHtml);
                 marker.bindTooltip(st.station, {
-                    permanent: true,
+                    permanent: false,
                     direction: 'top',
                     className: 'map-station-label',
                     offset: [0, -12]
