@@ -2196,6 +2196,30 @@ window.showAuditorDetailedStats = async function(userId) {
     const modalHtml = `
         <div id="auditor-detailed-stats-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.7); backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; z-index:99999; opacity:0; transition:opacity 0.2s ease;">
             <div style="background:#0b1e36; border:1px solid rgba(255,255,255,0.1); border-radius:16px; width:780px; max-width:95%; max-height:90vh; box-shadow:0 15px 35px rgba(0,0,0,0.6); transform:scale(0.95); transition:transform 0.2s ease; overflow-y:auto; font-family:inherit; display:flex; flex-direction:column;">
+                <style>
+                    /* Custom Modern dark popups for Leaflet in detailed stats */
+                    #auditor-detailed-stats-modal .leaflet-popup-content-wrapper {
+                        background: #0b1e36 !important;
+                        color: #fff !important;
+                        border: 1px solid rgba(255,255,255,0.1) !important;
+                        border-radius: 8px !important;
+                        font-family: inherit !important;
+                        box-shadow: 0 8px 20px rgba(0,0,0,0.4) !important;
+                    }
+                    #auditor-detailed-stats-modal .leaflet-popup-tip {
+                        background: #0b1e36 !important;
+                        border-right: 1px solid rgba(255,255,255,0.1) !important;
+                        border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+                    }
+                    #auditor-detailed-stats-modal .leaflet-popup-content {
+                        margin: 10px 12px !important;
+                        font-size: 0.72rem !important;
+                        line-height: 1.4 !important;
+                    }
+                    #auditor-detailed-stats-modal .leaflet-popup-close-button {
+                        color: #94a3b8 !important;
+                    }
+                </style>
                 
                 <!-- Header -->
                 <div style="background:rgba(255,255,255,0.02); padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
