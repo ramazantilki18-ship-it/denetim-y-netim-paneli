@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kurumsal Denetim | Admin Kontrol Paneli</title>
-    <link rel="stylesheet" href="style_v4.css?v=166">
+    <link rel="stylesheet" href="style_v4.css?v=172">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
@@ -57,40 +57,40 @@
         }
 
         #user-display-name {
-            font-size: 0.92rem !important;
-            font-weight: 800 !important;
-            color: var(--text-primary) !important;
+            font-size: 0.75rem !important;
+            font-weight: 750 !important;
+            color: #ffffff !important;
             white-space: nowrap !important;
-            overflow: visible !important;
-            text-overflow: clip !important;
-            max-width: none !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            max-width: 130px !important;
             width: auto !important;
-            display: inline-block !important;
+            display: block !important;
             text-align: center !important;
             line-height: 1.2 !important;
         }
 
         body.light-mode #user-display-name {
-            color: #0f172a !important;
+            color: #ffffff !important;
         }
 
         #user-display-role {
             display: block !important;
             visibility: visible !important;
-            opacity: 0.75 !important;
-            color: var(--text-secondary) !important;
+            opacity: 0.8 !important;
+            color: #94a3b8 !important;
             background: none !important;
             border: none !important;
             padding: 0 !important;
             border-radius: 0 !important;
-            font-size: 0.76rem !important;
+            font-size: 0.65rem !important;
             font-weight: 500 !important;
-            max-width: none !important;
+            max-width: 130px !important;
             width: auto !important;
             height: auto !important;
             white-space: nowrap !important;
-            overflow: visible !important;
-            text-overflow: clip !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
             flex-shrink: 0 !important;
             text-align: center !important;
             margin-top: 1px !important;
@@ -101,7 +101,7 @@
         }
 
         body.light-mode #user-display-role {
-            color: #475569 !important;
+            color: #94a3b8 !important;
             background: none !important;
             border: none !important;
         }
@@ -163,6 +163,9 @@
                 <button id="sidebar-toggle" onclick="toggleSidebarCompact()" title="Menüyü Daralt / Genişlet">
                     <i class="fas fa-chevron-left" id="sidebar-toggle-icon"></i>
                 </button>
+                <button id="sidebar-theme-toggle" class="premium-theme-toggle" onclick="toggleDarkMode()" title="Temayı Değiştir">
+                    <i class="fas fa-sun" id="sidebar-theme-toggle-icon"></i>
+                </button>
                 <div class="sidebar-header-actions">
                     <span id="user-display-name-mobile" class="user-display-name-mobile">...</span>
                     <button class="btn-outline premium-theme-toggle" onclick="toggleDarkMode()" title="Temayı Değiştir">
@@ -188,6 +191,18 @@
                                 class="fas fa-user-clock"></i> <span>Kişisel İstatistikler</span></a></li>
                     <li><a href="#" class="nav-item" onclick="switchView('reports-view')" title="Raporlar"><i
                                 class="fas fa-file-invoice"></i> <span>Raporlar</span></a></li>
+
+                    <li class="sidebar-user-card" style="margin-top: auto; padding: 0.5rem 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; border-top: 1px solid var(--glass-border);">
+                        <div style="display: flex; flex-direction: column; align-items: center; text-align: center; min-width: 0; flex: 1; gap: 0.1rem;">
+                            <span id="user-display-name" style="font-weight: 750; font-size: 0.75rem; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2;">Yükleniyor...</span>
+                            <span id="user-display-role" style="font-size: 0.65rem; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; line-height: 1.2;">...</span>
+                            <div id="user-display-lines-logos" style="display: flex; gap: 0.2rem; align-items: center; justify-content: center; flex-wrap: wrap; margin-top: 0.1rem; width: 100%;"></div>
+                            <span id="user-display-lines" style="display: none;"></span>
+                        </div>
+                        <button onclick="handleLogout()" title="Çıkış Yap" style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444; cursor: pointer; padding: 0.4rem; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; border-radius: 6px; flex-shrink: 0;" onmouseover="this.style.color='#ffffff'; this.style.background='#ef4444';" onmouseout="this.style.color='#ef4444'; this.style.background='rgba(239, 68, 68, 0.08)';">
+                            <i class="fas fa-sign-out-alt" style="font-size: 1rem;"></i>
+                        </button>
+                    </li>
 
                     <div id="management-divider" class="nav-divider"
                         style="margin: 1rem 0; height: 1px; background: var(--glass-border);"></div>
@@ -238,31 +253,7 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            <header>
-                <div class="panel-page-title" style="flex-grow: 1; min-width: 0;">
-                    <span class="panel-page-kicker" id="active-page-kicker" aria-hidden="true"></span>
-                    <h1 id="active-page-title">Genel Bakış</h1>
-                    <p class="panel-page-description" id="active-page-description">Operasyonel durum, denetim
-                        performansı ve aksiyon takibi.</p>
-                </div>
-                <div class="user-profile premium-user-profile">
-                    <div class="user-info">
-                        <div class="user-title-row">
-                            <span id="user-display-name">Yükleniyor...</span>
-                            <span id="user-display-role">...</span>
-                        </div>
-                        <div class="user-lines-row" id="user-display-lines" style="display: none;">Hat bilgisi
-                            yükleniyor...</div>
-                        <div class="user-lines-logos" id="user-display-lines-logos" style="margin-top: 0.35rem;"></div>
-                    </div>
-                    <button class="btn-outline premium-theme-toggle" onclick="toggleDarkMode()" title="Temayı Değiştir">
-                        <i class="fas fa-sun" id="theme-toggle-icon"></i>
-                    </button>
-                    <button class="btn-outline premium-logout" onclick="handleLogout()" title="Çıkış Yap">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </button>
-                </div>
-            </header>
+
 
             <!-- DASHBOARD VIEW -->
             <div id="dashboard-view" class="view-section" style="display: none;">
@@ -637,7 +628,7 @@
                             style="margin-bottom: 0.8rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
                             <h3
                                 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: var(--text-primary); display:flex; align-items:center; gap:0.4rem;">
-                                <i class="fas fa-industry" style="color:var(--primary);"></i> İstasyon Bazlı Denetim
+                                İstasyon Bazlı Denetim
                                 Sayıları
                             </h3>
                             <div id="dashboard-station-chart-tabs"
@@ -645,7 +636,7 @@
                                 <!-- Dynamic tabs populated by JS -->
                             </div>
                         </div>
-                        <div style="height: 180px; position: relative; width: 100%; overflow-x: auto; overflow-y: hidden;" class="custom-scrollbar">
+                        <div style="height: 250px; position: relative; width: 100%; overflow-x: auto; overflow-y: hidden;" class="custom-scrollbar">
                             <div id="dashboard-stations-chart-wrapper" style="height: 100%; width: 100%;">
                                 <canvas id="dashboard-stations-chart"></canvas>
                             </div>
@@ -656,20 +647,21 @@
                 <!-- Auditor Performance Section -->
                 <section class="data-section"
                     style="margin-bottom: 1.5rem; background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important;">
-                    <div class="section-header"
-                        style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; margin-bottom:1rem;">
-                        <div>
-                            <h2 style="margin:0; font-size:1.25rem; font-weight:900;"><i class="fas fa-users-cog"
-                                    style="color:#06b6d4; margin-right:8px;"></i>Kişi Bazlı Denetim Performansı</h2>
-                            <p style="margin: 0.2rem 0 0 0; font-size:0.75rem; color:var(--text-secondary);">
-                                Denetçilerin gerçekleştirdiği denetim adetleri.</p>
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-main); border-radius: 18px; padding: 1.2rem 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+                        <div class="section-header"
+                            style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; margin-bottom:1rem;">
+                            <div>
+                                <h2 style="margin:0; font-size:1.25rem; font-weight:900;">Kişi Bazlı Denetim Performansı</h2>
+                                <p style="margin: 0.2rem 0 0 0; font-size:0.75rem; color:var(--text-secondary);">
+                                    Denetçilerin gerçekleştirdiği denetim adetleri.</p>
+                            </div>
                         </div>
-                    </div>
-                    <div style="max-height: 400px; overflow-y: auto; padding-right: 0.5rem; margin-right: -0.5rem;"
-                        class="custom-scrollbar">
-                        <div id="auditor-horizontal-list"
-                            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.5rem;">
-                            <!-- Dinamik olarak kartlar JS ile eklenecek -->
+                        <div style="max-height: 400px; overflow-y: auto; padding-right: 0.5rem; margin-right: -0.5rem;"
+                            class="custom-scrollbar">
+                            <div id="auditor-horizontal-list"
+                                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.5rem;">
+                                <!-- Dinamik olarak kartlar JS ile eklenecek -->
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -700,46 +692,50 @@
 
                 <!-- Recent Data Table -->
                 <section class="data-section"
-                    style="background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important;">
-                    <div class="section-header">
-                        <h2>Son Denetimler</h2>
-                        <button class="btn-primary" onclick="switchView('audits-view')">
-                            Tümünü Gör
-                        </button>
-                    </div>
-                    <div class="table-responsive"
-                        style="background: transparent !important; border: none !important; box-shadow: none !important;">
-                        <table id="recent-audits-table">
-                            <thead>
-                                <tr>
-                                    <th>Tarih</th>
-                                    <th style="text-align:center; width:65px;">Hafta</th>
-                                    <th>Saat</th>
-                                    <th>Denetim Tipi</th>
-                                    <th style="text-align:center;">Hat</th>
-                                    <th>İstasyon</th>
-                                    <th>Kullanıcı</th>
-                                    <th style="text-align:center; width:65px;">U / UY</th>
-                                    <th style="text-align:center;">Puan</th>
-                                    <th style="text-align:center;">Durum</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- JS will populate this -->
-                            </tbody>
-                        </table>
+                    style="background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; margin-bottom: 2rem;">
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-main); border-radius: 18px; padding: 1.2rem 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+                        <div class="section-header" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; margin-bottom:1rem;">
+                            <h2 style="margin:0; font-size:1.25rem; font-weight:900;">Son Denetimler</h2>
+                            <button class="btn-primary" onclick="switchView('audits-view')">
+                                Tümünü Gör
+                            </button>
+                        </div>
+                        <div class="table-responsive"
+                            style="background: transparent !important; border: none !important; box-shadow: none !important;">
+                            <table id="recent-audits-table">
+                                <thead>
+                                    <tr>
+                                        <th>Tarih</th>
+                                        <th style="text-align:center; width:65px;">Hafta</th>
+                                        <th>Saat</th>
+                                        <th>Denetim Tipi</th>
+                                        <th style="text-align:center;">Hat</th>
+                                        <th>İstasyon</th>
+                                        <th>Kullanıcı</th>
+                                        <th style="text-align:center; width:65px;">U / UY</th>
+                                        <th style="text-align:center;">Puan</th>
+                                        <th style="text-align:center;">Durum</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- JS will populate this -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </section>
 
                 <!-- Station Matrix Section -->
                 <section class="data-section"
-                    style="margin-top: 2rem; background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important;">
-                    <div class="section-header">
-                        <h2>Denetim Performans Matrisi</h2>
-                    </div>
-                    <div class="table-responsive" id="performance-matrix-container"
-                        style="background: transparent !important; border: none !important; box-shadow: none !important;">
-                        <!-- Tables will be dynamically rendered here grouped by Audit Type -->
+                    style="margin-top: 2rem; background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; margin-bottom: 2rem;">
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-main); border-radius: 18px; padding: 1.2rem 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+                        <div class="section-header" style="margin-bottom:1rem;">
+                            <h2 style="margin:0; font-size:1.25rem; font-weight:900;">Denetim Performans Matrisi</h2>
+                        </div>
+                        <div class="table-responsive" id="performance-matrix-container"
+                            style="background: transparent !important; border: none !important; box-shadow: none !important;">
+                            <!-- Tables will be dynamically rendered here grouped by Audit Type -->
+                        </div>
                     </div>
                 </section>
             </div>
@@ -1740,6 +1736,13 @@
                             </div>
                             <div class="nc-filter-actions"
                                 style="display: flex; gap: 0.4rem; flex-shrink: 0; align-items: center;">
+                                <div style="position: relative;">
+                                    <i class="fas fa-search" style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: var(--text-dim); font-size: 0.7rem; pointer-events: none; z-index: 1;"></i>
+                                    <input type="text" id="nc-search-input" placeholder="" onkeyup="renderNCs()" title="Arama yapmak için tıklayın"
+                                        style="height: 28px; padding: 0 10px 0 26px; border: 1px solid var(--border-main); border-radius: 14px; background: color-mix(in srgb, var(--bg-card) 50%, transparent); color: transparent; font-size: 0.7rem; width: 28px; outline: none; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer;"
+                                        onfocus="this.style.width='200px'; this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 0 2px rgba(14, 165, 233, 0.15)'; this.style.cursor='text'; this.style.color='var(--text-primary)'; this.placeholder='No, Detay, İstasyon...';"
+                                        onblur="if(!this.value){this.style.width='28px'; this.style.borderColor='var(--border-main)'; this.style.boxShadow='none'; this.style.cursor='pointer'; this.style.color='transparent'; this.placeholder='';}else{this.style.borderColor='var(--border-main)'; this.style.boxShadow='none';}">
+                                </div>
                                 <button class="btn-outline nc-clear-filter-button" onclick="clearFilters('nc')"><i
                                         class="fas fa-filter-circle-xmark"></i> Temizle</button>
                             </div>
@@ -1751,6 +1754,7 @@
                                 <tr>
                                     <th style="width:30px;"><input type="checkbox" id="select-all-ncs"
                                             onclick="toggleSelectAllNCs(this)" title="Tümünü Seç"></th>
+                                    <th style="width:75px; text-align:center;">No</th>
                                     <th id="nc-date-sort-header" aria-sort="descending" style="width:85px;">
                                         <button type="button" class="table-date-sort-button"
                                             onclick="toggleNcDateSort()"
@@ -3607,6 +3611,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"
         crossorigin="anonymous"></script>
     <script src="metro_data.js"></script>
-    <script src="script_v10.js?v=164"></script>
-    <script src="roster_view.js?v=82"></script>
+    <script src="script_v10.js?v=165"></script>
+    <script src="roster_view.js?v=87"></script>
 </body>

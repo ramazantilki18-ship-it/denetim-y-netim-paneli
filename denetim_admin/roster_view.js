@@ -362,10 +362,19 @@ async function renderPersonalStats() {
 
     const daysInMonth = new Date(statsSelectedYear, statsSelectedMonth, 0).getDate();
 
+    const todayObj = new Date();
+    const isCurrentMonthYear = (statsSelectedMonth === (todayObj.getMonth() + 1) && statsSelectedYear === todayObj.getFullYear());
+    const todayDay = todayObj.getDate();
+
     // Table Headers (Person, 1 to 31, Total Audits)
     let dayHeaders = '';
     for (let day = 1; day <= daysInMonth; day++) {
-        dayHeaders += `<th class="matrix-day-hdr">${day}</th>`;
+        const isToday = isCurrentMonthYear && day === todayDay;
+        if (isToday) {
+            dayHeaders += `<th class="matrix-day-hdr matrix-today-hdr">${day}</th>`;
+        } else {
+            dayHeaders += `<th class="matrix-day-hdr">${day}</th>`;
+        }
     }
 
     // Dynamic legend generation from db
@@ -524,6 +533,18 @@ async function renderPersonalStats() {
         return nameA.localeCompare(nameB, 'tr');
     });
 
+    const monthNamesTr = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+    let totalMonthAudits = 0;
+    let mostActiveUser = { name: '-', count: 0 };
+    let totalExcuseDays = 0;
+    
+    // New Metrics Tracking
+    let totalTargetMetDays = 0;
+    let totalWorkingDays = 0;
+    let totalDeficitDays = 0;
+    let totalOffShiftAudits = 0;
+    let stationCounts = {};
+
     activeUsers.forEach(user => {
         const userRoster = monthlyRosterMap[user.id] || { days: {} };
         const userName = user.name || user.displayName || user.username || '';
@@ -535,11 +556,10 @@ async function renderPersonalStats() {
             const rosterDay = userRoster.days?.[dayKey] || { shift: '-', excuse: '' };
             const shift = rosterDay.shift || '-';
             const excuse = rosterDay.excuse || '';
+            if (excuse) totalExcuseDays++;
 
-            // O(1) hash map lookup instead of O(K) filter
             const lookupKey = `${user.id}_${statsSelectedYear}_${statsSelectedMonth}_${day}`;
             const dailyAudits = [...(auditsLookup[lookupKey] || [])];
-            // Sort audits chronologically
             dailyAudits.sort((a, b) => new Date(a.date) - new Date(b.date));
             const pad = (num) => String(num).padStart(2, '0');
             const auditInfos = dailyAudits.map(a => {
@@ -568,64 +588,101 @@ async function renderPersonalStats() {
             const auditCount = dailyAudits.length;
             totalUserAuditsForMonth += auditCount;
 
-            // Cell Class & Tooltip
-            let cellClass = 'matrix-day-cell';
-            let excuseTooltip = '';
-            
-            // Deficit highlight: working but 0 audits with no excuse
             const matchedShift = activeShifts.find(s => s.code === shift);
             const isWorking = matchedShift ? matchedShift.type === 'work' : ['S', 'A', 'G', 'N', 'S8', 'S10'].includes(shift);
             
             const targetAuditCount = (matchedShift && matchedShift.requiredAuditCount !== undefined && matchedShift.requiredAuditCount !== null)
                 ? parseInt(matchedShift.requiredAuditCount)
                 : 10; // Default fallback to 10 if not defined
-            
-            if (isWorking && auditCount === 0 && !excuse) {
-                cellClass += ' cell-deficit-red';
-            } else if (excuse) {
-                cellClass += ' cell-has-excuse-orange';
-                excuseTooltip = `title="Mazeret: ${escapeAttr(excuse)}"`;
+
+            // Check if cell is in the future
+            const cellDate = new Date(statsSelectedYear, statsSelectedMonth - 1, day);
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const isFuture = cellDate > today;
+
+            // Tracking for KPIs
+            if (!isFuture) {
+                if (isWorking && !excuse) {
+                    totalWorkingDays++;
+                    if (auditCount >= targetAuditCount) {
+                        totalTargetMetDays++;
+                    }
+                    if (auditCount === 0) {
+                        totalDeficitDays++;
+                    }
+                } else if (!isWorking && auditCount > 0) {
+                    totalOffShiftAudits += auditCount;
+                }
+                
+                if (dailyAudits && dailyAudits.length > 0) {
+                    dailyAudits.forEach(a => {
+                        const st = a.station || 'Belirtilmedi';
+                        if (st !== 'Belirtilmedi') {
+                            stationCounts[st] = (stationCounts[st] || 0) + 1;
+                        }
+                    });
+                }
             }
 
-            // Shift color for the corner display
-            let shiftTextColor = 'var(--text-dim)';
-            let shiftGroup = matchedShift?.group || '';
-            if (shift.startsWith('S') || shiftGroup === 'sabah') shiftTextColor = '#007AFF'; // prominent blue
-            else if (shift.startsWith('A') || shiftGroup === 'aksam') shiftTextColor = '#FF9500'; // prominent orange
-            else if (shift === 'G') shiftTextColor = '#8b5cf6';
-            else if (shift === 'HT') shiftTextColor = '#FF3B30'; // prominent red
-            else if (shift === 'Yİ') shiftTextColor = '#34C759'; // prominent green
-            else if (shift === 'R') shiftTextColor = '#FF2D55'; // prominent pink
-            else if (matchedShift) {
-                shiftTextColor = matchedShift.type === 'work' ? '#007AFF' : '#8e8e93';
+            // Heatmap styling logic
+            let bg = 'var(--hm-empty-bg)';
+            let borderColor = 'var(--hm-empty-border)';
+            let cellContent = '';
+            let cursor = auditCount > 0 ? 'pointer' : 'default';
+
+            if (auditCount > 0) {
+                cellContent = `<span style="color:#ffffff; font-size:0.65rem; font-weight:900; z-index:2; text-shadow:0 1px 2px rgba(0,0,0,0.3);">${auditCount}</span>`;
+                if (auditCount >= targetAuditCount) {
+                    bg = 'var(--hm-met-bg)'; // Target Met
+                    borderColor = 'var(--hm-met-border)';
+                } else {
+                    bg = 'var(--hm-unmet-bg)'; // Target Not Met
+                    borderColor = 'var(--hm-unmet-border)';
+                }
+                
+                if (excuse) {
+                    cellContent += `<div style="position:absolute; top:-3px; right:-3px; width:8px; height:8px; background:#f59e0b; border-radius:50%; border:1px solid rgba(255,255,255,0.2); box-shadow:0 1px 2px rgba(0,0,0,0.3); z-index:3;" title="Mazeret: ${escapeAttr(excuse)}"></div>`;
+                }
+            } else if (excuse) {
+                bg = 'rgba(245,158,11,0.15)';
+                borderColor = '#f59e0b';
+                cellContent = '<div style="width:8px; height:8px; background:#f59e0b; border-radius:50%; box-shadow:0 1px 2px rgba(0,0,0,0.2);"></div>';
+            } else if (isWorking) {
+                if (isFuture) {
+                    bg = 'var(--hm-empty-bg)';
+                    borderColor = 'var(--hm-empty-border)';
+                    cellContent = `<span style="color:var(--hm-text-dim); font-size:0.55rem; font-weight:700;">${shift}</span>`;
+                } else {
+                    bg = 'var(--hm-deficit-bg)'; // Soft red deficit
+                    borderColor = 'var(--hm-deficit-border)';
+                    cellContent = `<span style="color:var(--hm-deficit-border); font-size:0.6rem; font-weight:900; text-shadow:0 1px 2px rgba(0,0,0,0.2);">!</span>`;
+                }
+            } else if (!isWorking && shift !== '-') {
+                bg = 'var(--hm-off-bg)';
+                cellContent = `<span style="color:var(--hm-text-dim); font-size:0.5rem; font-weight:700; opacity:0.8;">${shift}</span>`;
             }
+
+            const tooltipText = `Tarih: ${day} ${monthNamesTr[statsSelectedMonth - 1]}\nVardiya: ${shift !== '-' ? shift : 'Yok'}\nDenetim: ${auditCount}${excuse ? '\nMazeret: ' + excuse : ''}`;
+            
+            const isToday = isCurrentMonthYear && day === todayDay;
+            const tdClass = isToday ? 'class="matrix-today-cell"' : '';
+            const cellClass = isToday ? 'class="matrix-today-box"' : '';
 
             cellsHtml += `
-                <td class="${cellClass}" ${excuseTooltip} style="padding: 2px; height: 38px; width: 38px; min-width: 38px; position: relative;">
-                    <div class="matrix-cell-wrapper" style="position:relative; width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:2px 0;">
-                        <!-- Shift Code (Top) -->
-                        ${shift !== '-' ? `
-                            <span class="matrix-corner-shift" style="font-size:0.66rem; font-weight:900; color:${shiftTextColor}; line-height:1; letter-spacing:-0.1px;">
-                                ${shift}
-                            </span>
-                        ` : `
-                            <span style="font-size:0.66rem; line-height:1; visibility:hidden;">-</span>
-                        `}
-                        
-                        <!-- Audit Count Box (Bottom) -->
-                        ${auditCount > 0 ? `
-                            <div class="matrix-audit-box" style="background: ${auditCount >= targetAuditCount ? '#166534' : '#991b1b'}; color:white; font-size:0.7rem; font-weight:800; border-radius:3px; min-width:16px; width:auto; height:16px; padding:0 3px; display:inline-flex; align-items:center; justify-content:center; box-shadow:0 1px 2px rgba(0,0,0,0.15); line-height:1; cursor:pointer;" title="Denetimler: ${hoverTooltip}" onclick="showAuditTimesDetail('${userName.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}', '${day} ${months[statsSelectedMonth - 1]} ${statsSelectedYear}', '${auditInfosStr}')">${auditCount}</div>
-                        ` : `
-                            <div class="matrix-audit-box-empty" style="font-size:0.7rem; color:var(--text-dim); opacity:0.35; line-height:1;">-</div>
-                        `}
-                        
-                        <!-- Excuse Dot (Bottom-Right Corner) -->
-                        ${excuse ? `
-                            <span class="matrix-excuse-dot" style="position:absolute; bottom:2px; right:2px; background:#d97706; border-radius:50%; width:8px; height:8px; box-shadow:0 1px 2px rgba(0,0,0,0.15);" title="Mazeret: ${escapeAttr(excuse)}"></span>
-                        ` : ''}
+                <td ${tdClass} style="padding: 2px;">
+                    <div style="display:flex; justify-content:center; align-items:center; width:100%; height:100%;">
+                        <div title="${escapeAttr(tooltipText)}" ${auditCount > 0 ? `onclick="showAuditTimesDetail('${userName.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}', '${day} ${months[statsSelectedMonth - 1]} ${statsSelectedYear}', '${auditInfosStr}')"` : ''} class="${isToday ? 'matrix-today-box' : ''}" style="width: 24px; height: 24px; border-radius: 6px; background:${bg}; border:1px solid ${borderColor}; display:flex; align-items:center; justify-content:center; position:relative; cursor:${cursor}; transition:all 0.2s; box-shadow:0 1px 3px rgba(0,0,0,0.1);" onmouseover="this.style.transform='scale(1.15)'; this.style.zIndex='10'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.3)';" onmouseout="this.style.transform='scale(1)'; this.style.zIndex='1'; this.style.boxShadow='0 1px 3px rgba(0,0,0,0.1)';">
+                            ${cellContent}
+                        </div>
                     </div>
                 </td>
             `;
+        }
+        
+        totalMonthAudits += totalUserAuditsForMonth;
+        if (totalUserAuditsForMonth > mostActiveUser.count) {
+            mostActiveUser = { name: userName, count: totalUserAuditsForMonth };
         }
 
         rowsHtml += `
@@ -636,8 +693,11 @@ async function renderPersonalStats() {
                             ${renderUserRosterLineLogos(user)}
                         </div>
                         <div style="display:flex; flex-direction:column; min-width:0; overflow:hidden;">
-                            <strong class="stats-user-link" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#38bdf8; cursor:pointer; transition:color 0.2s;" title="Tıklayın: Detaylı Analiz & İstatistik Dehası Raporu" onclick="showAuditorDetailedStats('${user.id}')">${user.name || user.displayName || user.username}</strong>
-                            <div style="font-size:0.65rem; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapeAttr(user.title || user.roleName || user.jobTitle || user.role || '')}">${user.title || user.roleName || user.jobTitle || user.role || ''}</div>
+                            <strong class="stats-user-link" style="display:flex; align-items:center; gap:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--kpi-blue); cursor:pointer; transition:all 0.2s;" title="Tıklayın: Detaylı Analiz" onclick="showAuditorDetailedStats('${user.id}')" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
+                                <span style="overflow:hidden; text-overflow:ellipsis;">${user.name || user.displayName || user.username}</span>
+                                <i class="fas fa-external-link-alt" style="font-size:0.55rem; opacity:0.5; flex-shrink:0;"></i>
+                            </strong>
+                            <div style="font-size:0.65rem; color:var(--text-secondary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapeAttr(user.title || user.roleName || user.jobTitle || user.role || '')}">${user.title || user.roleName || user.jobTitle || user.role || ''}</div>
                         </div>
                     </div>
                 </td>
@@ -651,6 +711,21 @@ async function renderPersonalStats() {
         `;
     });
 
+    // Compute KPI metrics
+    const targetMetRate = totalWorkingDays > 0 ? Math.round((totalTargetMetDays / totalWorkingDays) * 100) : 0;
+    
+    let topStation = { name: '-', count: 0 };
+    for (const [st, count] of Object.entries(stationCounts)) {
+        if (count > topStation.count && st !== 'Belirtilmedi') {
+            topStation = { name: st, count: count };
+        }
+    }
+    
+    const currentDay = (statsSelectedMonth === (new Date().getMonth() + 1) && statsSelectedYear === new Date().getFullYear()) 
+        ? new Date().getDate() 
+        : new Date(statsSelectedYear, statsSelectedMonth, 0).getDate();
+    const dailyAverage = currentDay > 0 ? (totalMonthAudits / currentDay).toFixed(1) : 0;
+
     // Populate lines list
     const currentIsGlobal = isSuperAdmin() || currentUser.roleId === 'Executive_Viewer_Global' || currentUser.isGlobalScope === true || currentUser.scopeType === 'global';
     let linesList = appData.lines || [];
@@ -661,7 +736,6 @@ async function renderPersonalStats() {
     const linesOptions = `<option value="Tümü" ${statsSelectedLine === 'Tümü' ? 'selected' : ''}>Tüm Hatlar</option>` + 
         linesList.map(line => `<option value="${line}" ${line === statsSelectedLine ? 'selected' : ''}>${line}</option>`).join('');
 
-    const monthNamesTr = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
     const selectedMonthName = monthNamesTr[statsSelectedMonth - 1] || 'Denetçi';
 
     container.innerHTML = `
@@ -670,20 +744,20 @@ async function renderPersonalStats() {
                 <!-- Left: Filters moved to the top header -->
                 <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
                     <div class="filter-group" style="display:flex; align-items:center; gap:0.35rem; margin:0;">
-                        <label style="font-weight:700; font-size:0.76rem; color:#f1f5f9;">Yıl:</label>
-                        <select class="cms-input" id="stats-year-select" style="padding:3px 8px; font-size:0.76rem; border-radius:5px; min-width:80px; height:28px; background:#0f172a !important; color:#ffffff !important; border:1px solid rgba(255,255,255,0.15) !important;" onchange="changeStatsFilters(this.value, null, null)">
+                        <label style="font-weight:700; font-size:0.76rem; color:var(--text-primary);">Yıl:</label>
+                        <select class="cms-input" id="stats-year-select" style="padding:3px 8px; font-size:0.76rem; border-radius:5px; min-width:80px; height:28px;" onchange="changeStatsFilters(this.value, null, null)">
                             ${yearsOptions}
                         </select>
                     </div>
                     <div class="filter-group" style="display:flex; align-items:center; gap:0.35rem; margin:0;">
-                        <label style="font-weight:700; font-size:0.76rem; color:#f1f5f9;">Ay:</label>
-                        <select class="cms-input" id="stats-month-select" style="padding:3px 8px; font-size:0.76rem; border-radius:5px; min-width:100px; height:28px; background:#0f172a !important; color:#ffffff !important; border:1px solid rgba(255,255,255,0.15) !important;" onchange="changeStatsFilters(null, this.value, null)">
+                        <label style="font-weight:700; font-size:0.76rem; color:var(--text-primary);">Ay:</label>
+                        <select class="cms-input" id="stats-month-select" style="padding:3px 8px; font-size:0.76rem; border-radius:5px; min-width:100px; height:28px;" onchange="changeStatsFilters(null, this.value, null)">
                             ${monthsOptions}
                         </select>
                     </div>
                     <div class="filter-group" style="display:flex; align-items:center; gap:0.35rem; margin:0;">
-                        <label style="font-weight:700; font-size:0.76rem; color:#f1f5f9;">Hat:</label>
-                        <select class="cms-input" id="stats-line-select" style="padding:3px 8px; font-size:0.76rem; border-radius:5px; min-width:120px; height:28px; background:#0f172a !important; color:#ffffff !important; border:1px solid rgba(255,255,255,0.15) !important;" onchange="changeStatsFilters(null, null, this.value)">
+                        <label style="font-weight:700; font-size:0.76rem; color:var(--text-primary);">Hat:</label>
+                        <select class="cms-input" id="stats-line-select" style="padding:3px 8px; font-size:0.76rem; border-radius:5px; min-width:120px; height:28px;" onchange="changeStatsFilters(null, null, this.value)">
                             ${linesOptions}
                         </select>
                     </div>
@@ -694,10 +768,91 @@ async function renderPersonalStats() {
                 </div>
             </div>
 
+            <!-- Top KPI Dashboard -->
+            <div style="display:flex; gap:8px; margin: 10px 20px; flex-wrap:nowrap; overflow-x:auto; padding-bottom:4px; justify-content:flex-start;">
+                <!-- Total Audits -->
+                <div style="flex:1 1 120px; background:var(--hm-empty-bg); border:1px solid var(--hm-empty-border); border-radius:6px; padding:6px 8px; display:flex; align-items:center; gap:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1); backdrop-filter:blur(10px);">
+                    <div style="width:28px; height:28px; border-radius:6px; background:var(--kpi-blue-bg); display:flex; align-items:center; justify-content:center; color:var(--kpi-blue); font-size:0.85rem; flex-shrink:0;">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div style="min-width:0; overflow:hidden;">
+                        <div style="font-size:0.55rem; color:var(--text-secondary); font-weight:700; text-transform:uppercase; letter-spacing:0.3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${selectedMonthName} Toplamı">${selectedMonthName} Toplamı</div>
+                        <div style="font-size:1rem; color:var(--hm-text); font-weight:900; line-height:1.1;">${totalMonthAudits}</div>
+                    </div>
+                </div>
+                <!-- Target Met Rate (1) -->
+                <div style="flex:1 1 120px; background:var(--hm-empty-bg); border:1px solid var(--hm-empty-border); border-radius:6px; padding:6px 8px; display:flex; align-items:center; gap:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1); backdrop-filter:blur(10px);">
+                    <div style="width:28px; height:28px; border-radius:6px; background:var(--kpi-green-bg); display:flex; align-items:center; justify-content:center; color:var(--kpi-green); font-size:0.85rem; flex-shrink:0;">
+                        <i class="fas fa-bullseye"></i>
+                    </div>
+                    <div style="min-width:0; overflow:hidden;">
+                        <div style="font-size:0.55rem; color:var(--text-secondary); font-weight:700; text-transform:uppercase; letter-spacing:0.3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">H. Tutturma</div>
+                        <div style="font-size:1rem; color:var(--hm-text); font-weight:900; line-height:1.1;">%${targetMetRate}</div>
+                    </div>
+                </div>
+                <!-- Deficit Days (2) -->
+                <div style="flex:1 1 120px; background:var(--hm-empty-bg); border:1px solid var(--hm-empty-border); border-radius:6px; padding:6px 8px; display:flex; align-items:center; gap:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1); backdrop-filter:blur(10px);">
+                    <div style="width:28px; height:28px; border-radius:6px; background:var(--kpi-red-bg); display:flex; align-items:center; justify-content:center; color:var(--kpi-red); font-size:0.85rem; flex-shrink:0;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div style="min-width:0; overflow:hidden;">
+                        <div style="font-size:0.55rem; color:var(--text-secondary); font-weight:700; text-transform:uppercase; letter-spacing:0.3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Eksik Gün</div>
+                        <div style="font-size:1rem; color:var(--hm-text); font-weight:900; line-height:1.1;">${totalDeficitDays}</div>
+                    </div>
+                </div>
+                <!-- Most Audited Station (4) -->
+                <div style="flex:1 1 120px; background:var(--hm-empty-bg); border:1px solid var(--hm-empty-border); border-radius:6px; padding:6px 8px; display:flex; align-items:center; gap:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1); backdrop-filter:blur(10px);">
+                    <div style="width:28px; height:28px; border-radius:6px; background:var(--kpi-orange-bg); display:flex; align-items:center; justify-content:center; color:var(--kpi-orange); font-size:0.85rem; flex-shrink:0;">
+                        <i class="fas fa-subway"></i>
+                    </div>
+                    <div style="min-width:0; overflow:hidden;">
+                        <div style="font-size:0.55rem; color:var(--text-secondary); font-weight:700; text-transform:uppercase; letter-spacing:0.3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">En Çok Dn. İst</div>
+                        <div style="font-size:0.75rem; color:var(--hm-text); font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.1;" title="${escapeAttr(topStation.name)}">${topStation.name}</div>
+                        <div style="font-size:0.6rem; color:var(--kpi-orange); font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${topStation.count} D.</div>
+                    </div>
+                </div>
+                <!-- Daily Average (5) -->
+                <div style="flex:1 1 120px; background:var(--hm-empty-bg); border:1px solid var(--hm-empty-border); border-radius:6px; padding:6px 8px; display:flex; align-items:center; gap:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1); backdrop-filter:blur(10px);">
+                    <div style="width:28px; height:28px; border-radius:6px; background:var(--kpi-purple-bg); display:flex; align-items:center; justify-content:center; color:var(--kpi-purple); font-size:0.85rem; flex-shrink:0;">
+                        <i class="fas fa-calendar-day"></i>
+                    </div>
+                    <div style="min-width:0; overflow:hidden;">
+                        <div style="font-size:0.55rem; color:var(--text-secondary); font-weight:700; text-transform:uppercase; letter-spacing:0.3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Günlük Ort.</div>
+                        <div style="font-size:1rem; color:var(--hm-text); font-weight:900; line-height:1.1;">${dailyAverage} D.</div>
+                    </div>
+                </div>
+                <!-- Most Active -->
+                <div style="flex:1 1 120px; background:var(--hm-empty-bg); border:1px solid var(--hm-empty-border); border-radius:6px; padding:6px 8px; display:flex; align-items:center; gap:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1); backdrop-filter:blur(10px);">
+                    <div style="width:28px; height:28px; border-radius:6px; background:var(--kpi-green-bg); display:flex; align-items:center; justify-content:center; color:var(--kpi-green); font-size:0.85rem; flex-shrink:0;">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <div style="min-width:0; overflow:hidden;">
+                        <div style="font-size:0.55rem; color:var(--text-secondary); font-weight:700; text-transform:uppercase; letter-spacing:0.3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">En Aktif</div>
+                        <div style="font-size:0.75rem; color:var(--hm-text); font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.1;" title="${escapeAttr(mostActiveUser.name)}">${mostActiveUser.name}</div>
+                        <div style="font-size:0.6rem; color:var(--kpi-green); font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${mostActiveUser.count} D.</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Legend Bar -->
-            <div class="matrix-legend-bar" style="display:flex; justify-content:flex-start; padding:0.4rem 1.25rem; background:transparent !important; border:none !important; overflow-x:auto; width:100%;">
-                <div class="matrix-legend" style="display:flex; align-items:flex-start; gap:1.25rem; font-size:0.74rem; white-space:nowrap; margin:0 auto; padding:0 10px;">
-                    ${legendItemsHtml}
+            <div class="matrix-legend-bar" style="display:flex; justify-content:flex-start; padding:0.9rem 1.25rem; background:transparent !important; border:none !important; overflow-x:auto; width:100%;">
+                <div class="matrix-legend" style="display:flex; align-items:center; gap:2rem; font-size:0.74rem; white-space:nowrap; margin:0 auto; padding:0 10px;">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <div style="width:16px; height:16px; border-radius:4px; background:var(--hm-met-bg); border:1px solid var(--hm-met-border); display:flex; align-items:center; justify-content:center;"></div>
+                        <span style="color:var(--text-dim); font-size:0.7rem;">Hedef Gerçekleşti</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <div style="width:16px; height:16px; border-radius:4px; background:var(--hm-unmet-bg); border:1px solid var(--hm-unmet-border); display:flex; align-items:center; justify-content:center;"></div>
+                        <span style="color:var(--text-dim); font-size:0.7rem;">Hedefin Altında</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <div style="width:16px; height:16px; border-radius:4px; background:var(--hm-deficit-bg); border:1px solid var(--hm-deficit-border); display:flex; align-items:center; justify-content:center;"><span style="color:var(--hm-deficit-border); font-size:0.6rem; font-weight:900;">!</span></div>
+                        <span style="color:var(--text-dim); font-size:0.7rem;">Denetim Yok (Eksik)</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <div style="width:16px; height:16px; border-radius:4px; background:rgba(245,158,11,0.15); border:1px solid #f59e0b; display:flex; align-items:center; justify-content:center;"><div style="width:6px; height:6px; background:#f59e0b; border-radius:50%;"></div></div>
+                        <span style="color:var(--text-dim); font-size:0.7rem;">Mazeret</span>
+                    </div>
                 </div>
             </div>
 
@@ -2405,7 +2560,7 @@ window.showAuditorDetailedStats = async function(userId) {
             let legendHtml = '';
 
             stationList.forEach(st => {
-                const markerColor = st.count > 5 ? '#10b981' : (st.count > 2 ? '#38bdf8' : '#ea580c');
+                const markerColor = st.count > 5 ? '#15803d' : (st.count > 2 ? '#1d4ed8' : '#ea580c');
                 const customIcon = L.divIcon({
                     html: `<div style="background:${markerColor}; color:#fff; width:22px; height:22px; border-radius:50%; border:2px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,0.3); display:inline-flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:800; line-height:1; font-family:sans-serif;">${st.count}</div>`,
                     className: 'custom-station-dot',
@@ -2417,7 +2572,7 @@ window.showAuditorDetailedStats = async function(userId) {
                     <div style="font-family:inherit; color:#fff; padding:2px; min-width:140px;">
                         <div style="font-weight:800; font-size:0.75rem; margin-bottom:4px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:3px; color:#fff;">${st.station}</div>
                         <div style="font-size:0.68rem; margin-bottom:2px; color:#94a3b8;"><strong>Hat:</strong> ${st.line || '-'}</div>
-                        <div style="font-size:0.68rem; margin-bottom:2px; color:#94a3b8;"><strong>Denetim Sayısı:</strong> <span style="color:#38bdf8; font-weight:700;">${st.count} kez</span></div>
+                        <div style="font-size:0.68rem; margin-bottom:2px; color:#94a3b8;"><strong>Denetim Sayısı:</strong> <span style="color:#1d4ed8; font-weight:700;">${st.count} kez</span></div>
                         <div style="font-size:0.68rem; color:#94a3b8;"><strong>Son Denetim:</strong> ${lastAuditText}</div>
                     </div>
                 `;

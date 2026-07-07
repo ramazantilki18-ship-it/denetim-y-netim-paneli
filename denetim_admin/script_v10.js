@@ -1056,13 +1056,13 @@ function renderUserLineLogos(user) {
     container.innerHTML = '';
 
     if (hasGlobalScope(user)) {
-        container.innerHTML = `<span class="profile-line-logo" style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); width: auto; padding: 0 8px; border-radius: 6px; font-size: 0.6rem; line-height: 20px; height: 20px; font-weight: 800;">TÜM</span>`;
+        container.innerHTML = `<span class="profile-line-logo" title="Tüm Hatlar" style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;"><i class="fas fa-globe" style="font-size: 0.65rem; color: #ffffff;"></i></span>`;
         return;
     }
 
     const lines = Array.isArray(user?.authorizedLines) ? user.authorizedLines.filter(Boolean) : [];
     if (lines.length === 0) {
-        container.innerHTML = `<span class="profile-line-logo" style="background: #64748b; width: auto; padding: 0 8px; border-radius: 6px; font-size: 0.6rem; line-height: 20px; height: 20px; font-weight: 800;">YOK</span>`;
+        container.innerHTML = `<span class="profile-line-logo" title="Yetkili Hat Yok" style="background: #64748b; width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;"><i class="fas fa-ban" style="font-size: 0.65rem; color: #ffffff;"></i></span>`;
         return;
     }
 
@@ -3232,6 +3232,18 @@ window.toggleNcDateSort = function () {
     renderNCs();
 };
 
+// Helper for short visual NC ID
+function getNcShortId(ncId) {
+    let hash = 0;
+    const strId = String(ncId || 'U-XXXXX');
+    for (let i = 0; i < strId.length; i++) {
+        hash = ((hash << 5) - hash) + strId.charCodeAt(i);
+        hash |= 0;
+    }
+    const hashStr = Math.abs(hash).toString(36).substring(0, 5).toUpperCase().padStart(5, '0');
+    return `U-${hashStr}`;
+}
+
 // NC Management Logic with App Parity
 function renderNCs(filter) {
     if (filter !== undefined) {
@@ -3276,7 +3288,10 @@ function renderNCs(filter) {
         else if (isNcOverdue(nc)) ncStatusKey = 'overdue';
         else if (isNcOpen(nc)) ncStatusKey = 'open';
 
+        const shortId = getNcShortId(nc.id);
+
         const matchesSearch = !searchTerm ||
+            shortId.toLowerCase().includes(searchTerm) ||
             nc.id.toLowerCase().includes(searchTerm) ||
             nc.category.toLowerCase().includes(searchTerm) ||
             (nc.questionText || nc.detail || '').toLowerCase().includes(searchTerm) ||
@@ -3346,7 +3361,7 @@ function renderNCs(filter) {
     if (!filtered.length) {
         tbody.innerHTML = `
             <tr class="nc-empty-row">
-                <td colspan="11">
+                <td colspan="12">
                     <div class="nc-empty-state">
                         <i class="fas fa-check-circle"></i>
                         <span>Filtrelere uygun uygunsuzluk kaydı bulunamadı.</span>
@@ -3472,9 +3487,13 @@ function renderNCs(filter) {
         const firstCommentHtml = (nc.auditorComment || (ans ? (ans.comment || ans.detail || '') : '') || nc.detail || '').trim();
 
         const ncWeekNum = isNaN(ncDateObj.getTime()) ? '-' : getISOWeekNumber(ncDateObj);
+        
+        // Generate stable 5-character visual ID from actual ID
+        const shortId = getNcShortId(nc.id);
 
         tr.innerHTML = `
             <td><input type="checkbox" class="nc-row-select" data-nc-id="${nc.id}" ${appData.selectedNCIds.has(nc.id) ? 'checked' : ''} onchange="toggleNCSelection(this)"></td>
+            <td style="text-align: center; font-size: 0.72rem; font-weight: 650; color: var(--text-primary); white-space: nowrap;">${shortId}</td>
             <td class="nc-date-cell">
                 <div>${dateFormatted}</div>
                 ${closureDateHtml}

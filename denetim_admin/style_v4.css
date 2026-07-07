@@ -18,6 +18,31 @@
     --sidebar-width: 260px;
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    
+    /* Heatmap Variables - Dark Mode */
+    --hm-empty-bg: rgba(255,255,255,0.03);
+    --hm-empty-border: rgba(255,255,255,0.05);
+    --hm-off-bg: rgba(255,255,255,0.05);
+    --hm-text: #ffffff;
+    --hm-text-dim: var(--text-dim);
+    --hm-met-bg: #065f46;
+    --hm-met-border: #064e3b;
+    --hm-unmet-bg: #991b1b;
+    --hm-unmet-border: #7f1d1d;
+    --hm-deficit-bg: rgba(153, 27, 27, 0.2);
+    --hm-deficit-border: #991b1b;
+    
+    /* KPI Icon Colors - Dark Mode */
+    --kpi-blue: #38bdf8;
+    --kpi-blue-bg: rgba(56, 189, 248, 0.1);
+    --kpi-green: #10b981;
+    --kpi-green-bg: rgba(16, 185, 129, 0.1);
+    --kpi-red: #ef4444;
+    --kpi-red-bg: rgba(239, 68, 68, 0.1);
+    --kpi-orange: #f59e0b;
+    --kpi-orange-bg: rgba(245, 158, 11, 0.1);
+    --kpi-purple: #8b5cf6;
+    --kpi-purple-bg: rgba(139, 92, 246, 0.1);
 }
 
 /* Real Professional Light Theme */
@@ -40,6 +65,31 @@ body.light-mode {
     background-image:
         linear-gradient(135deg, rgba(11, 42, 74, 0.045) 0%, transparent 34%),
         linear-gradient(180deg, #edf2f7 0%, #e7edf5 100%) !important;
+        
+    /* Heatmap Variables - Light Mode */
+    --hm-empty-bg: #e2e8f0;
+    --hm-empty-border: #cbd5e1;
+    --hm-off-bg: #cbd5e1;
+    --hm-text: #0f172a;
+    --hm-text-dim: #475569;
+    --hm-met-bg: #059669;
+    --hm-met-border: #047857;
+    --hm-unmet-bg: #dc2626;
+    --hm-unmet-border: #b91c1c;
+    --hm-deficit-bg: rgba(220, 38, 38, 0.2);
+    --hm-deficit-border: #dc2626;
+    
+    /* KPI Icon Colors - Light Mode */
+    --kpi-blue: #0284c7;
+    --kpi-blue-bg: rgba(2, 132, 199, 0.15);
+    --kpi-green: #059669;
+    --kpi-green-bg: rgba(5, 150, 105, 0.15);
+    --kpi-red: #dc2626;
+    --kpi-red-bg: rgba(220, 38, 38, 0.15);
+    --kpi-orange: #d97706;
+    --kpi-orange-bg: rgba(217, 119, 6, 0.15);
+    --kpi-purple: #7c3aed;
+    --kpi-purple-bg: rgba(124, 58, 237, 0.15);
 }
 
 * {
@@ -81,24 +131,27 @@ body.light-mode header {
     min-height: 100vh;
 }
 
-/* Sidebar */
+/* Sidebar - Ooo Level Corporate */
 .sidebar {
     width: var(--sidebar-width);
-    background:
-        linear-gradient(180deg, rgba(3, 14, 31, 0.98), rgba(7, 26, 51, 0.99) 46%, rgba(5, 20, 40, 1)),
-        linear-gradient(135deg, rgba(227, 30, 36, 0.16), transparent 30%),
-        var(--bg-sidebar);
-    border-right: 1px solid rgba(148, 163, 184, 0.18);
-    padding: 1.45rem 0.9rem 1.2rem;
+    background: linear-gradient(180deg, #020617 0%, #0f172a 60%, #020617 100%);
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 1.5rem 1rem 1.2rem;
     display: flex;
+    transform: translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden;
     flex-direction: column;
     position: fixed;
     height: 100vh;
     z-index: 100;
     overflow-y: auto;
-    box-shadow: 22px 0 55px rgba(2, 6, 23, 0.28);
-    scrollbar-width: thin;
-    scrollbar-color: rgba(148, 163, 184, 0.55) transparent;
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+    scrollbar-width: none; /* Hide scrollbar for clean look */
+}
+
+.sidebar::-webkit-scrollbar {
+    display: none;
 }
 
 .sidebar::before {
@@ -106,9 +159,7 @@ body.light-mode header {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background:
-        linear-gradient(90deg, rgba(255, 255, 255, 0.035), transparent 34%),
-        linear-gradient(180deg, rgba(227, 30, 36, 0.08), transparent 22%);
+    background: radial-gradient(circle at 10% 10%, rgba(56, 189, 248, 0.05) 0%, transparent 50%);
 }
 
 .sidebar::after {
@@ -118,7 +169,7 @@ body.light-mode header {
     right: -1px;
     width: 1px;
     height: 100%;
-    background: linear-gradient(180deg, transparent, rgba(227, 30, 36, 0.72), rgba(96, 165, 250, 0.22), transparent);
+    background: linear-gradient(180deg, transparent, rgba(56, 189, 248, 0.3), transparent);
 }
 
 .sidebar > * {
@@ -127,46 +178,40 @@ body.light-mode header {
 }
 
 .logo {
-    margin-top: 0.15rem;
-    margin-bottom: 0.5rem;
+    margin-top: 0;
+    margin-bottom: 2rem;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.55rem;
-    min-height: 112px;
-    padding: 0.95rem 0.85rem 1rem;
+    gap: 0.8rem;
+    min-height: 110px;
+    padding: 1rem 0.5rem;
     text-align: center;
-    border: 1px solid rgba(226, 232, 240, 0.88);
-    border-radius: 4px;
-    background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(245, 248, 252, 0.94)),
-        linear-gradient(135deg, rgba(11, 42, 74, 0.07), rgba(227, 30, 36, 0.045));
-    box-shadow: 0 14px 30px rgba(2, 6, 23, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.92);
+    background: transparent;
+    border: none;
+    box-shadow: none;
     position: relative;
-    overflow: visible;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 
 .logo::before {
     content: "";
     position: absolute;
-    left: 22px;
-    right: 22px;
-    bottom: 0;
-    height: 3px;
-    border-radius: 0;
-    background: linear-gradient(90deg, #0b2a4a, #e31e24, #0b2a4a);
-    opacity: 0.9;
-    z-index: 1;
-    pointer-events: none;
+    bottom: -1px;
+    left: 20%;
+    right: 20%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #38bdf8, transparent);
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
 }
 
 .logo-img {
-    width: 156px;
+    width: 140px;
     max-width: 100%;
     height: auto;
     object-fit: contain;
-    filter: drop-shadow(0 3px 8px rgba(15, 23, 42, 0.10));
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
     display: block !important;
     opacity: 1 !important;
     visibility: visible !important;
@@ -191,19 +236,12 @@ body.light-mode header {
 }
 
 .brand-sub {
-    min-width: 156px;
-    font-size: 0.84rem;
-    font-weight: 600;
-    letter-spacing: 1.1px;
-    color: #001e61;
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: #38bdf8;
     text-transform: uppercase;
-    margin-top: 0;
-    padding: 0;
-    background: none;
-    border: 0;
-    line-height: 1.05;
-    text-align: center;
-    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+    text-shadow: 0 0 15px rgba(56, 189, 248, 0.6);
 }
 
 .sidebar nav {
@@ -223,20 +261,35 @@ body.light-mode header {
 .nav-item {
     display: flex;
     align-items: center;
-    gap: 0.78rem;
-    min-height: 41px;
-    padding: 0.62rem 0.75rem;
-    border-radius: 4px;
-    color: #cbd5e1;
+    gap: 1rem;
+    min-height: 44px;
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    color: #94a3b8;
     text-decoration: none;
-    transition: var(--transition);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border: 1px solid transparent;
     position: relative;
-    font-size: 0.88rem;
-    font-weight: 680;
-    letter-spacing: 0;
-    isolation: isolate;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
     overflow: hidden;
+    margin-bottom: 4px;
+}
+
+.nav-item::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 0;
+    width: 4px;
+    background: #38bdf8;
+    border-radius: 0 4px 4px 0;
+    transition: all 0.3s ease;
+    opacity: 0;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
 }
 
 .nav-item::after {
@@ -245,28 +298,22 @@ body.light-mode header {
     inset: 0;
     z-index: -1;
     border-radius: inherit;
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.06), rgba(227, 30, 36, 0.035));
+    background: linear-gradient(90deg, rgba(56, 189, 248, 0.1), transparent);
     opacity: 0;
-    transition: opacity 0.25s ease;
-}
-
-.nav-item::before {
-    content: "";
-    position: absolute;
-    left: -1px;
-    top: 9px;
-    bottom: 9px;
-    width: 3px;
-    border-radius: 0;
-    background: transparent;
+    transition: opacity 0.3s ease;
 }
 
 .nav-item:hover {
-    background: rgba(15, 47, 82, 0.74);
-    border-color: rgba(148, 163, 184, 0.16);
     color: #ffffff;
-    transform: translateX(1px);
-    box-shadow: none;
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    transform: translateX(4px);
+}
+
+.nav-item:hover::before {
+    height: 70%;
+    opacity: 1;
 }
 
 .nav-item:hover::after {
@@ -274,46 +321,45 @@ body.light-mode header {
 }
 
 .nav-item.active {
-    background:
-        linear-gradient(90deg, rgba(227, 30, 36, 0.9) 0 3px, transparent 3px),
-        rgba(16, 47, 82, 0.92);
-    border-color: rgba(125, 211, 252, 0.18);
     color: #ffffff;
-    box-shadow: none;
-    transform: translateX(1px);
+    background: linear-gradient(90deg, rgba(56, 189, 248, 0.15), transparent);
+    border-color: rgba(56, 189, 248, 0.2);
+    box-shadow: inset 2px 0 0 #38bdf8, 0 4px 15px rgba(0,0,0,0.2);
+    transform: translateX(4px);
+    font-weight: 700;
 }
 
 .nav-item.active::before {
-    background: transparent;
-    box-shadow: none;
+    height: 100%;
+    opacity: 1;
 }
 
 .nav-item.active::after {
-    opacity: 0;
+    opacity: 1;
 }
 
 .nav-item i {
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    flex: 0 0 22px;
-    font-size: 0.95rem;
-    color: inherit;
-    opacity: 0.92;
-    border-radius: 3px;
-    background: transparent;
-    transition: var(--transition);
+    flex: 0 0 24px;
+    font-size: 1.1rem;
+    color: #64748b;
+    transition: all 0.3s ease;
 }
 
 .nav-item:hover i {
-    background: rgba(255, 255, 255, 0.08);
+    color: #38bdf8;
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.6));
 }
 
 .nav-item.active i {
-    background: rgba(255, 255, 255, 0.10);
-    color: #ffffff;
+    color: #38bdf8;
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.6));
 }
 
 .nav-links .nav-divider {
@@ -470,12 +516,12 @@ header {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
     color: white;
     font-weight: 800;
-    font-size: 0.55rem;
+    font-size: 0.5rem;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
     flex-shrink: 0;
 }
@@ -485,17 +531,17 @@ header {
     align-items: center;
     gap: 0.45rem;
     min-width: 0;
+    flex-wrap: wrap;
 }
 
 .user-title-row #user-display-name {
     min-width: 0;
     font-size: 0.9rem;
     font-weight: 800;
-    line-height: 1.15;
+    line-height: 1.25;
     color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    word-break: break-word;
 }
 
 .user-title-row #user-display-role {
@@ -2656,52 +2702,45 @@ body:not(.light-mode) .premium-theme-toggle {
 }
 
 body:not(.light-mode) .sidebar {
-    background:
-        linear-gradient(180deg, rgba(3, 14, 31, 0.98), rgba(7, 26, 51, 0.99) 46%, rgba(5, 20, 40, 1)),
-        linear-gradient(135deg, rgba(227, 30, 36, 0.16), transparent 30%),
-        var(--bg-sidebar) !important;
-    border-right-color: rgba(148, 163, 184, 0.18) !important;
-    box-shadow: 22px 0 55px rgba(2, 6, 23, 0.28);
+    background: linear-gradient(180deg, #020617 0%, #0f172a 60%, #020617 100%) !important;
+    border-right-color: rgba(255, 255, 255, 0.05) !important;
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5) !important;
 }
 
 body:not(.light-mode) .logo {
-    background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.88)),
-        linear-gradient(135deg, rgba(11, 42, 74, 0.055), rgba(227, 30, 36, 0.035));
-    border-color: rgba(203, 213, 225, 0.92);
-    box-shadow: 0 14px 30px rgba(2, 6, 23, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.92);
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
 }
 
 body:not(.light-mode) .brand-sub {
     background: none;
     border: 0;
-    color: #001e61 !important;
-    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+    color: #38bdf8 !important;
+    text-shadow: 0 0 15px rgba(56, 189, 248, 0.6) !important;
 }
 
 body:not(.light-mode) .nav-item {
-    color: #cbd5e1;
+    color: #94a3b8;
     background: transparent;
 }
 
 body:not(.light-mode) .nav-item:hover {
-    background: rgba(16, 47, 82, 0.74);
-    border-color: rgba(148, 163, 184, 0.16);
-    color: #f8fafc;
-    box-shadow: none;
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
 }
 
 body:not(.light-mode) .nav-item.active {
-    background:
-        linear-gradient(90deg, rgba(227, 30, 36, 0.9) 0 3px, transparent 3px),
-        rgba(16, 47, 82, 0.92);
-    border-color: rgba(125, 211, 252, 0.18);
-    color: #ffffff;
-    box-shadow: none;
+    color: #ffffff !important;
+    background: linear-gradient(90deg, rgba(56, 189, 248, 0.15), transparent) !important;
+    border-color: rgba(56, 189, 248, 0.2) !important;
+    box-shadow: inset 2px 0 0 #38bdf8, 0 4px 15px rgba(0,0,0,0.2) !important;
 }
 
 body:not(.light-mode) .nav-item i {
-    background: rgba(248, 250, 252, 0.06);
+    background: transparent !important;
 }
 
 body:not(.light-mode) .nav-links li[style*="margin-top"] .nav-item {
@@ -3516,9 +3555,18 @@ body:not(.light-mode) canvas {
     font-size: 0.7rem;
     line-height: 1.18;
     vertical-align: middle;
+}
+
+#nc-table .nc-date-cell {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+#nc-table .nc-owner-cell {
+    white-space: normal;
+    word-break: break-word;
+    min-width: 100px;
 }
 
 #nc-table .nc-date-cell {
@@ -4753,10 +4801,11 @@ body:not(.light-mode) .logo {
     border: 1px solid rgba(255, 255, 255, 0.06) !important; /* GÃƒÂ¶rseldeki ince ÃƒÂ§erÃƒÂ§eve ÃƒÂ§izgisi */
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
     opacity: 1;
-    /* PÃƒÂ¼rÃƒÂ¼zsÃƒÂ¼z premium animasyon geÃƒÂ§iÃ…Å¸leri */
-    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.3s ease, color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, -webkit-box-reflect 0.3s ease;
-    /* Sola yumuÃ…Å¸ak ayna yansÃ„Â±masÃ„Â± */
-    -webkit-box-reflect: left 8px linear-gradient(to left, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.02) 50%, transparent 100%);
+    /* Pürüzsüz premium animasyon geçişleri */
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.3s ease, color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    transform: translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden;
 }
 
 .nav-item:hover {
@@ -4769,13 +4818,9 @@ body:not(.light-mode) .logo {
 .nav-item:hover i {
     background: rgba(255, 122, 0, 0.08) !important; /* GÃƒÂ¶rseldeki hafif turuncu dolgu */
     border: 1px solid rgba(255, 122, 0, 0.25) !important; /* Turuncu ÃƒÂ§erÃƒÂ§eve ÃƒÂ§izgisi */
-    color: #ff7a00 !important; /* ÃƒÅ“zerine gelindiÃ„Å¸inde turuncu renk */
-    /* Turuncu premium parlama gÃƒÂ¶lgesi */
-    filter: drop-shadow(0 0 10px rgba(255, 122, 0, 0.65));
-    /* Hover sÃ„Â±rasÃ„Â±nda turuncu tonlu belirgin sola yansÃ„Â±ma */
-    -webkit-box-reflect: left 8px linear-gradient(to left, rgba(255, 122, 0, 0.35) 0%, rgba(255, 122, 0, 0.10) 50%, transparent 100%);
-    /* SaÃ„Å¸a sola sallanma hareketi (sÃƒÂ¼rekli) */
-    animation: swingIcon 0.8s ease-in-out infinite;
+    color: #ff7a00 !important; /* Üzerine gelindiğinde turuncu renk */
+    box-shadow: 0 0 12px rgba(255, 122, 0, 0.4);
+    transform: scale(1.08) translateZ(0);
 }
 
 .nav-item.active {
@@ -5704,7 +5749,8 @@ body:not(.light-mode) .perm-scope-badge--restricted {
 .sidebar.compact .logo-text,
 .sidebar.compact .nav-header,
 .sidebar.compact .nav-divider,
-.sidebar.compact .nav-item span {
+.sidebar.compact .nav-item span,
+.sidebar.compact .sidebar-user-card {
     display: none !important;
 }
 
@@ -5749,9 +5795,9 @@ body:not(.light-mode) .perm-scope-badge--restricted {
 }
 
 /* Ã¢â€â‚¬Ã¢â€â‚¬ Sidebar Toggle Button Styles Ã¢â€â‚¬Ã¢â€â‚¬ */
-#sidebar-toggle {
+#sidebar-toggle,
+#sidebar-theme-toggle {
     position: absolute;
-    top: 8px;
     right: 4px;
     transform: none;
     width: 22px;
@@ -5761,36 +5807,48 @@ body:not(.light-mode) .perm-scope-badge--restricted {
     display: flex;
     align-items: center;
     justify-content: center;
+    background: var(--bg-input);
+    border: 1px solid var(--border-main);
+    color: var(--text-primary);
     transition: all 0.2s ease;
-    background: rgba(11, 42, 74, 0.08);
-    border: 1px solid rgba(11, 42, 74, 0.15);
-    color: #0b2a4a;
-    z-index: 5;
+    z-index: 10;
+}
+#sidebar-toggle {
+    top: 8px;
+}
+#sidebar-theme-toggle {
+    top: 36px;
 }
 
-#sidebar-toggle i {
+
+#sidebar-toggle i,
+#sidebar-theme-toggle i {
     font-size: 0.68rem;
 }
 
-#sidebar-toggle:hover {
+#sidebar-toggle:hover,
+#sidebar-theme-toggle:hover {
     background: var(--accent);
     border-color: var(--accent);
     color: #ffffff;
 }
 
-body:not(.light-mode) #sidebar-toggle {
+body:not(.light-mode) #sidebar-toggle,
+body:not(.light-mode) #sidebar-theme-toggle {
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.15);
     color: #f8fafc;
 }
 
-body:not(.light-mode) #sidebar-toggle:hover {
+body:not(.light-mode) #sidebar-toggle:hover,
+body:not(.light-mode) #sidebar-theme-toggle:hover {
     background: var(--accent);
     border-color: var(--accent);
     color: #ffffff;
 }
 
-.sidebar.compact #sidebar-toggle {
+.sidebar.compact #sidebar-toggle,
+.sidebar.compact #sidebar-theme-toggle {
     position: static !important;
     margin: 0.6rem auto 0 !important;
     width: 22px !important;
@@ -5802,7 +5860,8 @@ body:not(.light-mode) #sidebar-toggle:hover {
     transform: none !important;
 }
 
-.sidebar.compact #sidebar-toggle:hover {
+.sidebar.compact #sidebar-toggle:hover,
+.sidebar.compact #sidebar-theme-toggle:hover {
     background: var(--accent) !important;
     border-color: var(--accent) !important;
     color: #ffffff !important;
@@ -6634,7 +6693,8 @@ body:not(.light-mode) .audit-question-comment {
     .premium-user-profile {
         display: none !important;
     }
-    #sidebar-toggle {
+    #sidebar-toggle,
+    #sidebar-theme-toggle {
         display: none !important; /* Sidebar is fixed at the top, toggle is obsolete */
     }
     .main-content {
@@ -12919,4 +12979,288 @@ body.light-mode .legend-group {
 .map-tech-icon {
     background: transparent !important;
     border: none !important;
+}
+
+/* ========================================================= */
+/* DASHBOARD PREMIUM REDESIGN (Similar to Sidebar styling)   */
+/* ========================================================= */
+
+/* Dark Mode Dashboard Container Override */
+body:not(.light-mode) #dashboard-view,
+body:not(.light-mode) #audits-view,
+body:not(.light-mode) #nc-management-view,
+body:not(.light-mode) #stats-view,
+body:not(.light-mode) #personal-stats-view,
+body:not(.light-mode) #reports-view {
+    padding-top: 0.5rem !important;
+}
+
+/* Make Dashboard Stat Cards Premium Glassmorphic */
+body:not(.light-mode) .dashboard-stat-card,
+body:not(.light-mode) .stat-card,
+body:not(.light-mode) .report-card {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.7) 0%, rgba(2, 6, 23, 0.85) 100%) !important;
+    backdrop-filter: blur(24px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-bottom: 2px solid var(--stat-accent) !important;
+    border-left: 0 !important;
+    border-radius: 20px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+    transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+}
+
+body:not(.light-mode) .dashboard-stat-card:hover,
+body:not(.light-mode) .stat-card:hover,
+body:not(.light-mode) .report-card:hover {
+    background: linear-gradient(135deg, rgba(var(--stat-accent-rgb), 0.15) 0%, rgba(15, 23, 42, 0.95) 50%, rgba(2, 6, 23, 0.95) 100%) !important;
+    border-color: rgba(var(--stat-accent-rgb), 0.4) !important;
+    box-shadow: 0 15px 40px rgba(var(--stat-accent-rgb), 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+    transform: translateY(-6px) scale(1.02) !important;
+}
+
+/* Stat Card Glowing Texts */
+body:not(.light-mode) .dashboard-stat-title,
+body:not(.light-mode) .stat-label {
+    color: #e2e8f0 !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;
+}
+
+body:not(.light-mode) .dashboard-stat-value,
+body:not(.light-mode) .stat-value {
+    color: #ffffff !important;
+    text-shadow: 0 0 20px rgba(var(--stat-accent-rgb), 0.7), 0 2px 4px rgba(0,0,0,0.5) !important;
+    font-size: 1.8rem !important;
+}
+
+body:not(.light-mode) .dashboard-stat-badge,
+body:not(.light-mode) .stat-badge {
+    background: transparent !important;
+    border: none !important;
+    color: rgba(255, 255, 255, 0.8) !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+}
+
+/* Premium Filter Card */
+body:not(.light-mode) #dashboard-view .filter-card,
+body:not(.light-mode) #audits-view .filter-card,
+body:not(.light-mode) #nc-management-view .filter-card,
+body:not(.light-mode) #stats-view .stats-filter-actions,
+body:not(.light-mode) #stats-view > div:first-child,
+body:not(.light-mode) #personal-stats-view > div:first-child {
+    background: linear-gradient(90deg, rgba(11, 20, 38, 0.98) 0%, rgba(2, 6, 23, 0.98) 100%) !important;
+    border: 1px solid rgba(249, 115, 22, 0.2) !important;
+    border-top: 1px solid rgba(249, 115, 22, 0.4) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.05) !important;
+    border-radius: 16px !important;
+    position: relative !important;
+    z-index: 20 !important;
+}
+
+/* Data Sections (Charts & Tables Containers) */
+body:not(.light-mode) #dashboard-view .data-section > div:not(.filter-card),
+body:not(.light-mode) #audits-view .data-section > div:not(.filter-card),
+body:not(.light-mode) #nc-management-view .data-section > div:not(.filter-card),
+body:not(.light-mode) #stats-view .data-section,
+body:not(.light-mode) #personal-stats-view .data-section {
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.7) 0%, rgba(2, 6, 23, 0.9) 100%) !important;
+    backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+    border-radius: 20px !important;
+}
+
+/* Tables inside dashboard */
+body:not(.light-mode) #dashboard-view table th,
+body:not(.light-mode) #audits-view table th,
+body:not(.light-mode) #nc-management-view table th,
+body:not(.light-mode) #stats-view table th,
+body:not(.light-mode) #personal-stats-view table th {
+    background: rgba(15, 23, 42, 0.8) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+    color: #94a3b8 !important;
+}
+
+body:not(.light-mode) #dashboard-view table td,
+body:not(.light-mode) #audits-view table td,
+body:not(.light-mode) #nc-management-view table td,
+body:not(.light-mode) #stats-view table td,
+body:not(.light-mode) #personal-stats-view table td {
+    border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+}
+
+body:not(.light-mode) #dashboard-view table tr:hover td,
+body:not(.light-mode) #audits-view table tr:hover td,
+body:not(.light-mode) #nc-management-view table tr:hover td,
+body:not(.light-mode) #stats-view table tr:hover td,
+body:not(.light-mode) #personal-stats-view table tr:hover td {
+    background: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* ========================================================= */
+/* DASHBOARD PREMIUM REDESIGN - LIGHT MODE                   */
+/* ========================================================= */
+
+body.light-mode #dashboard-view,
+body.light-mode #audits-view,
+body.light-mode #nc-management-view,
+body.light-mode #stats-view,
+body.light-mode #personal-stats-view,
+body.light-mode #reports-view {
+    padding-top: 0.5rem !important;
+}
+
+/* Light Mode Dashboard Stat Cards */
+body.light-mode .dashboard-stat-card,
+body.light-mode .stat-card,
+body.light-mode .report-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.85) 100%) !important;
+    backdrop-filter: blur(24px) !important;
+    border: 1px solid rgba(148, 163, 184, 0.2) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.8) !important;
+    border-bottom: 2px solid var(--stat-accent) !important;
+    border-left: 0 !important;
+    border-radius: 20px !important;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+    transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+}
+
+body.light-mode .dashboard-stat-card:hover,
+body.light-mode .stat-card:hover,
+body.light-mode .report-card:hover {
+    background: linear-gradient(135deg, rgba(var(--stat-accent-rgb), 0.05) 0%, rgba(255, 255, 255, 1) 50%, rgba(248, 250, 252, 0.95) 100%) !important;
+    border-color: rgba(var(--stat-accent-rgb), 0.3) !important;
+    box-shadow: 0 15px 40px rgba(var(--stat-accent-rgb), 0.12), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+    transform: translateY(-6px) scale(1.02) !important;
+}
+
+body.light-mode .dashboard-stat-title,
+body.light-mode .stat-label {
+    color: #334155 !important;
+    text-shadow: none !important;
+}
+
+body.light-mode .dashboard-stat-value,
+body.light-mode .stat-value {
+    color: #0f172a !important;
+    text-shadow: none !important;
+    font-size: 1.8rem !important;
+}
+
+body.light-mode .dashboard-stat-badge,
+body.light-mode .stat-badge {
+    background: transparent !important;
+    border: none !important;
+    color: var(--text-secondary) !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+}
+
+/* Light Mode Filter Card */
+body.light-mode #dashboard-view .filter-card,
+body.light-mode #audits-view .filter-card,
+body.light-mode #nc-management-view .filter-card,
+body.light-mode #stats-view .stats-filter-actions,
+body.light-mode #stats-view > div:first-child,
+body.light-mode #personal-stats-view > div:first-child {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%) !important;
+    border: 1px solid rgba(249, 115, 22, 0.2) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.8) !important;
+    box-shadow: 0 8px 32px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+    border-radius: 16px !important;
+    position: relative !important;
+    z-index: 20 !important;
+}
+
+/* Light Mode Data Sections */
+body.light-mode #dashboard-view .data-section > div:not(.filter-card),
+body.light-mode #audits-view .data-section > div:not(.filter-card),
+body.light-mode #nc-management-view .data-section > div:not(.filter-card),
+body.light-mode #stats-view .data-section,
+body.light-mode #personal-stats-view .data-section {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.85) 0%, rgba(248, 250, 252, 0.95) 100%) !important;
+    backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(148, 163, 184, 0.2) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.8) !important;
+    box-shadow: 0 15px 40px rgba(15, 23, 42, 0.05), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+    border-radius: 20px !important;
+}
+
+/* Light Mode Tables */
+body.light-mode #dashboard-view table th,
+body.light-mode #audits-view table th,
+body.light-mode #nc-management-view table th,
+body.light-mode #stats-view table th,
+body.light-mode #personal-stats-view table th {
+    background: rgba(248, 250, 252, 0.9) !important;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.2) !important;
+    color: #475569 !important;
+}
+
+body.light-mode #dashboard-view table td,
+body.light-mode #audits-view table td,
+body.light-mode #nc-management-view table td,
+body.light-mode #stats-view table td,
+body.light-mode #personal-stats-view table td {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1) !important;
+}
+
+body.light-mode #dashboard-view table tr:hover td,
+body.light-mode #audits-view table tr:hover td,
+body.light-mode #nc-management-view table tr:hover td {
+    background: rgba(15, 23, 42, 0.02) !important;
+}
+
+/* Sidebar User Card Custom Styling & Theme Fixes */
+.sidebar-user-card #user-display-name {
+    color: #ffffff !important;
+}
+.sidebar-user-card #user-display-role {
+    display: inline-flex !important;
+    color: #94a3b8 !important;
+}
+
+/* Today's Column Highlight - Dark Mode (Default) */
+.matrix-today-hdr {
+    background: rgba(249, 115, 22, 0.22) !important;
+    color: #ff781f !important;
+    font-weight: 900 !important;
+    border: 2px solid #ff781f !important;
+    border-bottom: none !important;
+    box-shadow: 0 0 10px rgba(249, 115, 22, 0.4) !important;
+}
+.matrix-today-cell {
+    background: rgba(249, 115, 22, 0.05) !important;
+    border-left: 2px solid #ff781f !important;
+    border-right: 2px solid #ff781f !important;
+}
+#matrix-stats-table tbody tr:last-child .matrix-today-cell {
+    border-bottom: 2px solid #ff781f !important;
+}
+.matrix-today-box {
+    border: 2px solid #ff781f !important;
+    box-shadow: 0 0 8px rgba(249, 115, 22, 0.6) !important;
+}
+
+/* Today's Column Highlight - Light Mode (Stronger contrast) */
+body.light-mode .matrix-today-hdr {
+    background: #ffedd5 !important; /* Soft orange block */
+    color: #c2410c !important; /* Dark orange text */
+    border: 2px solid #ea580c !important;
+    border-bottom: none !important;
+    box-shadow: 0 0 10px rgba(234, 88, 12, 0.3) !important;
+}
+body.light-mode .matrix-today-cell {
+    background: #fff7ed !important; /* Visible light orange column background */
+    border-left: 2px solid #ea580c !important;
+    border-right: 2px solid #ea580c !important;
+}
+body.light-mode #matrix-stats-table tbody tr:last-child .matrix-today-cell {
+    border-bottom: 2px solid #ea580c !important;
+}
+body.light-mode .matrix-today-box {
+    border: 2px solid #ea580c !important;
+    box-shadow: 0 0 8px rgba(234, 88, 12, 0.5) !important;
 }
