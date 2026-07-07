@@ -2009,13 +2009,15 @@ window.showAuditorDetailedStats = async function(userId) {
     }
 
     // Advanced conformity metrics calculation
-    let totalConformities = 0;
     let totalNonConformities = 0;
+    let auditsWithFailures = 0;
     userAudits.forEach(a => {
+        let hasNc = false;
         if (typeof getAuditConformityCounts === 'function') {
             const counts = getAuditConformityCounts(a);
-            totalConformities += counts.conformities || 0;
-            totalNonConformities += counts.nonConformities || 0;
+            const ncCount = counts.nonConFormities || counts.nonConformities || 0;
+            totalNonConformities += ncCount;
+            if (ncCount > 0) hasNc = true;
         } else {
             const answers = Array.isArray(a.answers) ? a.answers : [];
             answers.forEach(ans => {
@@ -2024,14 +2026,13 @@ window.showAuditorDetailedStats = async function(userId) {
                 if (isNc) {
                     const addCount = Array.isArray(ans.additionalNonconformities) ? ans.additionalNonconformities.length : 0;
                     totalNonConformities += 1 + addCount;
-                } else {
-                    totalConformities++;
+                    hasNc = true;
                 }
             });
         }
+        if (hasNc) auditsWithFailures++;
     });
-    const totalCheckedPoints = totalConformities + totalNonConformities;
-    const defectRatio = totalCheckedPoints > 0 ? Math.round((totalNonConformities / totalCheckedPoints) * 100) : 0;
+    const failureRate = totalAudits > 0 ? Math.round((auditsWithFailures / totalAudits) * 100) : 0;
 
     // Weekly activity distribution calculation
     const weekdayCounts = [0, 0, 0, 0, 0, 0, 0];
@@ -2227,11 +2228,11 @@ window.showAuditorDetailedStats = async function(userId) {
                             <div style="font-size:1.3rem; font-weight:900; color:#10b981;">%${avgScore}</div>
                             <div style="font-size:0.58rem; color:var(--text-dim); margin-top:2px;">Uyum Ortalaması</div>
                         </div>
-                        <!-- Defect Detection / NC rate -->
+                        <!-- Defect Detection / failure rate -->
                         <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:10px; border-radius:10px; text-align:center;">
-                            <div style="font-size:0.65rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Uygunsuzluk Yakalama</div>
-                            <div style="font-size:1.3rem; font-weight:900; color:#ef4444;">%${defectRatio}</div>
-                            <div style="font-size:0.58rem; color:var(--text-dim); margin-top:2px;">${totalNonConformities} NC / ${totalCheckedPoints} Nokta</div>
+                            <div style="font-size:0.65rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Uygunsuzluk Oranı</div>
+                            <div style="font-size:1.3rem; font-weight:900; color:#ef4444;">%${failureRate}</div>
+                            <div style="font-size:0.58rem; color:var(--text-dim); margin-top:2px;">${auditsWithFailures} Uygunsuz / ${totalAudits} Denetim</div>
                         </div>
                         <!-- Average Duration -->
                         <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:10px; border-radius:10px; text-align:center;">
