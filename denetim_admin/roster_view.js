@@ -2232,7 +2232,7 @@ window.showAuditorDetailedStats = async function(userId) {
                         <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:10px; border-radius:10px; text-align:center;">
                             <div style="font-size:0.65rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Uygunsuzluk Oranı</div>
                             <div style="font-size:1.3rem; font-weight:900; color:#ef4444;">%${failureRate}</div>
-                            <div style="font-size:0.58rem; color:var(--text-dim); margin-top:2px;">${auditsWithFailures} Uygunsuz / ${totalAudits} Denetim</div>
+                            <div style="font-size:0.58rem; color:var(--text-dim); margin-top:2px;">${auditsWithFailures} Uygunsuzluk / ${totalAudits} Denetim</div>
                         </div>
                         <!-- Average Duration -->
                         <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:10px; border-radius:10px; text-align:center;">
