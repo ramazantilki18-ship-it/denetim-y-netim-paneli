@@ -13317,3 +13317,11 @@ body.light-mode .matrix-today-box {
         display: none !important;
     }
 }
+
+/* Fix report card dropdown overlapping */
+.report-card {
+    position: relative;
+}
+.report-card:focus-within {
+    z-index: 50 !important;
+}
