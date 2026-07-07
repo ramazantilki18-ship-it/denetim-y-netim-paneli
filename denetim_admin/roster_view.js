@@ -1978,7 +1978,7 @@ window.showAuditorDetailedStats = async function(userId) {
     const allAudits = appData.audits || [];
     const userAudits = allAudits.filter(a => {
         const normalizedAuditorId = a.auditorId?.trim() ?? '';
-        if (normalizedAuditorId.isNotEmpty && normalizedAuditorId === user.id.trim()) {
+        if (normalizedAuditorId !== '' && normalizedAuditorId === user.id.trim()) {
             return true;
         }
         const normalizedAuditorName = a.auditorName?.trim().toLowerCase() ?? '';
@@ -2012,22 +2012,26 @@ window.showAuditorDetailedStats = async function(userId) {
     let totalConformities = 0;
     let totalNonConformities = 0;
     userAudits.forEach(a => {
-        const answers = Array.isArray(a.answers) ? a.answers : [];
-        answers.forEach(ans => {
-            if (ans.isOutOfScope === true) return;
-            const isNc = ans.isNonconformity === true || (ans.score !== undefined && Number(ans.score) <= 3);
-            if (isNc) {
-                const addCount = Array.isArray(ans.additionalNonconformities) ? ans.additionalNonconformities.length : 0;
-                totalNonConConformities = (typeof totalNonConConformities === 'undefined' ? 0 : totalNonConConformities) + 1 + addCount;
-            } else {
-                totalConformities++;
-            }
-        });
+        if (typeof getAuditConformityCounts === 'function') {
+            const counts = getAuditConformityCounts(a);
+            totalConformities += counts.conformities || 0;
+            totalNonConformities += counts.nonConformities || 0;
+        } else {
+            const answers = Array.isArray(a.answers) ? a.answers : [];
+            answers.forEach(ans => {
+                if (ans.isOutOfScope === true) return;
+                const isNc = ans.isNonconformity === true || (ans.score !== undefined && Number(ans.score) <= 3);
+                if (isNc) {
+                    const addCount = Array.isArray(ans.additionalNonconformities) ? ans.additionalNonconformities.length : 0;
+                    totalNonConformities += 1 + addCount;
+                } else {
+                    totalConformities++;
+                }
+            });
+        }
     });
-    // Ensure safety in variable declarations
-    const finalNCs = typeof totalNonConConformities !== 'undefined' ? totalNonConConformities : 0;
-    const totalCheckedPoints = totalConformities + finalNCs;
-    const defectRatio = totalCheckedPoints > 0 ? Math.round((finalNCs / totalCheckedPoints) * 100) : 0;
+    const totalCheckedPoints = totalConformities + totalNonConformities;
+    const defectRatio = totalCheckedPoints > 0 ? Math.round((totalNonConformities / totalCheckedPoints) * 100) : 0;
 
     // Weekly activity distribution calculation
     const weekdayCounts = [0, 0, 0, 0, 0, 0, 0];
@@ -2227,7 +2231,7 @@ window.showAuditorDetailedStats = async function(userId) {
                         <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:10px; border-radius:10px; text-align:center;">
                             <div style="font-size:0.65rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Uygunsuzluk Yakalama</div>
                             <div style="font-size:1.3rem; font-weight:900; color:#ef4444;">%${defectRatio}</div>
-                            <div style="font-size:0.58rem; color:var(--text-dim); margin-top:2px;">${finalNCs} NC / ${totalCheckedPoints} Nokta</div>
+                            <div style="font-size:0.58rem; color:var(--text-dim); margin-top:2px;">${totalNonConformities} NC / ${totalCheckedPoints} Nokta</div>
                         </div>
                         <!-- Average Duration -->
                         <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:10px; border-radius:10px; text-align:center;">
