@@ -320,6 +320,7 @@
                         display: none;
                         padding: 0.45rem;
                         backdrop-filter: blur(20px);
+                        max-width: calc(100vw - 2.5rem);
                     }
 
                     body.light-mode .custom-select-options-card {
@@ -2546,20 +2547,20 @@
 
                         <!-- 5S Report Inline Filters (Single Line Centered Row Layout) -->
                         <div class="report-5s-filters" onclick="event.stopPropagation()"
-                            style="display: flex; gap: 1rem; background: rgba(0, 0, 0, 0.15); padding: 0.75rem; border-radius: 10px; border: 1px solid var(--border-main); align-items: center; justify-content: center; flex-wrap: nowrap;">
-                            <div style="width: 130px; display: flex; flex-direction: column; gap: 0.25rem; flex-shrink: 0;">
-                                <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-secondary); white-space: nowrap; text-align: center;">Hat Seçimi</label>
-                                <select id="report-5s-line" style="width: 100%; height: 32px; background: var(--bg-main); color: var(--text-primary); border: 1px solid var(--border-main); border-radius: 8px; padding: 0 0.5rem; font-size: 0.72rem; outline: none; box-sizing: border-box; text-align: center; text-align-last: center;"></select>
+                            style="display: flex; flex-direction: column; gap: 0.75rem; background: rgba(0, 0, 0, 0.15); padding: 0.75rem; border-radius: 10px; border: 1px solid var(--border-main); align-items: stretch;">
+                            <div style="width: 100%; display: flex; flex-direction: column; gap: 0.25rem;">
+                                <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-secondary); white-space: nowrap; text-align: left;">Hat Seçimi</label>
+                                <select id="report-5s-line" style="width: 100%; height: 32px; background: var(--bg-main); color: var(--text-primary); border: 1px solid var(--border-main); border-radius: 8px; padding: 0 0.5rem; font-size: 0.72rem; outline: none; box-sizing: border-box; text-align: left; text-align-last: left;"></select>
                             </div>
                             <!-- Unified Date Picker for 5S Report -->
-                            <div class="custom-select-wrapper" id="custom-wrap-report-5s-unified-date" style="position: relative; width: 150px; display: flex; flex-direction: column; gap: 0.25rem; flex-shrink: 0;">
-                                <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-secondary); white-space: nowrap; text-align: center;">Tarih Aralığı</label>
-                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-report-5s-unified-date')" style="border-color: var(--border-main) !important; height: 32px; box-sizing: border-box; justify-content: center;">
+                            <div class="custom-select-wrapper" id="custom-wrap-report-5s-unified-date" style="position: relative; width: 100%; display: flex; flex-direction: column; gap: 0.25rem;">
+                                <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-secondary); white-space: nowrap; text-align: left;">Tarih Aralığı</label>
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect('custom-wrap-report-5s-unified-date')" style="border-color: var(--border-main) !important; height: 32px; box-sizing: border-box; justify-content: space-between;">
                                     <span class="custom-select-label" id="report-5s-unified-date-label" style="font-size: 0.72rem;">Tüm Zamanlar</span>
                                     <i class="fas fa-calendar-alt" style="font-size: 0.75rem; color: var(--text-secondary);"></i>
                                 </div>
                                 <div class="custom-select-options-card" id="custom-options-report-5s-unified-date"
-                                    style="width: 320px; padding: 0.8rem; overflow-y: visible; max-height: unset; z-index: 1000; right: 50%; transform: translateX(50%); left: auto;">
+                                    style="width: 320px; padding: 0.8rem; overflow-y: visible; max-height: unset; z-index: 1000; right: 0; left: auto;">
                                     <!-- Dynamic content will go here -->
                                 </div>
                             </div>
