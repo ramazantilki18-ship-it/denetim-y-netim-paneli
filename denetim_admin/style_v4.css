@@ -13319,9 +13319,166 @@ body.light-mode .matrix-today-box {
 }
 
 /* Fix report card dropdown overlapping */
-.report-card {
-    position: relative;
-}
 .report-card:focus-within {
     z-index: 50 !important;
 }
+
+/* Ünvan Tanımları & Akordeon Stilleri */
+.settings-scroll-list::-webkit-scrollbar {
+    width: 6px;
+}
+.settings-scroll-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+.settings-scroll-list::-webkit-scrollbar-thumb {
+    background: var(--border-main);
+    border-radius: 99px;
+}
+.title-settings-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-main);
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+.title-settings-item .delete-btn {
+    background: none;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 0.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+.title-settings-item .delete-btn:hover {
+    background: rgba(239, 68, 68, 0.12);
+}
+
+.permissions-roles-panel-details {
+    transition: all 0.3s ease;
+}
+.permissions-roles-panel-details[open] summary {
+    border-bottom: 1px solid var(--border-main);
+    padding-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+.permissions-roles-panel-details summary::-webkit-details-marker {
+    display: none;
+}
+
+/* Mobile Permissions View Tabs & Matrix Styles */
+#permissions-view .permissions-tabs {
+    border-color: var(--border-main);
+}
+#permissions-view .btn-tab {
+    transition: all 0.2s ease;
+}
+#permissions-view .btn-tab:hover {
+    color: var(--text-primary) !important;
+    background: rgba(37, 99, 235, 0.05);
+}
+#permissions-view .btn-tab.active {
+    border-color: var(--accent) !important;
+    color: var(--accent) !important;
+}
+#permissions-view .permissions-matrix-table th {
+    background: var(--bg-main);
+    color: var(--text-secondary);
+    border-bottom: 2px solid var(--border-main);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+#permissions-view .permissions-matrix-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-main);
+    color: var(--text-primary);
+    font-size: 0.88rem;
+}
+#permissions-view .permissions-matrix-table tr:hover {
+    background: rgba(37, 99, 235, 0.02);
+}
+#permissions-view .delete-btn {
+    background: none;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0.4rem;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+#permissions-view .delete-btn:hover {
+    background: rgba(239, 68, 68, 0.12);
+}
+/* Toggle switches styled modernly */
+.mobile-switch-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+.mobile-switch-input {
+    display: none;
+}
+.mobile-switch-slider {
+    width: 40px;
+    height: 20px;
+    background-color: var(--border-main);
+    border-radius: 20px;
+    position: relative;
+    transition: background-color 0.2s ease;
+}
+.mobile-switch-slider::before {
+    content: "";
+    width: 16px;
+    height: 16px;
+    background-color: white;
+    border-radius: 50%;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+.mobile-switch-input:checked + .mobile-switch-slider {
+    background-color: var(--accent);
+}
+.mobile-switch-input:checked + .mobile-switch-slider::before {
+    transform: translateX(20px);
+}
+
+/* Light Mode overrides for Permissions View Matrix Headers */
+body.light-mode #permissions-view .permissions-matrix-table th,
+body.light-mode #permissions-view .permissions-matrix-table .permission-module-column {
+    background-color: #f1f5f9 !important;
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+    border-bottom: 1px solid #d5dee9 !important;
+}
+
+body.light-mode #permissions-view .permission-module-column span {
+    color: #0f172a !important;
+}
+
+body.light-mode #permissions-view .permission-module-column small {
+    color: #475569 !important;
+}
+
+body.light-mode #permissions-view .permission-role-heading strong {
+    color: #0f172a !important;
+}
+
+

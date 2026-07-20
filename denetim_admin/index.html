@@ -1844,109 +1844,127 @@
 
             <!-- Permissions Section -->
             <div id="permissions-view" class="view-section" style="display: none;">
-                <section class="permissions-summary-grid" aria-label="Yetki sistemi özeti">
-                    <article class="permissions-summary-card permissions-summary-card--roles">
-                        <div class="permissions-summary-icon"><i class="fas fa-users-gear"></i></div>
-                        <div>
-                            <span>Sistem Rolü</span>
-                            <strong id="permissions-role-count">0</strong>
-                        </div>
-                    </article>
-                    <article class="permissions-summary-card permissions-summary-card--modules">
-                        <div class="permissions-summary-icon"><i class="fas fa-border-all"></i></div>
-                        <div>
-                            <span>Yetki Tanımı</span>
-                            <strong id="permissions-module-count">0</strong>
-                        </div>
-                    </article>
-                    <article class="permissions-summary-card permissions-summary-card--active">
-                        <div class="permissions-summary-icon"><i class="fas fa-circle-check"></i></div>
-                        <div>
-                            <span>Aktif Rol Ataması</span>
-                            <strong id="permissions-active-count">0</strong>
-                        </div>
-                    </article>
-                    <article class="permissions-summary-card permissions-summary-card--scope">
-                        <div class="permissions-summary-icon"><i class="fas fa-earth-europe"></i></div>
-                        <div>
-                            <span>Küresel Rol</span>
-                            <strong id="permissions-global-count">0</strong>
-                        </div>
-                    </article>
-                </section>
-
-                <section class="permissions-panel permissions-matrix-panel">
-                    <div class="permissions-panel-header">
-                        <div class="permissions-panel-heading">
-                            <span class="permissions-panel-icon"><i class="fas fa-table-list"></i></span>
-                            <div>
-                                <h3>Yetki Erişim Matrisi</h3>
-                                <p>Bir hücreye tıklayarak ilgili rolün erişimini açın veya kapatın.</p>
-                            </div>
-                        </div>
-                        <label class="permissions-search">
-                            <i class="fas fa-magnifying-glass"></i>
-                            <input id="permissions-search-input" type="search" placeholder="Yetki veya modül ara..."
-                                oninput="filterPermissionMatrix()" autocomplete="off">
-                        </label>
-                    </div>
-
-                    <div id="permissions-role-legend" class="permissions-role-legend"></div>
-
-                    <div class="permissions-matrix-note">
-                        <span><i class="fas fa-lock"></i> Süper Admin erişimleri sistem tarafından
-                            sabitlenmiştir.</span>
-                        <span><i class="fas fa-hand-pointer"></i> Diğer rol hücreleri düzenlenebilir.</span>
-                    </div>
-
-                    <div class="permissions-table-shell">
-                        <table class="matrix-table permissions-matrix-table">
-                            <thead>
-                                <tr>
-                                    <th>Modül / Yetki Tanımı</th>
-                                    <!-- Header cells will be populated dynamically -->
-                                </tr>
-                            </thead>
-                            <tbody id="permissions-matrix-body">
-                                <!-- Dynamic checkboxes will be populated here -->
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div id="permissions-no-results" class="permissions-no-results" style="display: none;">
-                        <i class="fas fa-magnifying-glass"></i>
-                        <strong>Eşleşen yetki bulunamadı</strong>
-                        <span>Arama ifadenizi değiştirerek tekrar deneyin.</span>
-                    </div>
-                </section>
-
-                <section class="permissions-panel permissions-roles-panel">
-                    <div class="permissions-panel-header">
-                        <div class="permissions-panel-heading">
-                            <span class="permissions-panel-icon permissions-panel-icon--roles"><i
-                                    class="fas fa-id-badge"></i></span>
-                            <div>
-                                <h3>Rol Kapsamları</h3>
-                                <p>Her sistem rolünün erişim sınırları ve operasyonel sorumlulukları.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="permissions-descriptions-body" class="permissions-role-grid">
-                        <!-- Dynamic role cards will be populated here -->
-                    </div>
-                </section>
-
-                <div class="permissions-action-bar">
-                    <div>
-                        <strong>Yetki değişikliklerini yayınlayın</strong>
-                        <span>Kaydedilen ayarlar ilgili rollerin sonraki erişim kontrolünde uygulanır.</span>
-                    </div>
-                    <button class="btn-primary permissions-save-btn" onclick="savePermissions()">
-                        <i class="fas fa-save"></i>
-                        Tüm Değişiklikleri Kaydet
+                <div class="permissions-main-tabs" style="display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-main); padding-bottom: 0.5rem;">
+                    <button class="btn-tab active" id="perm-main-tab-web" onclick="switchPermMainTab('web')" style="background: none; border: none; border-bottom: 2px solid var(--accent); color: var(--text-primary); font-weight: 700; padding: 0.5rem 1rem; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-desktop"></i> Web Yetki Matrisi
+                    </button>
+                    <button class="btn-tab" id="perm-main-tab-mobile-titles" onclick="switchPermMainTab('mobile-titles')" style="background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-weight: 700; padding: 0.5rem 1rem; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-mobile-screen-button"></i> Mobil Yetki Matrisi
                     </button>
                 </div>
+
+                <!-- Tab 1: Web Permissions -->
+                <div id="perm-tab-web-content" class="perm-main-tab-content">
+
+                    <section class="permissions-panel permissions-matrix-panel">
+                        <div class="permissions-panel-header">
+                            <div class="permissions-panel-heading">
+                                <span class="permissions-panel-icon"><i class="fas fa-table-list"></i></span>
+                                <div>
+                                    <h3>Yetki Erişim Matrisi</h3>
+                                    <p>Bir hücreye tıklayarak ilgili rolün erişimini açın veya kapatın.</p>
+                                </div>
+                            </div>
+                            <label class="permissions-search">
+                                <i class="fas fa-magnifying-glass"></i>
+                                <input id="permissions-search-input" type="search" placeholder="Yetki veya modül ara..."
+                                    oninput="filterPermissionMatrix()" autocomplete="off">
+                            </label>
+                        </div>
+
+                        <div class="permissions-matrix-note">
+                            <span><i class="fas fa-lock"></i> Süper Admin erişimleri sistem tarafından
+                                sabitlenmiştir.</span>
+                            <span><i class="fas fa-hand-pointer"></i> Diğer rol hücreleri düzenlenebilir.</span>
+                        </div>
+
+                        <div class="permissions-table-shell">
+                            <table class="matrix-table permissions-matrix-table">
+                                <thead>
+                                    <tr>
+                                        <th>Modül / Yetki Tanımı</th>
+                                        <!-- Header cells will be populated dynamically -->
+                                    </tr>
+                                </thead>
+                                <tbody id="permissions-matrix-body">
+                                    <!-- Dynamic checkboxes will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div id="permissions-no-results" class="permissions-no-results" style="display: none;">
+                            <i class="fas fa-magnifying-glass"></i>
+                            <strong>Eşleşen yetki bulunamadı</strong>
+                            <span>Arama ifadenizi değiştirerek tekrar deneyin.</span>
+                        </div>
+                    </section>
+
+
+
+                    <div class="permissions-action-bar">
+                        <div>
+                            <strong>Yetki değişikliklerini yayınlayın</strong>
+                            <span>Kaydedilen ayarlar ilgili rollerin sonraki erişim kontrolünde uygulanır.</span>
+                        </div>
+                        <button class="btn-primary permissions-save-btn" onclick="savePermissions()">
+                            <i class="fas fa-save"></i>
+                            Tüm Değişiklikleri Kaydet
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Mobile Titles Permissions -->
+                <div id="perm-tab-mobile-titles-content" class="perm-main-tab-content" style="display: none;">
+                    <section class="permissions-panel" style="margin-bottom: 1.5rem;">
+                        <div class="permissions-panel-header" style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                            <div class="permissions-panel-heading">
+                                <span class="permissions-panel-icon" style="background: rgba(249,146,60,0.12); color: #fb923c;"><i class="fas fa-mobile-screen-button"></i></span>
+                                <div>
+                                    <h3>Mobil Yetki Matrisi (Ünvanlar)</h3>
+                                    <p>Sistemde tanımlı iş ünvanları bazında mobil uygulamanın (Denetim App) ekran yetkilerini yönetin.</p>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <input type="text" id="new-mobile-title-input" class="cms-input" placeholder="Yeni Ünvan (Örn: Kıdemli Denetçi)" style="padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid var(--border-main); font-size: 0.85rem;">
+                                <button class="btn-primary" onclick="addMobileTitle()" style="padding: 0.5rem 1rem; font-size: 0.85rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;">
+                                    <i class="fas fa-plus"></i> Ekle
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="permissions-matrix-wrapper" style="overflow-x: auto; margin-top: 1rem;">
+                            <table class="matrix-table permissions-matrix-table">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align: left; padding: 12px 16px; font-weight: 700; width: 20%;">Ünvan Adı</th>
+                                        <th style="text-align: left; padding: 12px 16px; font-weight: 700; width: 22%;">İlişkili Sistem Rolü</th>
+                                        <th style="text-align: center; padding: 12px 16px; font-weight: 700; width: 11%;">Panel (Ana Sayfa)</th>
+                                        <th style="text-align: center; padding: 12px 16px; font-weight: 700; width: 11%;">Denetim (Yeni/Kendi)</th>
+                                        <th style="text-align: center; padding: 12px 16px; font-weight: 700; width: 11%;">Takip (Uygunsuzluk)</th>
+                                        <th style="text-align: center; padding: 12px 16px; font-weight: 700; width: 11%;">Puantaj (Vardiya)</th>
+                                        <th style="text-align: center; padding: 12px 16px; font-weight: 700; width: 11%;">Analiz (Raporlar)</th>
+                                        <th style="text-align: center; padding: 12px 16px; font-weight: 700; width: 8%;">İşlem</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mobile-titles-matrix-body">
+                                    <!-- Dynamic rows will be inserted here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <div class="permissions-action-bar" style="margin-top: 1.5rem;">
+                        <div>
+                            <strong>Mobil yetki değişikliklerini kaydedin</strong>
+                            <span>Yapılan değişiklikler, mobil uygulama kullanıcılarının menü görünürlüklerini anlık olarak etkiler.</span>
+                        </div>
+                        <button class="btn-primary mobile-perms-save-btn" onclick="saveMobilePermissions()">
+                            <i class="fas fa-save"></i>
+                            Mobil Yetkileri Kaydet
+                        </button>
+                    </div>
+                </div>
+
             </div>
 
             <!-- Online Users Section -->
@@ -2662,6 +2680,8 @@
                         </label>
                     </div>
 
+
+
                     <!-- Veri Yönetimi -->
                     <div
                         style="background: var(--bg-card); border: 1px solid var(--border-main); border-radius: 14px; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
@@ -2885,7 +2905,9 @@
                     </div>
                     <div class="personnel-field">
                         <label for="personnel-title">Ünvan</label>
-                        <input type="text" id="personnel-title" name="title" placeholder="Saha Mühendisi, Denetçi, vb.">
+                        <select id="personnel-title" name="title" required class="cms-input" style="padding: 0.5rem; border-radius: 8px;">
+                            <option value="">Ünvan Seçiniz...</option>
+                        </select>
                     </div>
                 </div>
                 <div class="personnel-grid-2" style="margin-top: -0.5rem; margin-bottom: 0.5rem;">

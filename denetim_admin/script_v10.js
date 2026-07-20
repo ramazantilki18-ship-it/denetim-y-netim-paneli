@@ -159,7 +159,14 @@ const RBAC_PERMISSION_MODULES = [
     { id: 'export_data', label: 'Excel / PDF Dışa Aktar' },
     { id: 'backup_data', label: 'Veri Yedeği (JSON)' },
     { id: 'settings', label: 'Sistem Ayarları' },
-    { id: 'view_logs', label: 'Sistem Loglarını Görüntüleme' }
+    { id: 'view_logs', label: 'Sistem Loglarını Görüntüleme' },
+    { id: 'personal_stats_view', label: 'Kişisel İstatistikleri Görüntüleme' },
+    { id: 'nfc_mgmt', label: 'NFC Tanımları Yönetimi' },
+    { id: 'location_mgmt', label: 'Konum Tanımları Yönetimi' },
+    { id: 'roster_mgmt', label: 'Vardiya Tanımları Yönetimi' },
+    { id: 'feedbacks_view', label: 'Geri Bildirim Takip' },
+    { id: 'excuse_mgmt', label: 'Mazeret Yönetimi' },
+    { id: 'online_users_view', label: 'Günlük Aktifleri Görüntüleme' }
 ];
 
 const LEGACY_ROLE_KEY_TO_RBAC = {
@@ -199,27 +206,32 @@ const DEFAULT_RBAC_PERMISSIONS = {
     Executive_Viewer_Global: {
         user_add_edit: false, user_delete: false, perm_mgmt: false, question_mgmt: false, line_mgmt: false,
         planning: false, announcement_mgmt: false, audit_start: false, nc_close: false, nc_approve: false, nc_share: true,
-        dashboard_view: true, stats_view: true, export_data: true, backup_data: false, settings: false, view_logs: true
+        dashboard_view: true, stats_view: true, export_data: true, backup_data: false, settings: false, view_logs: true,
+        personal_stats_view: true, nfc_mgmt: false, location_mgmt: false, roster_mgmt: false, feedbacks_view: true, excuse_mgmt: false, online_users_view: true
     },
     Executive_Viewer_Restricted: {
         user_add_edit: false, user_delete: false, perm_mgmt: false, question_mgmt: false, line_mgmt: false,
         planning: false, announcement_mgmt: false, audit_start: false, nc_close: false, nc_approve: false, nc_share: false,
-        dashboard_view: true, stats_view: true, export_data: true, backup_data: false, settings: false, view_logs: false
+        dashboard_view: true, stats_view: true, export_data: true, backup_data: false, settings: false, view_logs: false,
+        personal_stats_view: true, nfc_mgmt: false, location_mgmt: false, roster_mgmt: false, feedbacks_view: false, excuse_mgmt: false, online_users_view: false
     },
     Approver: {
         user_add_edit: false, user_delete: false, perm_mgmt: false, question_mgmt: false, line_mgmt: false,
         planning: true, announcement_mgmt: false, audit_start: true, nc_close: true, nc_approve: true, nc_share: true,
-        dashboard_view: true, stats_view: true, export_data: true, backup_data: false, settings: false, view_logs: false
+        dashboard_view: true, stats_view: true, export_data: true, backup_data: false, settings: false, view_logs: false,
+        personal_stats_view: true, nfc_mgmt: false, location_mgmt: false, roster_mgmt: true, feedbacks_view: true, excuse_mgmt: true, online_users_view: false
     },
     Field_Auditor_Action_Owner: {
         user_add_edit: false, user_delete: false, perm_mgmt: false, question_mgmt: false, line_mgmt: false,
         planning: true, announcement_mgmt: false, audit_start: true, nc_close: true, nc_approve: false, nc_share: true,
-        dashboard_view: true, stats_view: true, export_data: true, backup_data: false, settings: false, view_logs: false
+        dashboard_view: true, stats_view: true, export_data: true, backup_data: false, settings: false, view_logs: false,
+        personal_stats_view: true, nfc_mgmt: false, location_mgmt: false, roster_mgmt: false, feedbacks_view: false, excuse_mgmt: false, online_users_view: false
     },
     Field_Auditor: {
         user_add_edit: false, user_delete: false, perm_mgmt: false, question_mgmt: false, line_mgmt: false,
         planning: false, announcement_mgmt: false, audit_start: true, nc_close: false, nc_approve: false, nc_share: true,
-        dashboard_view: true, stats_view: false, export_data: false, backup_data: false, settings: false, view_logs: false
+        dashboard_view: true, stats_view: false, export_data: false, backup_data: false, settings: false, view_logs: false,
+        personal_stats_view: true, nfc_mgmt: false, location_mgmt: false, roster_mgmt: false, feedbacks_view: false, excuse_mgmt: false, online_users_view: false
     }
 };
 
@@ -372,7 +384,8 @@ const DEFAULT_SYSTEM_SETTINGS = {
     planReminders: true,
     reminderTime: '09:00',
     offlineCache: true,
-    retentionMonths: 36
+    retentionMonths: 36,
+    titles: []
 };
 
 // Charts
@@ -1014,8 +1027,7 @@ function resetPersonnelForm() {
     document.getElementById('new-user-email').value = '';
     document.getElementById('new-user-pass').value = '';
     document.getElementById('personnel-role-id').value = '';
-    const titleInput = document.getElementById('personnel-title');
-    if (titleInput) titleInput.value = '';
+    populatePersonnelTitles('');
     personnelSelectedLines = [];
     personnelSelectedAuditTypes = [];
     renderPersonnelTags();
@@ -1193,6 +1205,11 @@ function initRealtimeSync() {
         renderPeople();
         renderPermissions();
         populateStatsFilters();
+        if (appData.mobilePermissions) {
+            appData.mobilePermissions = normalizeMobilePermissions(appData.mobilePermissions);
+            renderMobilePermissions();
+            populatePersonnelTitles();
+        }
         if (document.getElementById('online-users-view')?.style.display !== 'none') {
             renderOnlineUsers();
         }
@@ -1216,6 +1233,13 @@ function initRealtimeSync() {
     db.collection('system_config').doc('settings').onSnapshot(doc => {
         appData.settings = { ...DEFAULT_SYSTEM_SETTINGS, ...(doc.exists ? doc.data() : {}) };
         renderSettings();
+    });
+
+    db.collection('system_config').doc('mobile_permissions').onSnapshot(doc => {
+        appData.mobilePermissions = normalizeMobilePermissions(doc.exists ? doc.data() : null);
+        appData.mobilePermissionsLoaded = true;
+        renderMobilePermissions();
+        populatePersonnelTitles();
     });
 
     // Roster Shift Management Listener initialization
@@ -1798,8 +1822,8 @@ const NAV_VIEW_PERMISSIONS = {
     'permissions-view': 'perm_mgmt',
     'questions-view': 'question_mgmt',
     'lines-view': 'line_mgmt',
-    'nfc-view': 'line_mgmt',
-    'location-view': 'line_mgmt',
+    'nfc-view': 'nfc_mgmt',
+    'location-view': 'location_mgmt',
     'planning-view': 'planning',
     'announcements-view': 'announcement_mgmt',
     'logs-view': 'view_logs',
@@ -1807,24 +1831,24 @@ const NAV_VIEW_PERMISSIONS = {
     'stats-view': 'stats_view',
     'reports-view': 'stats_view',
     'dashboard-view': 'dashboard_view',
-    'online-users-view': 'perm_mgmt',
-    'roster-entry-view': 'settings',
-    'excuse-management-view': 'settings'
+    'online-users-view': 'online_users_view',
+    'roster-entry-view': 'roster_mgmt',
+    'excuse-management-view': 'excuse_mgmt',
+    'feedbacks-view': 'feedbacks_view',
+    'personal-stats-view': 'personal_stats_view',
 };
 
 function canShowNavView(viewId, user = currentUser) {
-    if (viewId === 'feedbacks-view' || viewId === 'roster-entry-view' || viewId === 'excuse-management-view') return isSuperAdmin(user);
+    if (isSuperAdmin(user)) return true;
     if (isFieldAuditor(user)) {
         if (FIELD_AUDITOR_WEB_VIEWS.has(viewId)) return true;
         if ((viewId === 'stats-view' || viewId === 'reports-view') && hasPermission('stats_view', user)) return true;
         if (viewId === 'dashboard-view' && hasPermission('dashboard_view', user)) return true;
-        return false;
     }
     if (isFieldAuditorActionOwner(user)) {
         if (ACTION_OWNER_WEB_VIEWS.has(viewId)) return true;
         if ((viewId === 'stats-view' || viewId === 'reports-view') && hasPermission('stats_view', user)) return true;
         if (viewId === 'dashboard-view' && hasPermission('dashboard_view', user)) return true;
-        return false;
     }
     const requiredPerm = NAV_VIEW_PERMISSIONS[viewId];
     return requiredPerm ? hasPermission(requiredPerm, user) : true;
@@ -1881,8 +1905,9 @@ function updatePermissionGatedUI() {
     const logsNavItem = document.getElementById('logs-nav-item');
     
     if (feedbackNavItem) {
-        feedbackNavItem.style.display = superAdminOnlyVisible ? '' : 'none';
-        feedbackNavItem.classList.toggle('nav-hidden', !superAdminOnlyVisible);
+        const hasFeedbacks = hasPermission('feedbacks_view');
+        feedbackNavItem.style.display = hasFeedbacks ? '' : 'none';
+        feedbackNavItem.classList.toggle('nav-hidden', !hasFeedbacks);
     }
     if (refreshNavItem) {
         refreshNavItem.style.display = superAdminOnlyVisible ? '' : 'none';
@@ -1917,7 +1942,7 @@ function updatePermissionGatedUI() {
     });
 
     // YÖNETİM başlığı ve ayırıcı çizginin durumunu güncelle
-    const mgmtViews = ['people-view', 'questions-view', 'lines-view', 'nfc-view', 'location-view', 'planning-view', 'announcements-view', 'logs-view', 'permissions-view', 'online-users-view'];
+    const mgmtViews = ['people-view', 'questions-view', 'lines-view', 'nfc-view', 'location-view', 'planning-view', 'announcements-view', 'logs-view', 'permissions-view', 'online-users-view', 'roster-entry-view', 'excuse-management-view', 'feedbacks-view'];
     const hasAnyMgmtPermission = !fieldAuditorOnly && mgmtViews.some(viewId => {
         const perm = NAV_VIEW_PERMISSIONS[viewId];
         return perm ? hasPermission(perm) : false;
@@ -1968,6 +1993,10 @@ function switchView(viewId) {
     if (targetView) {
         targetView.style.display = 'block';
         window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) mainContent.scrollTop = 0;
 
         // Re-render charts if stats view is active
         if (viewId === 'stats-view') {
@@ -2017,7 +2046,11 @@ function switchView(viewId) {
     }
     if (viewId === 'planning-view') renderPlanning();
     if (viewId === 'announcements-view') renderAnnouncements();
-    if (viewId === 'permissions-view') renderPermissions();
+    if (viewId === 'permissions-view') {
+        renderPermissions();
+        renderMobilePermissions();
+        switchPermMainTab('web');
+    }
     if (viewId === 'nfc-view') {
         populateNfcLineFilter();
         renderNfcList();
@@ -4523,7 +4556,14 @@ const PERMISSION_PRESENTATION = {
     stats_view: { group: 'Analiz ve Raporlama', icon: 'fa-chart-column', description: 'İstatistiksel analiz ekranına erişme' },
     export_data: { group: 'Analiz ve Raporlama', icon: 'fa-file-export', description: 'Excel ve PDF raporlarını dışa aktarma' },
     backup_data: { group: 'Sistem ve Güvenlik', icon: 'fa-database', description: 'Sistem verilerinin JSON yedeğini alma' },
-    settings: { group: 'Sistem ve Güvenlik', icon: 'fa-sliders', description: 'Genel sistem ayarlarını değiştirme' }
+    settings: { group: 'Sistem ve Güvenlik', icon: 'fa-sliders', description: 'Genel sistem ayarlarını değiştirme' },
+    personal_stats_view: { group: 'Analiz ve Raporlama', icon: 'fa-user-clock', description: 'Kendi denetim istatistiklerini görüntüleme' },
+    nfc_mgmt: { group: 'İçerik ve Tanımlar', icon: 'fa-rss', description: 'NFC etiket tanımlarını yönetme' },
+    location_mgmt: { group: 'İçerik ve Tanımlar', icon: 'fa-location-dot', description: 'İstasyon konum tanımlarını yönetme' },
+    roster_mgmt: { group: 'Saha Operasyonları', icon: 'fa-business-time', description: 'Vardiya ve puantaj tanımlarını yönetme' },
+    feedbacks_view: { group: 'Saha Operasyonları', icon: 'fa-bug', description: 'Geri bildirim ve hata bildirimlerini izleme' },
+    excuse_mgmt: { group: 'Saha Operasyonları', icon: 'fa-file-signature', description: 'Mazeret bildirimlerini onaylama ve yönetme' },
+    online_users_view: { group: 'Sistem ve Güvenlik', icon: 'fa-signal', description: 'Sistemdeki aktif kullanıcıları izleme' }
 };
 
 const PERMISSION_GROUP_ORDER = [
@@ -4643,10 +4683,10 @@ function getPermissionRoleMatrixLabel(role) {
 function renderPermissions() {
     const matrixBody = document.getElementById('permissions-matrix-body');
     const descBody = document.getElementById('permissions-descriptions-body');
-    if (!matrixBody || !descBody) return;
+    if (!matrixBody) return;
 
     matrixBody.innerHTML = '';
-    descBody.innerHTML = '';
+    if (descBody) descBody.innerHTML = '';
 
     try {
         const theadTr = document.querySelector('#permissions-view .matrix-table thead tr');
@@ -4741,31 +4781,33 @@ function renderPermissions() {
             matrixBody.appendChild(tr);
         });
 
-        RBAC_ROLES.forEach((role, index) => {
-            const info = RBAC_ROLE_SCOPE_INFO[role.id] || {};
-            const accentColor = getPermissionRoleColor(role, index);
-            const activePermissions = RBAC_PERMISSION_MODULES.filter(mod => getMatrixPermissionValue(role.id, mod.id)).length;
-            const card = document.createElement('article');
-            card.className = 'permission-role-card';
-            card.dataset.permissionRole = role.id;
-            card.style.setProperty('--role-color', accentColor);
-            card.innerHTML = `
-                <div class="permission-role-card-header">
-                    <span class="permission-role-card-icon"><i class="fas ${info.icon || 'fa-user'}"></i></span>
-                    <div class="permission-role-card-title">
-                        <span>${role.isGlobal ? 'Küresel Sistem Rolü' : 'Hat Kapsamlı Sistem Rolü'}</span>
-                        <h4>${escapeAttr(role.name)}</h4>
+        if (descBody) {
+            RBAC_ROLES.forEach((role, index) => {
+                const info = RBAC_ROLE_SCOPE_INFO[role.id] || {};
+                const accentColor = getPermissionRoleColor(role, index);
+                const activePermissions = RBAC_PERMISSION_MODULES.filter(mod => getMatrixPermissionValue(role.id, mod.id)).length;
+                const card = document.createElement('article');
+                card.className = 'permission-role-card';
+                card.dataset.permissionRole = role.id;
+                card.style.setProperty('--role-color', accentColor);
+                card.innerHTML = `
+                    <div class="permission-role-card-header">
+                        <span class="permission-role-card-icon"><i class="fas ${info.icon || 'fa-user'}"></i></span>
+                        <div class="permission-role-card-title">
+                            <span>${role.isGlobal ? 'Küresel Sistem Rolü' : 'Hat Kapsamlı Sistem Rolü'}</span>
+                            <h4>${escapeAttr(role.name)}</h4>
+                        </div>
+                        <span class="permission-role-card-count">${activePermissions}/${RBAC_PERMISSION_MODULES.length}</span>
                     </div>
-                    <span class="permission-role-card-count">${activePermissions}/${RBAC_PERMISSION_MODULES.length}</span>
-                </div>
-                <p>${escapeAttr(info.text || '')}</p>
-                <div class="permission-role-card-footer">
-                    <span><i class="fas ${role.isGlobal ? 'fa-earth-europe' : 'fa-location-dot'}"></i> ${role.isGlobal ? 'Tüm hatlara erişim' : 'Atanmış hatlarla sınırlı'}</span>
-                    <strong class="permission-role-active-count">${activePermissions} aktif yetki</strong>
-                </div>
-            `;
-            descBody.appendChild(card);
-        });
+                    <p>${escapeAttr(info.text || '')}</p>
+                    <div class="permission-role-card-footer">
+                        <span><i class="fas ${role.isGlobal ? 'fa-earth-europe' : 'fa-location-dot'}"></i> ${role.isGlobal ? 'Tüm hatlara erişim' : 'Atanmış hatlarla sınırlı'}</span>
+                        <strong class="permission-role-active-count">${activePermissions} aktif yetki</strong>
+                    </div>
+                `;
+                descBody.appendChild(card);
+            });
+        }
 
         renderPermissionsRoleLegend();
         updatePermissionsSummary();
@@ -11259,8 +11301,7 @@ function openAddUserModal(userId) {
             document.getElementById('new-user-pass').value = '********';
             document.getElementById('new-user-pass').required = false;
             document.getElementById('personnel-role-id').value = inferRbacRoleId(user);
-            const titleInput = document.getElementById('personnel-title');
-            if (titleInput) titleInput.value = user.title || '';
+            populatePersonnelTitles(user.title || '');
             personnelSelectedLines = Array.isArray(user.authorizedLines) ? [...user.authorizedLines] : [];
             personnelSelectedAuditTypes = Array.isArray(user.authorizedAuditTypes) ? [...user.authorizedAuditTypes] : [];
             renderPersonnelTags();
@@ -12343,6 +12384,386 @@ function renderSettings() {
     setSettingValue('setting-offline-cache', settings.offlineCache);
     setSettingValue('setting-retention-months', settings.retentionMonths);
 }
+
+const DEFAULT_MOBILE_PERMISSIONS = {
+    titles: {},
+    roles: {
+        "Super_Admin": { panel: true, denetim: true, takip: true, puantaj: true, analiz: true },
+        "Executive_Viewer_Global": { panel: true, denetim: false, takip: true, puantaj: false, analiz: true },
+        "Executive_Viewer_Restricted": { panel: true, denetim: false, takip: true, puantaj: false, analiz: true },
+        "Approver": { panel: true, denetim: true, takip: true, puantaj: true, analiz: true },
+        "Field_Auditor_Action_Owner": { panel: true, denetim: true, takip: true, puantaj: true, analiz: false },
+        "Field_Auditor": { panel: true, denetim: true, takip: true, puantaj: true, analiz: false }
+    }
+};
+
+function getUniqueUserTitles() {
+    const titlesSet = new Set();
+    if (Array.isArray(appData.users)) {
+        appData.users.forEach(u => {
+            const t = (u.title || u.jobTitle || '').trim();
+            if (t) {
+                titlesSet.add(t);
+            }
+        });
+    }
+    return Array.from(titlesSet);
+}
+
+function normalizeMobilePermissions(data) {
+    const norm = {
+        titles: {},
+        roles: {}
+    };
+    const raw = data || {};
+    const rawTitles = raw.titles || {};
+    const rawRoles = raw.roles || {};
+
+    // 1. Default titles
+    Object.keys(DEFAULT_MOBILE_PERMISSIONS.titles).forEach(title => {
+        norm.titles[title] = {
+            associatedRole: rawTitles[title]?.associatedRole ?? '',
+            panel: rawTitles[title]?.panel ?? DEFAULT_MOBILE_PERMISSIONS.titles[title].panel,
+            denetim: rawTitles[title]?.denetim ?? DEFAULT_MOBILE_PERMISSIONS.titles[title].denetim,
+            takip: rawTitles[title]?.takip ?? DEFAULT_MOBILE_PERMISSIONS.titles[title].takip,
+            puantaj: rawTitles[title]?.puantaj ?? DEFAULT_MOBILE_PERMISSIONS.titles[title].puantaj,
+            analiz: rawTitles[title]?.analiz ?? DEFAULT_MOBILE_PERMISSIONS.titles[title].analiz
+        };
+    });
+
+    // 2. Custom titles stored in Firestore mobile_permissions
+    Object.keys(rawTitles).forEach(title => {
+        if (!norm.titles[title]) {
+            norm.titles[title] = {
+                associatedRole: rawTitles[title].associatedRole || '',
+                panel: rawTitles[title].panel === true,
+                denetim: rawTitles[title].denetim === true,
+                takip: rawTitles[title].takip === true,
+                puantaj: rawTitles[title].puantaj === true,
+                analiz: rawTitles[title].analiz === true
+            };
+        }
+    });
+
+    // 3. Scan dynamic user titles from the user profiles database
+    const dbTitles = getUniqueUserTitles();
+    dbTitles.forEach(title => {
+        if (!norm.titles[title]) {
+            const lower = title.toLowerCase();
+            const isManagerOrExecutive = lower.includes('müdür') || lower.includes('direktör') || lower.includes('yönetici') || lower.includes('viewer') || lower.includes('executive') || lower.includes('planlama');
+            const isSupervisor = lower.includes('vardiya amiri') || lower.includes('sorumlusu') || lower.includes('sefi');
+            
+            let assocRole = '';
+            if (isManagerOrExecutive) {
+                assocRole = lower.includes('üst') || lower.includes('ust') || lower.includes('genel') ? 'Executive_Viewer_Global' : 'Executive_Viewer_Restricted';
+            } else if (isSupervisor) {
+                assocRole = 'Field_Auditor_Action_Owner';
+            } else {
+                assocRole = 'Field_Auditor';
+            }
+
+            norm.titles[title] = {
+                associatedRole: assocRole,
+                panel: true,
+                denetim: !isManagerOrExecutive,
+                takip: true,
+                puantaj: !isSupervisor && !isManagerOrExecutive,
+                analiz: isSupervisor || isManagerOrExecutive
+            };
+        }
+    });
+
+    // 4. Default roles
+    Object.keys(DEFAULT_MOBILE_PERMISSIONS.roles).forEach(role => {
+        norm.roles[role] = {
+            panel: rawRoles[role]?.panel ?? DEFAULT_MOBILE_PERMISSIONS.roles[role].panel,
+            denetim: rawRoles[role]?.denetim ?? DEFAULT_MOBILE_PERMISSIONS.roles[role].denetim,
+            takip: rawRoles[role]?.takip ?? DEFAULT_MOBILE_PERMISSIONS.roles[role].takip,
+            puantaj: rawRoles[role]?.puantaj ?? DEFAULT_MOBILE_PERMISSIONS.roles[role].puantaj,
+            analiz: rawRoles[role]?.analiz ?? DEFAULT_MOBILE_PERMISSIONS.roles[role].analiz
+        };
+    });
+
+    return norm;
+}
+
+function renderMobilePermissions() {
+    const container = document.getElementById('permissions-view');
+    if (!container || container.style.display === 'none') return;
+
+    const data = appData.mobilePermissions || normalizeMobilePermissions(null);
+    const titlesBody = document.getElementById('mobile-titles-matrix-body');
+    const rolesBody = document.getElementById('mobile-roles-matrix-body');
+
+    // 1. Render Titles Matrix
+    if (titlesBody) {
+        titlesBody.innerHTML = '';
+        const titles = Object.keys(data.titles);
+
+        const ROLE_RANKING = {
+            'Super_Admin': 100,
+            'Approver': 90,
+            'Executive_Viewer_Global': 80,
+            'Executive_Viewer_Restricted': 70,
+            'Field_Auditor_Action_Owner': 60,
+            'Field_Auditor': 50,
+            '': 0
+        };
+
+        titles.sort((a, b) => {
+            const roleA = data.titles[a]?.associatedRole || '';
+            const roleB = data.titles[b]?.associatedRole || '';
+            const rankA = ROLE_RANKING[roleA] ?? 0;
+            const rankB = ROLE_RANKING[roleB] ?? 0;
+
+            if (rankA !== rankB) {
+                return rankB - rankA;
+            }
+            return a.localeCompare(b, 'tr');
+        });
+
+        if (titles.length === 0) {
+            titlesBody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:1.5rem; color:var(--text-dim);">Tanımlı ünvan bulunmuyor.</td></tr>`;
+        } else {
+            titles.forEach(title => {
+                const perms = data.titles[title];
+                const tr = document.createElement('tr');
+                const associatedRole = perms.associatedRole || '';
+                tr.innerHTML = `
+                    <td style="font-weight: 700;">${escapeHtml(title)}</td>
+                    <td>
+                        <select class="cms-input" style="padding: 0.3rem 0.5rem; font-size: 0.8rem; border-radius: 6px; width: 100%; border: 1px solid var(--border-main); background: var(--bg-card); color: var(--text-primary);" data-title-name="${escapeAttr(title)}" onchange="applyRoleToTitlePermissions(this, '${escapeAttr(title)}')">
+                            <option value="">-- Rol Seçin --</option>
+                            ${RBAC_ROLES.map(role => `
+                                <option value="${role.id}" ${associatedRole === role.id ? 'selected' : ''}>${escapeHtml(role.name)}</option>
+                            `).join('')}
+                        </select>
+                    </td>
+                    <td style="text-align: center;" onclick="toggleMobileMatrixPerm(this.querySelector('.permission-toggle'))">
+                        <button type="button" class="permission-toggle ${perms.panel ? 'is-enabled' : 'is-disabled'}" data-type="title" data-name="${escapeAttr(title)}" data-perm="panel">
+                            <span class="permission-toggle-track">
+                                <span class="permission-toggle-thumb"><i class="fa-solid ${perms.panel ? 'fa-check' : 'fa-xmark'}"></i></span>
+                            </span>
+                            <small>${perms.panel ? 'Açık' : 'Kapalı'}</small>
+                        </button>
+                    </td>
+                    <td style="text-align: center;" onclick="toggleMobileMatrixPerm(this.querySelector('.permission-toggle'))">
+                        <button type="button" class="permission-toggle ${perms.denetim ? 'is-enabled' : 'is-disabled'}" data-type="title" data-name="${escapeAttr(title)}" data-perm="denetim">
+                            <span class="permission-toggle-track">
+                                <span class="permission-toggle-thumb"><i class="fa-solid ${perms.denetim ? 'fa-check' : 'fa-xmark'}"></i></span>
+                            </span>
+                            <small>${perms.denetim ? 'Açık' : 'Kapalı'}</small>
+                        </button>
+                    </td>
+                    <td style="text-align: center;" onclick="toggleMobileMatrixPerm(this.querySelector('.permission-toggle'))">
+                        <button type="button" class="permission-toggle ${perms.takip ? 'is-enabled' : 'is-disabled'}" data-type="title" data-name="${escapeAttr(title)}" data-perm="takip">
+                            <span class="permission-toggle-track">
+                                <span class="permission-toggle-thumb"><i class="fa-solid ${perms.takip ? 'fa-check' : 'fa-xmark'}"></i></span>
+                            </span>
+                            <small>${perms.takip ? 'Açık' : 'Kapalı'}</small>
+                        </button>
+                    </td>
+                    <td style="text-align: center;" onclick="toggleMobileMatrixPerm(this.querySelector('.permission-toggle'))">
+                        <button type="button" class="permission-toggle ${perms.puantaj ? 'is-enabled' : 'is-disabled'}" data-type="title" data-name="${escapeAttr(title)}" data-perm="puantaj">
+                            <span class="permission-toggle-track">
+                                <span class="permission-toggle-thumb"><i class="fa-solid ${perms.puantaj ? 'fa-check' : 'fa-xmark'}"></i></span>
+                            </span>
+                            <small>${perms.puantaj ? 'Açık' : 'Kapalı'}</small>
+                        </button>
+                    </td>
+                    <td style="text-align: center;" onclick="toggleMobileMatrixPerm(this.querySelector('.permission-toggle'))">
+                        <button type="button" class="permission-toggle ${perms.analiz ? 'is-enabled' : 'is-disabled'}" data-type="title" data-name="${escapeAttr(title)}" data-perm="analiz">
+                            <span class="permission-toggle-track">
+                                <span class="permission-toggle-thumb"><i class="fa-solid ${perms.analiz ? 'fa-check' : 'fa-xmark'}"></i></span>
+                            </span>
+                            <small>${perms.analiz ? 'Açık' : 'Kapalı'}</small>
+                        </button>
+                    </td>
+                    <td style="text-align: center;">
+                        <button class="delete-btn" onclick="deleteMobileTitle('${escapeAttr(title)}')" title="Ünvanı Sil">
+                            <i class="fas fa-trash-can"></i>
+                        </button>
+                    </td>
+                `;
+                titlesBody.appendChild(tr);
+            });
+        }
+    }
+
+
+}
+
+function switchPermMainTab(tab) {
+    document.querySelectorAll('#permissions-view .btn-tab').forEach(btn => {
+        btn.classList.remove('active');
+        btn.style.borderBottom = '2px solid transparent';
+        btn.style.color = 'var(--text-secondary)';
+    });
+    document.querySelectorAll('#permissions-view .perm-main-tab-content').forEach(c => {
+        c.style.display = 'none';
+    });
+
+    const activeBtn = document.getElementById(`perm-main-tab-${tab}`);
+    if (activeBtn) {
+        activeBtn.classList.add('active');
+        activeBtn.style.borderBottom = '2px solid var(--accent)';
+        activeBtn.style.color = 'var(--text-primary)';
+    }
+
+    const activeContent = document.getElementById(`perm-tab-${tab}-content`);
+    if (activeContent) {
+        activeContent.style.display = 'block';
+    }
+}
+
+function addMobileTitle() {
+    const input = document.getElementById('new-mobile-title-input');
+    if (!input) return;
+    const titleVal = input.value.trim();
+    if (!titleVal) {
+        showToast('Lütfen geçerli bir ünvan yazın.');
+        return;
+    }
+
+    if (!appData.mobilePermissions) appData.mobilePermissions = normalizeMobilePermissions(null);
+    if (appData.mobilePermissions.titles[titleVal]) {
+        showToast('Bu ünvan zaten sistemde tanımlı.');
+        return;
+    }
+
+    // Default permissions for new title
+    appData.mobilePermissions.titles[titleVal] = { panel: true, denetim: true, takip: true, puantaj: true, analiz: false };
+    input.value = '';
+    renderMobilePermissions();
+    showToast('Yeni ünvan listeye eklendi (Kaydet butonuna basarak kaydedin).');
+}
+
+function deleteMobileTitle(titleName) {
+    if (!confirm(`"${titleName}" ünvanını silmek istediğinize emin misiniz?`)) return;
+
+    if (!appData.mobilePermissions) return;
+    delete appData.mobilePermissions.titles[titleName];
+    renderMobilePermissions();
+    showToast('Ünvan silindi (Değişiklikleri Kaydet butonuna basarak kaydedin).');
+}
+
+function toggleMobileMatrixPerm(btn) {
+    if (!btn || btn.classList.contains('is-locked') || btn.disabled) return;
+    const has = btn.classList.contains('is-enabled');
+    btn.classList.toggle('is-enabled', !has);
+    btn.classList.toggle('is-disabled', has);
+    btn.ariaPressed = String(!has);
+    const icon = btn.querySelector('.permission-toggle-thumb i');
+    if (icon) {
+        icon.className = `fa-solid ${!has ? 'fa-check' : 'fa-xmark'}`;
+    }
+    const text = btn.querySelector('small');
+    if (text) text.textContent = !has ? 'Açık' : 'Kapalı';
+}
+
+function applyRoleToTitlePermissions(select, title) {
+    if (!appData.mobilePermissions) appData.mobilePermissions = normalizeMobilePermissions(null);
+    const roleId = select.value;
+    
+    // Find the title object
+    const titlePerms = appData.mobilePermissions.titles[title];
+    if (!titlePerms) return;
+
+    titlePerms.associatedRole = roleId;
+
+    if (roleId) {
+        // Fetch role's default permissions
+        const rolePerms = DEFAULT_MOBILE_PERMISSIONS.roles[roleId];
+        if (rolePerms) {
+            titlePerms.panel = rolePerms.panel === true;
+            titlePerms.denetim = rolePerms.denetim === true;
+            titlePerms.takip = rolePerms.takip === true;
+            titlePerms.puantaj = rolePerms.puantaj === true;
+            titlePerms.analiz = rolePerms.analiz === true;
+        }
+        showToast(`"${title}" ünvanı yetkileri "${select.options[select.selectedIndex].text}" rolüne göre eşitlendi.`);
+    }
+
+    renderMobilePermissions();
+}
+
+async function saveMobilePermissions() {
+    const btn = document.querySelector('.mobile-perms-save-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...';
+    }
+
+    try {
+        const payload = {
+            titles: {},
+            roles: appData.mobilePermissions?.roles || DEFAULT_MOBILE_PERMISSIONS.roles
+        };
+
+        // 1. Gather all permission toggles for titles
+        document.querySelectorAll('#permissions-view button.permission-toggle[data-type="title"]').forEach(btnToggle => {
+            const name = btnToggle.dataset.name; // e.g. "Saha Mühendisi"
+            const perm = btnToggle.dataset.perm; // e.g. "panel"
+            const isChecked = btnToggle.classList.contains('is-enabled');
+
+            if (!payload.titles[name]) payload.titles[name] = {};
+            payload.titles[name][perm] = isChecked;
+        });
+
+        // 2. Gather associatedRoles from the dropdowns
+        document.querySelectorAll('#mobile-titles-matrix-body select').forEach(select => {
+            const name = select.getAttribute('data-title-name');
+            const roleId = select.value;
+            if (name && payload.titles[name]) {
+                payload.titles[name].associatedRole = roleId;
+            }
+        });
+
+        // Super Admin permissions are always true
+        payload.roles['Super_Admin'] = { panel: true, denetim: true, takip: true, puantaj: true, analiz: true };
+
+        await db.collection('system_config').doc('mobile_permissions').set(payload);
+        showToast('Mobil yetkiler başarıyla Firestore\'a kaydedildi.');
+    } catch (err) {
+        console.error('Save Mobile Permissions Error:', err);
+        showToast('Yetkiler kaydedilirken hata oluştu.');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save"></i> Mobil Yetkileri Kaydet';
+        }
+    }
+}
+
+function populatePersonnelTitles(selectedValue = '') {
+    const select = document.getElementById('personnel-title');
+    if (!select) return;
+
+    select.innerHTML = '<option value="">Ünvan Seçiniz...</option>';
+    const data = appData.mobilePermissions || normalizeMobilePermissions(null);
+    const titles = Object.keys(data.titles || {});
+
+    titles.forEach(title => {
+        const opt = document.createElement('option');
+        opt.value = title;
+        opt.textContent = title;
+        select.appendChild(opt);
+    });
+
+    if (selectedValue && selectedValue.trim() !== '') {
+        const exists = titles.some(t => t.toLowerCase() === selectedValue.trim().toLowerCase());
+        if (!exists) {
+            const opt = document.createElement('option');
+            opt.value = selectedValue;
+            opt.textContent = `${selectedValue} (Kayıtlı Değer)`;
+            select.appendChild(opt);
+        }
+        select.value = selectedValue;
+    } else {
+        select.value = '';
+    }
+}
+
 
 function collectSystemSettings() {
     return {
