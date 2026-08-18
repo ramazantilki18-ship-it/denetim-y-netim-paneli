@@ -161,6 +161,7 @@ const RBAC_PERMISSION_MODULES = [
     { id: 'settings', label: 'Sistem Ayarları' },
     { id: 'view_logs', label: 'Sistem Loglarını Görüntüleme' },
     { id: 'personal_stats_view', label: 'Kişisel İstatistikleri Görüntüleme' },
+    { id: 'field_tracking_view', label: 'Saha Performansı Görüntüleme' },
     { id: 'nfc_mgmt', label: 'NFC Tanımları Yönetimi' },
     { id: 'location_mgmt', label: 'Konum Tanımları Yönetimi' },
     { id: 'roster_mgmt', label: 'Vardiya Tanımları Yönetimi' },
@@ -207,31 +208,31 @@ const DEFAULT_RBAC_PERMISSIONS = {
         user_add_edit: false, user_delete: false, perm_mgmt: false, question_mgmt: false, line_mgmt: false,
         planning: false, announcement_mgmt: false, audit_start: false, nc_close: false, nc_approve: false, nc_share: true,
         dashboard_view: true, stats_view: true, export_data: true, backup_data: false, settings: false, view_logs: true,
-        personal_stats_view: true, nfc_mgmt: false, location_mgmt: false, roster_mgmt: false, feedbacks_view: true, excuse_mgmt: false, online_users_view: true
+        personal_stats_view: true, field_tracking_view: true, nfc_mgmt: false, location_mgmt: false, roster_mgmt: false, feedbacks_view: true, excuse_mgmt: false, online_users_view: true
     },
     Executive_Viewer_Restricted: {
         user_add_edit: false, user_delete: false, perm_mgmt: false, question_mgmt: false, line_mgmt: false,
         planning: false, announcement_mgmt: false, audit_start: false, nc_close: false, nc_approve: false, nc_share: false,
         dashboard_view: true, stats_view: true, export_data: true, backup_data: false, settings: false, view_logs: false,
-        personal_stats_view: true, nfc_mgmt: false, location_mgmt: false, roster_mgmt: false, feedbacks_view: false, excuse_mgmt: false, online_users_view: false
+        personal_stats_view: true, field_tracking_view: true, nfc_mgmt: false, location_mgmt: false, roster_mgmt: false, feedbacks_view: false, excuse_mgmt: false, online_users_view: false
     },
     Approver: {
         user_add_edit: false, user_delete: false, perm_mgmt: false, question_mgmt: false, line_mgmt: false,
         planning: true, announcement_mgmt: false, audit_start: true, nc_close: true, nc_approve: true, nc_share: true,
         dashboard_view: true, stats_view: true, export_data: true, backup_data: false, settings: false, view_logs: false,
-        personal_stats_view: true, nfc_mgmt: false, location_mgmt: false, roster_mgmt: true, feedbacks_view: true, excuse_mgmt: true, online_users_view: false
+        personal_stats_view: true, field_tracking_view: true, nfc_mgmt: false, location_mgmt: false, roster_mgmt: true, feedbacks_view: true, excuse_mgmt: true, online_users_view: false
     },
     Field_Auditor_Action_Owner: {
         user_add_edit: false, user_delete: false, perm_mgmt: false, question_mgmt: false, line_mgmt: false,
         planning: true, announcement_mgmt: false, audit_start: true, nc_close: true, nc_approve: false, nc_share: true,
         dashboard_view: true, stats_view: true, export_data: true, backup_data: false, settings: false, view_logs: false,
-        personal_stats_view: true, nfc_mgmt: false, location_mgmt: false, roster_mgmt: false, feedbacks_view: false, excuse_mgmt: false, online_users_view: false
+        personal_stats_view: true, field_tracking_view: false, nfc_mgmt: false, location_mgmt: false, roster_mgmt: false, feedbacks_view: false, excuse_mgmt: false, online_users_view: false
     },
     Field_Auditor: {
         user_add_edit: false, user_delete: false, perm_mgmt: false, question_mgmt: false, line_mgmt: false,
         planning: false, announcement_mgmt: false, audit_start: true, nc_close: false, nc_approve: false, nc_share: true,
         dashboard_view: true, stats_view: false, export_data: false, backup_data: false, settings: false, view_logs: false,
-        personal_stats_view: true, nfc_mgmt: false, location_mgmt: false, roster_mgmt: false, feedbacks_view: false, excuse_mgmt: false, online_users_view: false
+        personal_stats_view: true, field_tracking_view: false, nfc_mgmt: false, location_mgmt: false, roster_mgmt: false, feedbacks_view: false, excuse_mgmt: false, online_users_view: false
     }
 };
 
@@ -388,6 +389,52 @@ const DEFAULT_SYSTEM_SETTINGS = {
     titles: []
 };
 
+// Performance Caching & State Management
+appData._metricsVersion = 1;
+appData._auditsVersion = 1;
+appData._ncVersion = 1;
+appData._auditMap = null;
+appData._auditMapVersion = 0;
+
+let _cachedFilteredAudits = null;
+let _auditDisplayIdMap = null;
+let _ncDisplayIdMap = null;
+
+function invalidateDataCaches() {
+    appData._metricsVersion = (appData._metricsVersion || 0) + 1;
+    appData._auditsVersion = (appData._auditsVersion || 0) + 1;
+    appData._ncVersion = (appData._ncVersion || 0) + 1;
+    appData._auditMap = null;
+    _auditDisplayIdMap = null;
+    _ncDisplayIdMap = null;
+    _cachedFilteredAudits = null;
+    _cachedFilteredNCs = null;
+}
+
+function getAuditMap() {
+    if (!appData._auditMap || appData._auditMapVersion !== appData._auditsVersion) {
+        const map = new Map();
+        (appData.audits || []).forEach(a => {
+            if (a && a.id) map.set(String(a.id), a);
+        });
+        appData._auditMap = map;
+        appData._auditMapVersion = appData._auditsVersion;
+    }
+    return appData._auditMap;
+}
+
+function debounce(func, wait = 150) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
 // Charts
 let performanceChart, categoryChart, auditorChart, statsTrendChart, statsLineDistChart, statsNcStatusChart, statsCategorySuccessChart, dashboardStationsChart;
 
@@ -397,7 +444,8 @@ const unifiedDateFilters = {
     stats: { years: [], months: [], weeks: [], days: [], activeTab: 'year', labelId: 'stats-unified-date-label', containerId: 'custom-options-stats-unified-date', applyFn: () => updateStats() },
     audits: { years: [], months: [], weeks: [], days: [], activeTab: 'year', labelId: 'audits-unified-date-label', containerId: 'custom-options-audits-unified-date', applyFn: () => renderAllAuditsTable() },
     nc: { years: [], months: [], weeks: [], days: [], activeTab: 'year', labelId: 'nc-unified-date-label', containerId: 'custom-options-nc-unified-date', applyFn: () => renderNCs() },
-    report5S: { years: [], months: [], weeks: [], days: [], activeTab: 'year', labelId: 'report-5s-unified-date-label', containerId: 'custom-options-report-5s-unified-date', applyFn: () => {} }
+    report5S: { years: [], months: [], weeks: [], days: [], activeTab: 'year', labelId: 'report-5s-unified-date-label', containerId: 'custom-options-report-5s-unified-date', applyFn: () => {} },
+    field: { years: [], months: [], weeks: [], days: [], activeTab: 'year', labelId: 'field-unified-date-label', containerId: 'custom-options-field-unified-date', applyFn: () => { if (typeof loadFieldTrackingData === 'function') loadFieldTrackingData(); } }
 };
 
 function getISOWeekNumber(d) {
@@ -498,7 +546,22 @@ function renderUnifiedDateOptions(pageName = 'dashboard') {
     const container = document.getElementById(filter.containerId);
     if (!container) return;
 
-    const audits = getFilteredAudits() || [];
+    let itemsToProcess = [];
+    if (pageName === 'field' && typeof fieldSessionsCache !== 'undefined') {
+        itemsToProcess = fieldSessionsCache.map(s => {
+            let d = null;
+            if (s.startTime) {
+                if (typeof s.startTime.toDate === 'function') d = s.startTime.toDate();
+                else d = new Date(s.startTime);
+            }
+            return { date: d };
+        }).filter(item => item.date && !isNaN(item.date.getTime()));
+    } else {
+        const audits = getFilteredAudits() || [];
+        itemsToProcess = audits.map(audit => ({
+            date: audit.date ? new Date(audit.date) : null
+        })).filter(item => item.date && !isNaN(item.date.getTime()));
+    }
 
     const yearsSet = new Set();
     const months = [
@@ -519,18 +582,15 @@ function renderUnifiedDateOptions(pageName = 'dashboard') {
     const weeksSet = new Set();
     const daysSet = new Set();
 
-    audits.forEach(audit => {
-        if (!audit.date) return;
-        const d = new Date(audit.date);
-        if (isNaN(d.getTime())) return;
-
+    itemsToProcess.forEach(item => {
+        const d = item.date;
         const y = d.getFullYear().toString();
         yearsSet.add(y);
 
         const w = getISOWeekNumber(d);
         weeksSet.add(w);
 
-        const localDateStr = getLocalDateString(audit.date);
+        const localDateStr = getLocalDateString(d);
         if (localDateStr) daysSet.add(localDateStr);
     });
 
@@ -1184,20 +1244,102 @@ function initRealtimeSync() {
 
     // Audits Listener
     db.collection('audits').orderBy('date', 'desc').onSnapshot(snapshot => {
+        invalidateDataCaches();
         appData.audits = snapshot.docs.map(doc => normalizeAuditScore({ id: doc.id, ...doc.data() }));
         appData.auditsLoaded = true;
         renderAll();
+        autoMigrateMissingAuditAndNcNumbers();
     }, err => console.error('Audits Sync Error:', err));
 
     // Nonconformities Listener
     db.collection('nonconformities').onSnapshot(snapshot => {
+        appData._ncVersion = (appData._ncVersion || 0) + 1;
+        _cachedFilteredNCs = null;
         appData.nonconformities = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        // Auto-clean orphaned closure fields disabled because rejectNC handles it safely.
-
-        updateStats();
-        renderNCs();
+        const activeView = getActiveViewId();
+        if (activeView === 'nc-management-view') {
+            renderNCs();
+        } else if (activeView === 'dashboard-view' || activeView === 'stats-view') {
+            updateStats();
+        }
+        autoMigrateMissingAuditAndNcNumbers();
     }, err => console.error('NC Sync Error:', err));
+
+    // Field Sessions Listener
+    db.collection('field_sessions').onSnapshot(snapshot => {
+        appData.fieldSessions = snapshot.docs.map(doc => {
+            const data = doc.data();
+            
+            // date conversion
+            if (data.date) {
+                if (typeof data.date.toDate === 'function') data.date = data.date.toDate();
+                else data.date = new Date(data.date);
+            }
+            if (data.startTime) {
+                if (typeof data.startTime.toDate === 'function') data.startTime = data.startTime.toDate();
+                else data.startTime = new Date(data.startTime);
+            }
+            if (data.endTime) {
+                if (typeof data.endTime.toDate === 'function') data.endTime = data.endTime.toDate();
+                else data.endTime = new Date(data.endTime);
+            }
+            if (Array.isArray(data.visits)) {
+                data.visits.forEach(v => {
+                    if (v.entryTime) {
+                        if (typeof v.entryTime.toDate === 'function') v.entryTime = v.entryTime.toDate();
+                        else v.entryTime = new Date(v.entryTime);
+                    }
+                    if (v.exitTime) {
+                        if (typeof v.exitTime.toDate === 'function') v.exitTime = v.exitTime.toDate();
+                        else v.exitTime = new Date(v.exitTime);
+                    }
+                });
+            }
+            if (Array.isArray(data.travels)) {
+                data.travels.forEach(t => {
+                    if (t.startTime) {
+                        if (typeof t.startTime.toDate === 'function') t.startTime = t.startTime.toDate();
+                        else t.startTime = new Date(t.startTime);
+                    }
+                    if (t.endTime) {
+                        if (typeof t.endTime.toDate === 'function') t.endTime = t.endTime.toDate();
+                        else t.endTime = new Date(t.endTime);
+                    }
+                });
+            }
+            return { id: doc.id, ...data };
+        });
+        
+        // Sırala
+        appData.fieldSessions.sort((a, b) => {
+            const dateA = a.startTime || a.date || new Date(0);
+            const dateB = b.startTime || b.date || new Date(0);
+            return dateB - dateA;
+        });
+
+        appData.fieldSessionsLoaded = true;
+
+        // Eğer şu an aktif görünüm saha takipse verileri yenile
+        if (typeof loadFieldTrackingData === 'function') {
+            const activeView = getActiveViewId();
+            if (activeView === 'field-tracking-view') {
+                loadFieldTrackingData(false);
+            }
+        }
+    }, err => {
+        console.warn('Field Sessions Sync Error, falling back to mock:', err);
+        appData.fieldSessions = [];
+        appData.fieldSessionsLoaded = true;
+        
+        // Yenile
+        if (typeof loadFieldTrackingData === 'function') {
+            const activeView = getActiveViewId();
+            if (activeView === 'field-tracking-view') {
+                loadFieldTrackingData(false);
+            }
+        }
+    });
 
     // Users Listener
     db.collection('users').onSnapshot(snapshot => {
@@ -1261,16 +1403,8 @@ function initRealtimeSync() {
         } else {
             seedLinesStationsToFirebase();
         }
-        pushDebug('Calling renderLines...');
-        renderLines();
-        pushDebug('renderLines returned!');
-        renderAnnouncements();
+        invalidateDataCaches();
         renderAll();
-        populateStatsFilters();
-        populateNfcLineFilter();
-        renderNfcList();
-        populateLocationLineFilter();
-        renderLocationList();
         if (document.getElementById('user-modal')?.style.display === 'flex') {
             populatePersonnelPickers();
         }
@@ -1375,14 +1509,27 @@ function getAuditTypeAliasSet(type = {}) {
 }
 
 function getAuditTypeValues(audit = {}) {
+    if (!audit) return [];
+    if (audit._cachedTypeValues && audit._cachedTypeVersion === appData._metricsVersion) {
+        return audit._cachedTypeValues;
+    }
+
     const explicitTypeId = String(audit.auditTypeId || '').trim();
-    if (explicitTypeId) return [explicitTypeId];
+    if (explicitTypeId) {
+        audit._cachedTypeValues = [explicitTypeId];
+        audit._cachedTypeVersion = appData._metricsVersion;
+        return audit._cachedTypeValues;
+    }
 
     const explicitTypeNames = [
         audit.auditType,
         audit.type
     ].filter(value => String(value || '').trim()).map(String);
-    if (explicitTypeNames.length) return [...new Set(explicitTypeNames)];
+    if (explicitTypeNames.length) {
+        audit._cachedTypeValues = [...new Set(explicitTypeNames)];
+        audit._cachedTypeVersion = appData._metricsVersion;
+        return audit._cachedTypeValues;
+    }
 
     const values = [
         audit.questionGroupId,
@@ -1403,7 +1550,10 @@ function getAuditTypeValues(audit = {}) {
         }
     });
 
-    return [...new Set(values.filter(Boolean))];
+    const res = [...new Set(values.filter(Boolean))];
+    audit._cachedTypeValues = res;
+    audit._cachedTypeVersion = appData._metricsVersion;
+    return res;
 }
 
 function getAuditForNonconformity(nc = {}) {
@@ -1411,27 +1561,51 @@ function getAuditForNonconformity(nc = {}) {
 }
 
 function getNonconformityTypeValues(nc = {}) {
+    if (!nc) return [];
+    if (nc._cachedTypeValues && nc._cachedTypeVersion === appData._metricsVersion) {
+        return nc._cachedTypeValues;
+    }
+
     const audit = getAuditForNonconformity(nc);
     const parentTypeId = String(audit.auditTypeId || '').trim();
-    if (parentTypeId) return [parentTypeId];
+    if (parentTypeId) {
+        nc._cachedTypeValues = [parentTypeId];
+        nc._cachedTypeVersion = appData._metricsVersion;
+        return nc._cachedTypeValues;
+    }
 
     const nonconformityTypeId = String(nc.auditTypeId || '').trim();
-    if (nonconformityTypeId) return [nonconformityTypeId];
+    if (nonconformityTypeId) {
+        nc._cachedTypeValues = [nonconformityTypeId];
+        nc._cachedTypeVersion = appData._metricsVersion;
+        return nc._cachedTypeValues;
+    }
 
     const parentTypeNames = [audit.auditType, audit.type]
         .filter(value => String(value || '').trim())
         .map(String);
-    if (parentTypeNames.length) return [...new Set(parentTypeNames)];
+    if (parentTypeNames.length) {
+        nc._cachedTypeValues = [...new Set(parentTypeNames)];
+        nc._cachedTypeVersion = appData._metricsVersion;
+        return nc._cachedTypeValues;
+    }
 
     const nonconformityTypeNames = [nc.auditType, nc.type]
         .filter(value => String(value || '').trim())
         .map(String);
-    if (nonconformityTypeNames.length) return [...new Set(nonconformityTypeNames)];
+    if (nonconformityTypeNames.length) {
+        nc._cachedTypeValues = [...new Set(nonconformityTypeNames)];
+        nc._cachedTypeVersion = appData._metricsVersion;
+        return nc._cachedTypeValues;
+    }
 
-    return getAuditTypeValues({
+    const res = getAuditTypeValues({
         ...audit,
         answers: nc.answers || audit.answers || []
     });
+    nc._cachedTypeValues = res;
+    nc._cachedTypeVersion = appData._metricsVersion;
+    return res;
 }
 
 function auditTypeValuesMatch(values, selectedTypeId, source = {}) {
@@ -1745,21 +1919,84 @@ function populateAuditPageFilters() {
     }
 }
 
-function renderAll() {
+function getActiveViewId() {
+    const visibleView = Array.from(document.querySelectorAll('.view-section')).find(view => {
+        return view.style.display !== 'none' && getComputedStyle(view).display !== 'none';
+    });
+    return visibleView?.id || 'dashboard-view';
+}
+
+let _renderAllTimeout = null;
+
+function renderAll(immediate = false) {
+    if (immediate) {
+        if (_renderAllTimeout) clearTimeout(_renderAllTimeout);
+        executeRenderAll();
+        return;
+    }
+    if (_renderAllTimeout) clearTimeout(_renderAllTimeout);
+    _renderAllTimeout = setTimeout(() => {
+        executeRenderAll();
+    }, 80);
+}
+
+function executeRenderAll() {
     try {
         populateDashboardFilters();
         populateAuditPageFilters();
         populateStatsFilters();
-        updateStats();
-        renderRecentTable();
-        renderAllAuditsTable();
-        renderPeople();
-        renderStationMatrix();
-        updateCharts(appData);
-        renderAuditorPerformance();
+
+        const activeView = getActiveViewId();
+
+        if (activeView === 'dashboard-view') {
+            updateStats();
+            renderRecentTable();
+            renderStationMatrix();
+            updateCharts(appData);
+            renderAuditorPerformance();
+        } else if (activeView === 'audits-view') {
+            renderAllAuditsTable();
+        } else if (activeView === 'stats-view') {
+            updateStats();
+        } else if (activeView === 'nc-management-view') {
+            renderNCs();
+        } else if (activeView === 'people-view') {
+            renderPeople();
+        } else if (activeView === 'lines-view') {
+            renderLines();
+        } else if (activeView === 'questions-view') {
+            renderQuestionGroups();
+            if (appData.selectedGroupId) renderQuestions(appData.selectedGroupId);
+        } else if (activeView === 'planning-view') {
+            renderPlanning();
+        } else if (activeView === 'announcements-view') {
+            renderAnnouncements();
+        } else if (activeView === 'permissions-view') {
+            renderPermissions();
+            renderMobilePermissions();
+        } else if (activeView === 'nfc-view') {
+            populateNfcLineFilter();
+            renderNfcList();
+        } else if (activeView === 'location-view') {
+            populateLocationLineFilter();
+            renderLocationList();
+        } else if (activeView === 'online-users-view') {
+            renderOnlineUsers();
+        } else if (activeView === 'roster-entry-view') {
+            if (typeof renderRosterEntry === 'function') renderRosterEntry();
+        } else if (activeView === 'personal-stats-view') {
+            if (typeof renderPersonalStats === 'function') renderPersonalStats();
+        } else if (activeView === 'field-tracking-view') {
+            if (typeof renderFieldTracking === 'function') renderFieldTracking();
+        } else if (activeView === 'excuse-management-view') {
+            if (typeof renderExcuseManagement === 'function') renderExcuseManagement();
+        } else {
+            updateStats();
+            renderRecentTable();
+            renderAllAuditsTable();
+        }
     } catch (err) {
         console.error("Error in renderAll:", err);
-        showToast("Dashboard yüklenirken hata oluştu: " + err.message);
     }
 }
 
@@ -1836,6 +2073,7 @@ const NAV_VIEW_PERMISSIONS = {
     'excuse-management-view': 'excuse_mgmt',
     'feedbacks-view': 'feedbacks_view',
     'personal-stats-view': 'personal_stats_view',
+    'field-tracking-view': 'field_tracking_view',
 };
 
 function canShowNavView(viewId, user = currentUser) {
@@ -1992,32 +2230,12 @@ function switchView(viewId) {
     const targetView = document.getElementById(viewId);
     if (targetView) {
         targetView.style.display = 'block';
+        // Scroll to top
         window.scrollTo(0, 0);
         document.documentElement.scrollTop = 0;
         document.body.scrollTop = 0;
         const mainContent = document.querySelector('.main-content');
         if (mainContent) mainContent.scrollTop = 0;
-
-        // Re-render charts if stats view is active
-        if (viewId === 'stats-view') {
-            updateStats();
-        }
-        if (viewId === 'settings-view') {
-            loadSettingsPage();
-        }
-        if (viewId === 'audits-view') {
-            populateStatsFilters();
-            renderAllAuditsTable();
-        }
-        if (viewId === 'feedbacks-view') {
-            loadFeedbacks();
-        }
-        if (viewId === 'logs-view') {
-            renderLogsList();
-        }
-        if (viewId === 'reports-view') {
-            init5SReportFilters();
-        }
     } else {
         console.warn('View not found:', viewId);
     }
@@ -2025,55 +2243,66 @@ function switchView(viewId) {
     // Update nav items
     document.querySelectorAll('.nav-item').forEach(item => {
         item.classList.remove('active');
-        // More robust check for active state
         const onClickAttr = item.getAttribute('onclick') || '';
         if (onClickAttr.includes(`'${viewId}'`) || onClickAttr.includes(`"${viewId}"`)) {
             item.classList.add('active');
         }
     });
 
-    // Run view-specific rendering
-    if (viewId === 'dashboard-view') renderAll();
-    if (viewId === 'stats-view') {
+    // Run view-specific rendering lazily once
+    if (viewId === 'dashboard-view') {
         updateStats();
-    }
-    if (viewId === 'audits-view') renderAllAuditsTable();
-    if (viewId === 'people-view') renderPeople();
-    if (viewId === 'lines-view') renderLines();
-    if (viewId === 'questions-view') {
+        renderRecentTable();
+        renderStationMatrix();
+        updateCharts(appData);
+        renderAuditorPerformance();
+    } else if (viewId === 'stats-view') {
+        updateStats();
+    } else if (viewId === 'audits-view') {
+        populateStatsFilters();
+        renderAllAuditsTable();
+    } else if (viewId === 'nc-management-view') {
+        initNCFilters();
+        renderNCs();
+    } else if (viewId === 'settings-view') {
+        loadSettingsPage();
+    } else if (viewId === 'feedbacks-view') {
+        loadFeedbacks();
+    } else if (viewId === 'logs-view') {
+        renderLogsList();
+    } else if (viewId === 'reports-view') {
+        init5SReportFilters();
+    } else if (viewId === 'people-view') {
+        renderPeople();
+    } else if (viewId === 'lines-view') {
+        renderLines();
+    } else if (viewId === 'questions-view') {
         renderQuestionGroups();
         if (appData.selectedGroupId) renderQuestions(appData.selectedGroupId);
-    }
-    if (viewId === 'planning-view') renderPlanning();
-    if (viewId === 'announcements-view') renderAnnouncements();
-    if (viewId === 'permissions-view') {
+    } else if (viewId === 'planning-view') {
+        renderPlanning();
+    } else if (viewId === 'announcements-view') {
+        renderAnnouncements();
+    } else if (viewId === 'permissions-view') {
         renderPermissions();
         renderMobilePermissions();
         switchPermMainTab('web');
-    }
-    if (viewId === 'nfc-view') {
+    } else if (viewId === 'nfc-view') {
         populateNfcLineFilter();
         renderNfcList();
-    }
-    if (viewId === 'location-view') {
+    } else if (viewId === 'location-view') {
         populateLocationLineFilter();
         renderLocationList();
-    }
-    if (viewId === 'nc-management-view') {
-        initNCFilters();
-        renderNCs();
-    }
-    if (viewId === 'online-users-view') {
+    } else if (viewId === 'online-users-view') {
         renderOnlineUsers();
-    }
-    if (viewId === 'roster-entry-view') {
-        renderRosterEntry();
-    }
-    if (viewId === 'personal-stats-view') {
-        renderPersonalStats();
-    }
-    if (viewId === 'excuse-management-view') {
-        renderExcuseManagement();
+    } else if (viewId === 'roster-entry-view') {
+        if (typeof renderRosterEntry === 'function') renderRosterEntry();
+    } else if (viewId === 'personal-stats-view') {
+        if (typeof renderPersonalStats === 'function') renderPersonalStats();
+    } else if (viewId === 'field-tracking-view') {
+        if (typeof renderFieldTracking === 'function') renderFieldTracking();
+    } else if (viewId === 'excuse-management-view') {
+        if (typeof renderExcuseManagement === 'function') renderExcuseManagement();
     }
 }
 
@@ -2914,43 +3143,51 @@ function isAuditTypeActive(typeId, typeName) {
 
 function getFilteredAudits() {
     if (!currentUser) return [];
+    if (_cachedFilteredAudits && _cachedFilteredAuditsVersion === appData._auditsVersion) {
+        return _cachedFilteredAudits;
+    }
 
-    let audits = (appData.audits || []).filter(audit => {
+    const isGlobal = hasGlobalScope(currentUser);
+    const audits = (appData.audits || []).filter(audit => {
         const typeId = audit.auditTypeId;
         const typeName = audit.auditType || audit.type;
-        return isAuditTypeActive(typeId, typeName);
+        if (!isAuditTypeActive(typeId, typeName)) return false;
+        if (isGlobal) return true;
+        return userMatchesLineScope(currentUser, audit.line);
     });
 
-    if (hasGlobalScope(currentUser)) return audits;
-
-    return audits.filter(audit => userMatchesLineScope(currentUser, audit.line));
+    _cachedFilteredAudits = audits;
+    _cachedFilteredAuditsVersion = appData._auditsVersion;
+    return audits;
 }
 
 function getFilteredNCs() {
     if (!currentUser) return [];
+    if (_cachedFilteredNCs && _cachedFilteredNCsVersion === appData._ncVersion && appData._auditMapVersion === appData._auditsVersion) {
+        return _cachedFilteredNCs;
+    }
 
-    let ncs = getActiveNonconformities().filter(nc => {
-        const audit = (appData.audits || []).find(a => String(a.id) === String(nc.auditId));
+    const auditMap = getAuditMap();
+    const isGlobal = hasGlobalScope(currentUser);
+    const activeNCs = getActiveNonconformities();
+
+    const ncs = activeNCs.filter(nc => {
+        const audit = auditMap.get(String(nc.auditId));
         if (audit) {
-            const typeId = audit.auditTypeId;
-            const typeName = audit.auditType || audit.type;
-            if (!isAuditTypeActive(typeId, typeName)) return false;
+            if (!isAuditTypeActive(audit.auditTypeId, audit.auditType || audit.type)) return false;
         } else {
             const typeId = nc.auditTypeId;
             const typeName = nc.auditType || nc.type;
             if ((typeId || typeName) && !isAuditTypeActive(typeId, typeName)) return false;
         }
-        return true;
-    });
-
-    return ncs.filter(nc => {
-        const audit = getAccessibleAuditById(nc.auditId) || {};
-        const ncLine = audit.line || nc.line || 'N/A';
-
-        if (hasGlobalScope(currentUser)) return true;
-
+        if (isGlobal) return true;
+        const ncLine = audit?.line || nc.line || 'N/A';
         return userMatchesLineScope(currentUser, ncLine);
     });
+
+    _cachedFilteredNCs = ncs;
+    _cachedFilteredNCsVersion = appData._ncVersion;
+    return ncs;
 }
 
 function getScopedAuditLines() {
@@ -2972,7 +3209,8 @@ function getScopedAuditLines() {
 }
 
 function getAccessibleAuditById(id) {
-    return getFilteredAudits().find(audit => String(audit.id) === String(id)) || null;
+    if (!id) return null;
+    return getAuditMap().get(String(id)) || null;
 }
 
 // Mobil uygulama ile ortak fotoğraf yolu çözümleme
@@ -3265,16 +3503,153 @@ window.toggleNcDateSort = function () {
     renderNCs();
 };
 
-// Helper for short visual NC ID
-function getNcShortId(ncId) {
-    let hash = 0;
-    const strId = String(ncId || 'U-XXXXX');
-    for (let i = 0; i < strId.length; i++) {
-        hash = ((hash << 5) - hash) + strId.charCodeAt(i);
-        hash |= 0;
+function refreshSequentialIdMaps() {
+    _auditDisplayIdMap = new Map();
+    _ncDisplayIdMap = new Map();
+
+    // 1. Audits: Kronolojik olarak en eskiden en yeniye (artan tarih sırası) sırala
+    const sortedAudits = [...(appData.audits || [])].sort((a, b) => {
+        const timeA = statsToDate(a.date || a.createdAt || a.startedAt)?.getTime() || 0;
+        const timeB = statsToDate(b.date || b.createdAt || b.startedAt)?.getTime() || 0;
+        if (timeA !== timeB) return timeA - timeB;
+        return String(a.id).localeCompare(String(b.id));
+    });
+
+    sortedAudits.forEach((audit, index) => {
+        const seqNo = `D-${String(index + 1).padStart(5, '0')}`;
+        _auditDisplayIdMap.set(String(audit.id), seqNo);
+    });
+
+    // 2. Nonconformities: Kronolojik olarak en eskiden en yeniye (artan tarih sırası) sırala
+    const sortedNCs = [...(appData.nonconformities || [])].sort((a, b) => {
+        const auditA = getAccessibleAuditById(a.auditId);
+        const auditB = getAccessibleAuditById(b.auditId);
+        const timeA = statsToDate(a.detectionDate || a.createdAt || a.date || auditA?.date)?.getTime() || 0;
+        const timeB = statsToDate(b.detectionDate || b.createdAt || b.date || auditB?.date)?.getTime() || 0;
+        if (timeA !== timeB) return timeA - timeB;
+        return String(a.id).localeCompare(String(b.id));
+    });
+
+    sortedNCs.forEach((nc, index) => {
+        const seqNo = `U-${String(index + 1).padStart(5, '0')}`;
+        _ncDisplayIdMap.set(String(nc.id), seqNo);
+    });
+}
+
+// Helper for chronological sequential audit display number (D-00001, D-00002...)
+function getAuditDisplayId(auditOrId) {
+    if (!auditOrId) return 'D-00000';
+    if (!_auditDisplayIdMap) refreshSequentialIdMaps();
+
+    if (typeof auditOrId === 'object') {
+        const id = String(auditOrId.id || '');
+        if (_auditDisplayIdMap && _auditDisplayIdMap.has(id)) return _auditDisplayIdMap.get(id);
+        return 'D-00000';
     }
-    const hashStr = Math.abs(hash).toString(36).substring(0, 5).toUpperCase().padStart(5, '0');
-    return `U-${hashStr}`;
+
+    const rawId = String(auditOrId);
+    if (_auditDisplayIdMap && _auditDisplayIdMap.has(rawId)) return _auditDisplayIdMap.get(rawId);
+    return 'D-00000';
+}
+
+// Helper for chronological sequential NC display number (U-00001, U-00002...)
+function getNcShortId(ncId) {
+    if (!ncId) return 'U-00000';
+    if (!_ncDisplayIdMap) refreshSequentialIdMaps();
+
+    if (typeof ncId === 'object') {
+        const id = String(ncId.id || '');
+        if (_ncDisplayIdMap && _ncDisplayIdMap.has(id)) return _ncDisplayIdMap.get(id);
+        return 'U-00000';
+    }
+
+    const rawId = String(ncId);
+    if (_ncDisplayIdMap && _ncDisplayIdMap.has(rawId)) return _ncDisplayIdMap.get(rawId);
+    return 'U-00000';
+}
+
+// Auto-migration helper for auditNo & ncNo
+let _isAutoMigrationRunning = false;
+let _autoMigrationAttempted = false;
+
+async function autoMigrateMissingAuditAndNcNumbers() {
+    if (_isAutoMigrationRunning || _autoMigrationAttempted) return;
+    if (!appData.audits || !appData.nonconformities || appData.audits.length === 0) return;
+    if (!isSuperAdmin()) return;
+
+    const missingAudits = appData.audits.filter(a => !a.auditNo);
+    const missingNCs = appData.nonconformities.filter(n => !n.ncNo);
+    if (missingAudits.length === 0 && missingNCs.length === 0) {
+        _autoMigrationAttempted = true;
+        return;
+    }
+
+    _autoMigrationAttempted = true;
+    _isAutoMigrationRunning = true;
+    console.log(`[AutoMigration] Migrating ${missingAudits.length} audits and ${missingNCs.length} NCs...`);
+
+    try {
+        const batch = db.batch();
+        let ops = 0;
+        let auditCount = 0;
+        let ncCount = 0;
+
+        if (missingAudits.length > 0) {
+            const sortedAudits = [...appData.audits].sort((a, b) => {
+                const aTime = a.date ? new Date(a.date).getTime() : 0;
+                const bTime = b.date ? new Date(b.date).getTime() : 0;
+                return aTime - bTime;
+            });
+            for (let i = 0; i < sortedAudits.length; i++) {
+                auditCount++;
+                const a = sortedAudits[i];
+                const num = `D-${String(auditCount).padStart(5, '0')}`;
+                if (a.auditNo !== num) {
+                    a.auditNo = num;
+                    if (ops < 450) {
+                        batch.update(db.collection('audits').doc(a.id), { auditNo: num });
+                        ops++;
+                    }
+                }
+            }
+        }
+
+        if (missingNCs.length > 0) {
+            const sortedNCs = [...appData.nonconformities].sort((a, b) => {
+                const aTime = a.detectionDate || a.date ? new Date(a.detectionDate || a.date).getTime() : 0;
+                const bTime = b.detectionDate || b.date ? new Date(b.detectionDate || b.date).getTime() : 0;
+                return aTime - bTime;
+            });
+            for (let i = 0; i < sortedNCs.length; i++) {
+                ncCount++;
+                const n = sortedNCs[i];
+                const num = `U-${String(ncCount).padStart(5, '0')}`;
+                if (n.ncNo !== num) {
+                    n.ncNo = num;
+                    if (ops < 450) {
+                        batch.update(db.collection('nonconformities').doc(n.id), { ncNo: num });
+                        ops++;
+                    }
+                }
+            }
+        }
+
+        if (ops > 0) {
+            await batch.commit().catch(err => console.warn('AutoMigration batch commit error:', err));
+        }
+
+        await db.collection('system_config').doc('counters').set({
+            lastAuditNumber: auditCount > 0 ? auditCount : (appData.audits ? appData.audits.length : 0),
+            lastNcNumber: ncCount > 0 ? ncCount : (appData.nonconformities ? appData.nonconformities.length : 0),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true }).catch(() => {});
+
+        console.log('[AutoMigration] Migration finished successfully.');
+    } catch (e) {
+        console.error('[AutoMigration] Error:', e);
+    } finally {
+        _isAutoMigrationRunning = false;
+    }
 }
 
 // NC Management Logic with App Parity
@@ -3838,7 +4213,7 @@ async function renderNCDetailsToPdf(doc, nc, audit, imageCache, startY = 20, isB
 
     setAuditPdfFont(doc, 'normal');
     doc.setFontSize(8);
-    auditPdfText(doc, 'Kayit ID: ' + String(nc.id).substring(0, 8), pageW - margin, y - 3, { align: 'right' });
+    auditPdfText(doc, 'Kayıt No: ' + String(getNcShortId(nc)), pageW - margin, y - 3, { align: 'right' });
     const ncDateStr = nc.detectionDate || nc.date || audit.date;
     const ncPdfWeekNum = ncDateStr ? getISOWeekNumber(new Date(ncDateStr)) : '-';
     const ncPdfWeekText = ncPdfWeekNum !== '-' ? ` (${ncPdfWeekNum}. Hafta)` : '';
@@ -4067,7 +4442,8 @@ function inspectNC(id, parentAuditId = null) {
     const title = document.getElementById('modal-title');
     if (!modal || !body || !title) return;
     modal.classList.add('nc-detail-modal');
-    title.innerText = 'Uygunsuzluk Detayı';
+    const ncDisplayNo = getNcShortId(nc);
+    title.innerText = `Uygunsuzluk Detayı (${ncDisplayNo})`;
     configureAuditModalFooter({
         showReport: true,
         reportLabel: 'Uygunsuzluk Raporu',
@@ -4141,6 +4517,7 @@ function inspectNC(id, parentAuditId = null) {
                 <div class="nc-detail-overview-main">
                     <div class="nc-detail-badges">
                         <span class="nc-detail-status"><i class="fas ${statusMeta.icon}"></i>${statusMeta.label}</span>
+                        <span class="nc-detail-score" style="background: rgba(37, 99, 235, 0.15); color: #2563eb; font-weight: 800;"><i class="fas fa-hashtag"></i> ${escapeAttr(ncDisplayNo)}</span>
                         <span class="nc-detail-score"><i class="fas fa-star"></i> Denetim Puanı: ${escapeAttr(score)}</span>
                     </div>
                     <div class="nc-detail-location">
@@ -4920,9 +5297,9 @@ function seedDefaultGeneralQuestions() {
         { id: 'q29', groupId: 'g1', categoryName: 'STANDARTLAŞTIRMA', questionText: 'Anahtarlık Dolabı Planı var mı?', orderIndex: 29, maxScore: 5 },
         { id: 'q30', groupId: 'g1', categoryName: 'STANDARTLAŞTIRMA', questionText: 'İyileştirme panosu mevcut ve pano içinde olması gereken dökümanlar bulunuyor mu? (İstasyon denetim sorumlusu, Denetim Kontrol Formu, önce/sonra fotoğrafları vb.)', orderIndex: 30, maxScore: 5 },
 
-        { id: 'q31', groupId: 'g1', categoryName: 'SAHİPLENME', questionText: 'Tutum ve davranışlar denetim yaklaşımının faydalarının anlaşıldığını gösteriyor mu?', orderIndex: 31, maxScore: 5 },
-        { id: 'q32', groupId: 'g1', categoryName: 'SAHİPLENME', questionText: 'denetim standartlarını uygularken israflardan kaçınılmış mı?', orderIndex: 32, maxScore: 5 },
-        { id: 'q33', groupId: 'g1', categoryName: 'SAHİPLENME', questionText: 'denetim çalışması yaparken örnek alınacak uygulamalar geliştiriliyor mu?', orderIndex: 33, maxScore: 5 }
+        { id: 'q31', groupId: 'g1', categoryName: 'SAHİPLENME', questionText: 'Tutum ve davranışlar 5s faydalarını anlaşıldığını gösteriyor mu?', orderIndex: 31, maxScore: 5 },
+        { id: 'q32', groupId: 'g1', categoryName: 'SAHİPLENME', questionText: '5S uygularken israflardan kaçınılmış mı?', orderIndex: 32, maxScore: 5 },
+        { id: 'q33', groupId: 'g1', categoryName: 'SAHİPLENME', questionText: '5s çalışması yaparken örnek alınacak uygulamalar geliştiriliyor mu?', orderIndex: 33, maxScore: 5 }
     ];
     defaultQuestions.forEach(q => {
         db.collection('questions').doc(q.id).set(q);
@@ -5982,7 +6359,7 @@ function exportDetailedAnswersToExcel() {
 
             // Fixed columns
             const row = {};
-            row['Denetim ID'] = audit.id || '';
+            row['Denetim ID'] = getAuditDisplayId(audit);
             row['Tarih'] = dateStr;
             row['Denetçi'] = getAuditorDisplayName(audit.auditorName) || '';
             row['Hat'] = audit.line || '';
@@ -6048,7 +6425,7 @@ function exportAuditsToExcel() {
             const statusText = overallScore > 80 ? 'Tamamlandı' : (overallScore > 50 ? 'İnceleniyor' : 'Kritik');
 
             return {
-                'Denetim ID': audit.id || '',
+                'Denetim ID': getAuditDisplayId(audit),
                 'Tarih': dateStr,
                 'Denetçi': getAuditorDisplayName(audit.auditorName) || '',
                 'Hat': audit.line || '',
@@ -6471,7 +6848,7 @@ function generateCriticalNCReport() {
 
             rowsHtml += `
                 <tr>
-                    <td style="font-weight: 700; color: #1e293b;">${nc.id ? nc.id.substring(0, 8) : 'N/A'}</td>
+                    <td style="font-weight: 700; color: #1e293b;">${getNcShortId(nc)}</td>
                     <td>${dateStr}</td>
                     <td>${nc.category || 'Genel'}</td>
                     <td style="max-width: 250px; font-size: 0.72rem;">${nc.questionText || nc.detail || 'Soru detayı bulunamadı.'}</td>
@@ -6782,11 +7159,13 @@ function updateStats() {
         if (document.getElementById('stat-ontime-count')) document.getElementById('stat-ontime-count').innerText = ontimeCount + ' / ' + closedNCs.length;
         if (document.getElementById('stat-ontime-rate')) document.getElementById('stat-ontime-rate').innerText = '%' + Math.round(ontimeRate);
 
-        // Advanced Stats View (Kurumsal Analiz)
-        renderAdvancedStats();
+        // Advanced Stats View (Kurumsal Analiz) - only render if stats-view is active
+        const statsView = document.getElementById('stats-view');
+        if (statsView && statsView.style.display !== 'none' && getComputedStyle(statsView).display !== 'none') {
+            renderAdvancedStats();
+        }
     } catch (err) {
         console.error("Error in updateStats:", err);
-        showToast("İstatistikler güncellenirken hata oluştu: " + err.message);
     }
 }
 
@@ -8795,78 +9174,84 @@ function renderDashboardStationAudits(audits) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    if (window.dashboardStationsChart instanceof Chart) {
-        window.dashboardStationsChart.destroy();
-    }
-
     const maxVal = Math.max(...data, 1);
     const suggestedMax = Math.ceil(maxVal * 1.2);
     const theme = statsChartTheme();
 
-    window.dashboardStationsChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                data: data,
-                backgroundColor: color,
-                borderRadius: 5,
-                barThickness: sortedStations.length > 15 ? 12 : 20
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            layout: {
-                padding: { top: 20, bottom: 5, left: 5, right: 5 }
+    if (window.dashboardStationsChart instanceof Chart && window.dashboardStationsChart.ctx) {
+        window.dashboardStationsChart.data.labels = labels;
+        window.dashboardStationsChart.data.datasets[0].data = data;
+        window.dashboardStationsChart.data.datasets[0].backgroundColor = color;
+        window.dashboardStationsChart.options.scales.y.suggestedMax = suggestedMax;
+        window.dashboardStationsChart.update('none');
+    } else {
+        if (window.dashboardStationsChart instanceof Chart) {
+            window.dashboardStationsChart.destroy();
+        }
+        window.dashboardStationsChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: color,
+                    borderRadius: 5,
+                    barThickness: sortedStations.length > 15 ? 12 : 20
+                }]
             },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: function (context) {
-                            return `Denetim: ${context.parsed.y}`;
+            options: {
+                animation: false,
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: {
+                    padding: { top: 20, bottom: 5, left: 5, right: 5 }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                return `Denetim: ${context.parsed.y}`;
+                            }
                         }
-                    }
-                },
-                datalabels: {
-                    anchor: 'end',
-                    align: 'top',
-                    color: theme.text,
-                    font: {
-                        weight: 'bold',
-                        size: 9
                     },
-                    formatter: (val) => val
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    suggestedMax: suggestedMax,
-                    grid: {
-                        color: theme.grid,
-                        borderColor: 'transparent'
-                    },
-                    ticks: {
-                        stepSize: 1,
-                        color: theme.dim,
-                        font: { size: 9 }
-                    }
-                },
-                x: {
-                    grid: { display: false },
-                    ticks: {
+                    datalabels: {
+                        anchor: 'end',
+                        align: 'top',
                         color: theme.text,
-                        font: { size: 9 },
-                        maxRotation: 45,
-                        minRotation: 30,
-                        autoSkip: false
+                        font: {
+                            weight: 'bold',
+                            size: 9
+                        },
+                        formatter: (val) => val
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        suggestedMax: suggestedMax,
+                        grid: {
+                            color: theme.grid,
+                            borderColor: 'transparent'
+                        },
+                        ticks: {
+                            stepSize: 1,
+                            color: theme.dim,
+                            font: { size: 9 }
+                        }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            color: theme.text,
+                            maxRotation: 45,
+                            minRotation: 30
+                        }
                     }
                 }
             }
-        }
-    });
+        });
+    }
 }
 function renderCategoryStatsChart(audits) {
     const canvas = document.getElementById('categoryChartStats');
@@ -9223,6 +9608,7 @@ function renderAllAuditsTable() {
     const startIdx = (auditsCurrentPage - 1) * ITEMS_PER_PAGE;
     const paginatedAudits = audits.slice(startIdx, startIdx + ITEMS_PER_PAGE);
 
+    const fragment = document.createDocumentFragment();
     paginatedAudits.forEach(audit => {
         const tr = createAuditRow(audit, { showDelete: isSuperAdmin() });
         const selectTd = document.createElement('td');
@@ -9230,11 +9616,12 @@ function renderAllAuditsTable() {
         selectTd.innerHTML = `<input type="checkbox" class="audit-row-select" data-audit-id="${audit.id}" ${appData.selectedAuditIds.has(audit.id) ? 'checked' : ''} onchange="toggleAuditSelection(this)">`;
         const idTd = document.createElement('td');
         idTd.className = 'audit-id-cell';
-        idTd.innerText = audit.id?.substring(0, 8) || 'N/A';
+        idTd.innerText = getAuditDisplayId(audit);
         tr.insertBefore(idTd, tr.firstChild);
         tr.insertBefore(selectTd, tr.firstChild);
-        tbody.appendChild(tr);
+        fragment.appendChild(tr);
     });
+    tbody.appendChild(fragment);
     syncAuditSelectionUI();
     // Sayfalama butonlarını çiz
     renderTablePagination('all-audits-table-pagination', auditsCurrentPage, totalPages, 'changeAuditsPage');
@@ -9353,7 +9740,8 @@ function openAuditModal(id) {
         const title = document.getElementById('modal-title');
         if (!modal || !body || !title) return;
         modal.classList.remove('nc-detail-modal');
-        title.innerText = 'Denetim Raporu';
+        const auditDisplayNo = getAuditDisplayId(audit);
+        title.innerText = `Denetim Raporu (${auditDisplayNo})`;
         configureAuditModalFooter({ showReport: true, reportLabel: 'Rapor Al' });
 
         const auditDate = audit.date ? new Date(audit.date) : new Date(NaN);
@@ -9389,10 +9777,7 @@ function openAuditModal(id) {
 
         if (metrics.rows.length > 0) {
             categories = metrics.rows.map(row => row.categoryName);
-            questions = audit.answers.map(ans => {
-                const q = resolveAuditAnswerQuestion(audit, ans);
-                return q.questionText || 'Soru detayı bulunamadı';
-            });
+            questions = metrics.rows.map(row => row.questionText);
             scores = metrics.rows.map(row => row.rawScore);
         } else if (Array.isArray(audit.scores)) {
             scores = audit.scores.map(s => Number(s) || 0);
@@ -9438,6 +9823,7 @@ function openAuditModal(id) {
                                 <div title="${audit.line || '-'}" style="min-width: 34px; height: 24px; padding: 0 8px; border-radius: 999px; background: ${(appData.lineColors && audit.line) ? (appData.lineColors[audit.line] || '#64748b') : '#64748b'}; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 900; flex-shrink: 0;">${audit.line || '-'}</div>
                             </div>
                             <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <div style="padding: 6px 12px; background: rgba(59, 130, 246, 0.4); border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; font-size: 0.75rem; font-weight: 900; color: #ffffff;" title="Denetim Numarası"><i class="fas fa-hashtag"></i> ${getAuditDisplayId(audit)}</div>
                                 <div style="padding: 6px 12px; background: rgba(255,255,255,0.1); border-radius: 8px; font-size: 0.7rem; font-weight: 800; display: flex; align-items: center; gap: 6px;" title="Kullanıcı">
                                     <i class="fas fa-user" style="opacity: 0.7;"></i> ${escapeAttr(getAuditorDisplayName(audit.auditorName || 'Bilinmiyor'))}
                                 </div>
@@ -9459,12 +9845,12 @@ function openAuditModal(id) {
                         </div>
 
                         <!-- Column 3: Success Chart Container (Horizontal Bar Chart) -->
-                        <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 16px; display: flex; flex-direction: column; justify-content: center; height: 180px; align-self: stretch; position: relative;">
-                            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+                        <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 12px 16px; display: flex; flex-direction: column; justify-content: center; min-height: 190px; align-self: stretch; position: relative;">
+                            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
                                 <div style="width: 3px; height: 10px; background: #3b82f6; border-radius: 1px;"></div>
                                 <span style="font-size: 0.65rem; font-weight: 900; color: #ffffff; letter-spacing: 0.5px; text-transform: uppercase;">KATEGORİ BAZLI BAŞARI (%)</span>
                             </div>
-                            <div style="flex: 1; position: relative; height: 140px; width: 100%; min-width: 0;">
+                            <div style="flex: 1; position: relative; height: 155px; width: 100%; min-width: 0;">
                                 <canvas id="auditDetailBarChart"></canvas>
                             </div>
                         </div>
@@ -9649,8 +10035,11 @@ function openAuditModal(id) {
                     groupedQuestions[catKey].push({
                         originalIndex: i,
                         questionText: questions[i] || '-',
-                        displayScore,
-                        color,
+                        score: sVal,
+                        displayScore: displayScore,
+                        isNC: isNC,
+                        color: color,
+                        scorePercent: scorePercent,
                         ncsHtml
                     });
                 });
@@ -9658,14 +10047,37 @@ function openAuditModal(id) {
                 return Object.keys(groupedQuestions).map(catName => {
                     const listItems = groupedQuestions[catName].map((qObj, index) => {
                         const questionNumber = index + 1;
+                        const isMuaf = qObj.displayScore === 'K.D.' || qObj.score === -1;
+                        let badgeBg = '#10b981';
+                        let badgeFg = '#ffffff';
+                        let badgeText = `${qObj.displayScore} PUAN`;
+
+                        if (isMuaf) {
+                            badgeBg = '#475569';
+                            badgeFg = '#ffffff';
+                            badgeText = 'MUAF (K.D.)';
+                        } else if (qObj.isNC) {
+                            badgeBg = '#e11d48';
+                            badgeFg = '#ffffff';
+                            badgeText = `${qObj.displayScore} PUAN`;
+                        } else if (Number(qObj.score) === 4) {
+                            badgeBg = '#0284c7';
+                            badgeFg = '#ffffff';
+                            badgeText = '4 PUAN';
+                        } else if (Number(qObj.score) === 5) {
+                            badgeBg = '#10b981';
+                            badgeFg = '#ffffff';
+                            badgeText = '5 PUAN';
+                        }
+
                         return `
-                                            <div class="audit-question-row">
-                                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                                    <div style="flex: 1; padding-right: 12px;">
-                                                        <div class="audit-question-text"><strong>${questionNumber}.</strong> ${qObj.questionText}</div>
+                                            <div class="audit-question-row" style="padding: 10px 14px; border-bottom: 1px solid var(--border-main); transition: 0.15s;">
+                                                <div style="display: flex; justify-content: space-between; align-items: center; gap: 14px;">
+                                                    <div style="flex: 1;">
+                                                        <div class="audit-question-text" style="font-size: 0.82rem; font-weight: 600; color: var(--text-primary); line-height: 1.4;"><strong style="color: var(--primary); margin-right: 4px;">${questionNumber}.</strong> ${escapeAttr(qObj.questionText)}</div>
                                                     </div>
-                                                    <div style="width: 28px; height: 28px; border-radius: 8px; background: ${qObj.color}15; color: ${qObj.color}; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.75rem; flex-shrink: 0;">
-                                                        ${qObj.displayScore}
+                                                    <div style="padding: 4px 10px; border-radius: 8px; background: ${badgeBg}; color: ${badgeFg}; font-weight: 900; font-size: 0.76rem; letter-spacing: 0.4px; flex-shrink: 0; box-shadow: 0 2px 6px ${badgeBg}40; text-align: center; min-width: 60px;">
+                                                        ${badgeText}
                                                     </div>
                                                 </div>
                                                 ${qObj.ncsHtml || ''}
@@ -9675,69 +10087,46 @@ function openAuditModal(id) {
 
                     // Kategoriye özel ikon ve renk konfigürasyonu
                     const catIcons = {
-                        'SINIFLANDIRMA': { icon: 'fa-filter', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)' },
-                        'SIRALAMA': { icon: 'fa-sort-amount-down', color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' },
-                        'SİLME': { icon: 'fa-broom', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
-                        'SILME': { icon: 'fa-broom', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
-                        'STANDARTLAŞTIRMA': { icon: 'fa-check-double', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.1)' },
-                        'STANDARTLASTIRMA': { icon: 'fa-check-double', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.1)' },
-                        'SAHİPLENME': { icon: 'fa-shield-alt', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.1)' },
-                        'SAHIPLENME': { icon: 'fa-shield-alt', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.1)' },
-                        'AYIKLAMA': { icon: 'fa-filter', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)' },
-                        'DÜZEN': { icon: 'fa-sort-amount-down', color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' },
-                        'DUZEN': { icon: 'fa-sort-amount-down', color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' },
-                        'TEMİZLİK': { icon: 'fa-broom', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
-                        'TEMIZLIK': { icon: 'fa-broom', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
-                        'DİSİPLİN': { icon: 'fa-shield-alt', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.1)' },
-                        'DISIPLIN': { icon: 'fa-shield-alt', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.1)' }
+                        'SINIFLANDIRMA': { icon: 'fa-filter', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.15)' },
+                        'SIRALAMA': { icon: 'fa-sort-amount-down', color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)' },
+                        'SİLME': { icon: 'fa-broom', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)' },
+                        'SILME': { icon: 'fa-broom', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)' },
+                        'STANDARTLAŞTIRMA': { icon: 'fa-check-double', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.15)' },
+                        'STANDARTLASTIRMA': { icon: 'fa-check-double', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.15)' },
+                        'SAHİPLENME': { icon: 'fa-shield-alt', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.15)' },
+                        'SAHIPLENME': { icon: 'fa-shield-alt', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.15)' }
                     };
 
-                    const catIndex = Object.keys(groupedQuestions).indexOf(catName);
                     const catUpper = toTurkishUpperCase(catName).trim();
-                    let config = { icon: 'fa-folder', color: '#64748b', bg: 'rgba(100, 116, 139, 0.08)' };
+                    let config = { icon: 'fa-folder', color: '#64748b', bg: 'rgba(100, 116, 139, 0.12)' };
 
-                    if (catUpper.includes('AYI') || catUpper.includes('SINIF') || catUpper.includes('AY') || catUpper.includes('AYÝ')) {
-                        config = catIcons['AYIKLAMA'] || catIcons['SINIFLANDIRMA'];
-                    } else if (catUpper.includes('DÜZ') || catUpper.includes('SIRAL') || catUpper.includes('DZ') || catUpper.includes('DUZ') || catUpper.includes('DÝZ')) {
-                        config = catIcons['DÜZEN'] || catIcons['SIRALAMA'];
-                    } else if (catUpper.includes('TEMİZ') || catUpper.includes('TEMIZ') || catUpper.includes('SİL') || catUpper.includes('SIL') || catUpper.includes('SL') || catUpper.includes('SÝL')) {
-                        config = catIcons['TEMİZLİK'] || catIcons['SİLME'];
-                    } else if (catUpper.includes('STAND') || catUpper.includes('STAN')) {
-                        config = catIcons['STANDARTLAŞTIRMA'];
-                    } else if (catUpper.includes('DİS') || catUpper.includes('DIS') || catUpper.includes('SAH') || catUpper.includes('SAHÝ')) {
-                        config = catIcons['DİSİPLİN'] || catIcons['SAHİPLENME'];
-                    } else {
-                        // List sırasına göre index fallback (0->Mavi, 1->Yeşil, 2->Turuncu, 3->Mor, 4->Pembe)
-                        const fallbackConfigs = [
-                            catIcons['AYIKLAMA'] || catIcons['SINIFLANDIRMA'],
-                            catIcons['DÜZEN'] || catIcons['SIRALAMA'],
-                            catIcons['TEMİZLİK'] || catIcons['SİLME'],
-                            catIcons['STANDARTLAŞTIRMA'],
-                            catIcons['DİSİPLİN'] || catIcons['SAHİPLENME']
-                        ];
-                        if (catIndex >= 0 && catIndex < fallbackConfigs.length) {
-                            config = fallbackConfigs[catIndex];
-                        } else {
-                            // Fallback loop
-                            for (const key in catIcons) {
-                                if (catUpper.includes(key)) {
-                                    config = catIcons[key];
-                                    break;
-                                }
-                            }
+                    for (const key in catIcons) {
+                        if (catUpper.includes(key)) {
+                            config = catIcons[key];
+                            break;
                         }
                     }
 
                     const typeObj = getAuditTypeForAudit(audit) || {};
                     const catObj = (typeObj.categories || []).find(c => String(c.id) === String(catName) || String(c.name).toUpperCase() === String(catName).toUpperCase());
                     const weightStr = catObj && catObj.weight !== undefined ? ` (Ağırlık: ${catObj.weight})` : '';
+
+                    const catAvg = (metrics.categoryAverages || []).find(c => (c.categoryName || c.category || '').toUpperCase() === catName.toUpperCase());
+                    const catPercentVal = catAvg ? clampAuditPercent(catAvg.avgPercent) : 100;
+                    const catBadgeBg = catPercentVal >= 80 ? '#10b981' : (catPercentVal >= 60 ? '#f59e0b' : '#e11d48');
+
                     return `
-                                <div class="audit-question-category-group" style="margin-bottom: 10px;">
-                                    <div style="background: linear-gradient(90deg, ${config.bg}, transparent); border-left: 4px solid ${config.color}; padding: 6px 12px; font-size: 0.72rem; font-weight: 900; color: ${config.color}; letter-spacing: 0.8px; border-radius: 0 8px 8px 0; margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
-                                        <i class="fas ${config.icon}" style="font-size: 0.8rem; color: ${config.color};"></i>
-                                        <span>${catName}${weightStr}</span>
+                                <div class="audit-question-category-group" style="margin-bottom: 12px;">
+                                    <div style="background: linear-gradient(90deg, ${config.bg}, rgba(255,255,255,0.02)); border-left: 4px solid ${config.color}; padding: 8px 14px; font-size: 0.78rem; font-weight: 900; color: ${config.color}; letter-spacing: 0.8px; border-radius: 0 10px 10px 0; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <i class="fas ${config.icon}" style="font-size: 0.85rem; color: ${config.color};"></i>
+                                            <span>${catName}${weightStr}</span>
+                                        </div>
+                                        <div style="padding: 2px 10px; border-radius: 999px; background: ${catBadgeBg}; color: #ffffff; font-size: 0.72rem; font-weight: 900; letter-spacing: 0.5px; box-shadow: 0 2px 5px ${catBadgeBg}40;">
+                                            %${Math.round(catPercentVal)}
+                                        </div>
                                     </div>
-                                    <div class="audit-question-card">
+                                    <div class="audit-question-card" style="border-radius: 12px; overflow: hidden; border: 1px solid var(--border-main); background: var(--bg-card);">
                                         ${listItems}
                                     </div>
                                 </div>
@@ -9763,64 +10152,57 @@ function openAuditModal(id) {
         setTimeout(() => {
             const barCanvas = document.getElementById('auditDetailBarChart');
             if (barCanvas) {
-                // Group scores by category for the chart (Parity: only 5 bars)
-                const groupData = {};
-                // User preferred categories (All Uppercase)
-                const chartCats = ['SINIFLANDIRMA', 'SIRALAMA', 'SİLME', 'STANDARTLAŞTIRMA', 'SAHİPLENME', 'AYIKLAMA', 'DÜZEN', 'TEMİZLİK', 'DİSİPLİN'];
-                chartCats.forEach(c => groupData[c] = []);
+                if (window.__auditDetailChartInstance) {
+                    try { window.__auditDetailChartInstance.destroy(); } catch (e) {}
+                    window.__auditDetailChartInstance = null;
+                }
 
-                categories.forEach((cat, idx) => {
-                    let catUpper = cat.toUpperCase().trim();
+                let finalLabels = [];
+                let finalScores = [];
 
-                    // Unified mapping to User Preferred Terms
-                    if (catUpper.includes('AYIKLA') || catUpper.includes('SINIF')) catUpper = 'SINIFLANDIRMA';
-                    if (catUpper.includes('DÜZEN') || catUpper.includes('SIRALA')) catUpper = 'SIRALAMA';
-                    if (catUpper.includes('TEMİZ') || catUpper.includes('SİLME')) catUpper = 'SİLME';
-                    if (catUpper.includes('STANDART')) catUpper = 'STANDARTLAŞTIRMA';
-                    if (catUpper.includes('SAHİP') || catUpper.includes('DİSİP')) catUpper = 'SAHİPLENME';
-
-                    const mainCat = chartCats.find(c => catUpper.includes(c)) || catUpper;
-
-                    if (!groupData[mainCat]) groupData[mainCat] = [];
-                    groupData[mainCat].push(scores[idx]);
-                });
-
-                let finalLabels = Object.keys(groupData).filter(k => groupData[k].length > 0 && ['SINIFLANDIRMA', 'SIRALAMA', 'SİLME', 'STANDARTLAŞTIRMA', 'SAHİPLENME'].includes(k));
-                let finalScores = finalLabels.map(k => {
-                    const sum = groupData[k].reduce((a, b) => a + b, 0);
-                    return (sum / groupData[k].length) * 20; // Avg score * 20 to get %
-                });
-                if (metrics.categoryAverages.length) {
+                if (metrics.categoryAverages && metrics.categoryAverages.length > 0) {
                     finalLabels = metrics.categoryAverages.map(item => item.categoryName || item.category || 'Genel');
                     finalScores = metrics.categoryAverages.map(item => clampAuditPercent(item.avgPercent));
+                } else {
+                    finalLabels = ['Genel'];
+                    finalScores = [clampAuditPercent(metrics.overallPercent)];
                 }
 
                 const barCtx = barCanvas.getContext('2d');
-                new Chart(barCtx, {
+                window.__auditDetailChartInstance = new Chart(barCtx, {
                     type: 'bar',
                     data: {
                         labels: finalLabels,
                         datasets: [{
                             data: finalScores,
                             backgroundColor: finalScores.map(val => {
-                                return val >= 80 ? '#15803d' : (val >= 60 ? '#f59e0b' : '#ef4444');
+                                return val >= 80 ? '#10b981' : (val >= 60 ? '#f59e0b' : '#ef4444');
                             }),
-                            borderRadius: 6,
-                            barThickness: 18
+                            borderRadius: 4,
+                            barThickness: 12,
+                            maxBarThickness: 14
                         }]
                     },
                     options: {
                         indexAxis: 'y',
                         responsive: true,
                         maintainAspectRatio: false,
+                        layout: {
+                            padding: { top: 2, bottom: 2, left: 0, right: 36 }
+                        },
                         plugins: {
                             legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => ` %${Number(ctx.raw || 0).toFixed(1)}`
+                                }
+                            },
                             datalabels: {
                                 anchor: 'end',
                                 align: 'start',
                                 offset: 4,
                                 formatter: (val) => '%' + Math.round(val),
-                                font: { weight: 'bold', size: 10 },
+                                font: { weight: '800', size: 9 },
                                 color: '#ffffff'
                             }
                         },
@@ -9832,8 +10214,9 @@ function openAuditModal(id) {
                             },
                             y: {
                                 ticks: {
-                                    font: { size: 10, weight: 'bold' },
-                                    color: '#ffffff'
+                                    font: { size: 8.5, weight: '700' },
+                                    color: '#ffffff',
+                                    padding: 6
                                 },
                                 grid: { display: false }
                             }
@@ -9842,7 +10225,7 @@ function openAuditModal(id) {
                     plugins: [ChartDataLabels]
                 });
             }
-        }, 200);
+        }, 150);
 
     } catch (err) {
         console.error('Audit modal error:', err);
@@ -9967,39 +10350,71 @@ function normalizeAuditPhotoPaths(ans) {
     return [...new Set([...photos, ...paths].filter(Boolean))];
 }
 
-function resolveAuditAnswerQuestion(audit, ans) {
+function resolveAuditAnswerQuestion(audit, ans, itemIndex = 0) {
     if (!ans) return { categoryName: 'Genel', questionText: 'Soru detayı bulunamadı', orderIndex: 0 };
-    if (ans.questionText || ans.categoryName) {
-        return {
-            id: ans.questionId,
-            categoryId: ans.categoryId || ans.groupId || '',
-            categoryName: ans.categoryName || 'Genel',
-            questionText: ans.questionText || ans.question || ans.title || ans.questionId || 'Soru detayı bulunamadı',
-            orderIndex: Number(ans.orderIndex) || 0
-        };
-    }
+    
+    let resolvedCategory = ans.categoryName || ans.category || '';
+    let resolvedText = ans.questionText || ans.question || ans.title || '';
 
-    const auditType = (appData.auditTypes || []).find(type => String(type.id) === String(audit?.auditTypeId));
-    for (const category of (auditType?.categories || [])) {
-        const question = (category.questions || []).find(q => String(q.id) === String(ans.questionId));
-        if (question) {
-            return {
-                id: question.id,
-                categoryId: category.id,
-                categoryName: category.name || category.title || 'Genel',
-                questionText: question.text || question.questionText || question.title || ans.questionId,
-                orderIndex: Number(question.orderIndex) || 0
-            };
+    const cleanStr = (s) => (s || '').toLowerCase().replace(/[^a-z0-9ğüşıöç]/gi, '').trim();
+    const cleanTargetText = cleanStr(resolvedText);
+
+    // 1. Try questionId lookup in appData.questions
+    if (ans.questionId && Array.isArray(appData?.questions)) {
+        const q = appData.questions.find(item => String(item.id) === String(ans.questionId));
+        if (q) {
+            resolvedCategory = q.categoryName || q.category || resolvedCategory;
+            if (!resolvedText) resolvedText = q.questionText || q.text || q.title || '';
         }
     }
 
-    const q = (appData.questions || []).find(item => String(item.id) === String(ans.questionId));
+    // 2. Try lookup in appData.auditTypes
+    if ((!resolvedCategory || !resolvedText) && Array.isArray(appData?.auditTypes)) {
+        for (const type of appData.auditTypes) {
+            for (const category of (type.categories || [])) {
+                const q = (category.questions || []).find(item => 
+                    (ans.questionId && String(item.id) === String(ans.questionId)) ||
+                    (cleanTargetText && cleanStr(item.text || item.questionText) === cleanTargetText)
+                );
+                if (q) {
+                    resolvedCategory = category.name || category.title || resolvedCategory;
+                    if (!resolvedText) resolvedText = q.text || q.questionText || q.title || '';
+                    break;
+                }
+            }
+            if (resolvedCategory && resolvedText) break;
+        }
+    }
+
+    // 3. Fallback to official 33 5S question catalog
+    const is5s = String(audit?.auditTypeId || audit?.auditType || '').toLowerCase().includes('5s') ||
+                 String(audit?.type || '').toLowerCase().includes('5s');
+    if (is5s) {
+        const default5s = typeof getDefault5SQuestionsForRepair === 'function' ? getDefault5SQuestionsForRepair() : [];
+        if (cleanTargetText) {
+            const found5s = default5s.find(q => {
+                const cleanQ = cleanStr(q.questionText);
+                return cleanQ === cleanTargetText ||
+                       (cleanTargetText.length > 10 && cleanQ.includes(cleanTargetText.substring(0, 18))) ||
+                       (cleanQ.length > 10 && cleanTargetText.includes(cleanQ.substring(0, 18)));
+            });
+            if (found5s) {
+                resolvedCategory = found5s.categoryName;
+                if (!resolvedText) resolvedText = found5s.questionText;
+            }
+        }
+        if (!resolvedCategory && itemIndex >= 0 && itemIndex < default5s.length) {
+            resolvedCategory = default5s[itemIndex].categoryName;
+            if (!resolvedText) resolvedText = default5s[itemIndex].questionText;
+        }
+    }
+
     return {
-        id: ans.questionId,
-        categoryId: q?.categoryId || q?.groupId || '',
-        categoryName: q?.categoryName || 'Genel',
-        questionText: q?.questionText || q?.text || q?.title || ans.questionId || 'Soru detayı bulunamadı',
-        orderIndex: Number(q?.orderIndex) || 0
+        id: ans.questionId || '',
+        categoryId: ans.categoryId || ans.groupId || '',
+        categoryName: resolvedCategory || 'Genel',
+        questionText: resolvedText || ans.questionId || 'Soru detayı bulunamadı',
+        orderIndex: Number(ans.orderIndex) !== undefined ? Number(ans.orderIndex) : itemIndex
     };
 }
 
@@ -10035,6 +10450,11 @@ function auditAnswerValueToken(value) {
 }
 
 function isBooleanAuditAnswer(audit = {}, ans = {}) {
+    const rawType = String(audit.auditTypeId || audit.auditType || '').toLowerCase();
+    if (rawType.includes('5s')) {
+        return false;
+    }
+
     // 1. Check if ans.answerType or ans.type is explicitly boolean, yes-no, or evet-hayir
     const ansType = String(ans.answerType || ans.type || '').toLowerCase();
     if (ansType.includes('bool') || ansType.includes('yes-no') || ansType.includes('evet') || ansType.includes('hayır') || ansType.includes('hayir')) {
@@ -10132,42 +10552,211 @@ function scoreAuditAnswer(audit = {}, ans = {}) {
     };
 }
 
+function getQuestionBankCategoriesAndQuestions(audit) {
+    const is5S = String(audit?.auditType || audit?.auditTypeId || '').toUpperCase().includes('5S') ||
+                 String(audit?.type || '').toUpperCase().includes('5S');
+                 
+    const resolvedTypeId = audit?.auditTypeId || (typeof appData !== 'undefined' && appData.auditTypes && appData.auditTypes.find(t => (t.title || t.name) === audit?.auditType)?.id);
+    const auditType = (typeof appData !== 'undefined' && appData.auditTypes)
+        ? (appData.auditTypes.find(t => String(t.id) === String(resolvedTypeId) || (t.title || t.name) === audit?.auditType) || (is5S ? appData.auditTypes.find(t => (t.title || t.name || '').includes('5S')) : null))
+        : null;
+
+    const auditTypeId = auditType?.id || resolvedTypeId || 'audit-type-5s-denetimi';
+
+    let groups = [];
+    if (typeof buildVisibleQuestionGroups === 'function' && Array.isArray(appData?.questionGroups)) {
+        groups = buildVisibleQuestionGroups(
+            appData.questionGroups
+                .map(normalizeQuestionBankGroup)
+                .filter(g => String(g.auditTypeId) === String(auditTypeId) && g.isActive !== false && !g.isDeleted)
+                .sort((a, b) => (Number(a.orderIndex) || 0) - (Number(b.orderIndex) || 0))
+        );
+    }
+
+    const canonicalCatOrder = ['SINIFLANDIRMA', 'SIRALAMA', 'SİLME', 'STANDARTLAŞTIRMA', 'SAHİPLENME'];
+    const resultCategories = [];
+
+    if (groups && groups.length > 0) {
+        if (is5S) {
+            groups.sort((a, b) => {
+                const nameA = (a.name || a.title || '').toUpperCase().trim();
+                const nameB = (b.name || b.title || '').toUpperCase().trim();
+                const idxA = canonicalCatOrder.findIndex(c => nameA.includes(c));
+                const idxB = canonicalCatOrder.findIndex(c => nameB.includes(c));
+                return (idxA !== -1 ? idxA : 99) - (idxB !== -1 ? idxB : 99);
+            });
+        }
+
+        groups.forEach(g => {
+            const rawQuestions = typeof getQuestionsForGroup === 'function' ? getQuestionsForGroup(g.id) : [];
+            const questions = rawQuestions.filter(q => !q.isDeleted && q.isActive !== false);
+            if (questions.length > 0) {
+                resultCategories.push({
+                    categoryId: g.id,
+                    categoryName: (g.name || g.title || 'Genel').toUpperCase().trim(),
+                    questions: questions.map((q, idx) => ({
+                        questionId: q.id,
+                        categoryId: g.id,
+                        categoryName: (g.name || g.title || 'Genel').toUpperCase().trim(),
+                        questionText: q.questionText || q.text || q.title || '',
+                        orderIndex: Number(q.orderIndex) !== undefined ? Number(q.orderIndex) : idx
+                    }))
+                });
+            }
+        });
+    }
+
+    const totalQuestions = resultCategories.reduce((sum, c) => sum + c.questions.length, 0);
+    if ((resultCategories.length === 0 || totalQuestions < 30) && is5S) {
+        const default5s = typeof getDefault5SQuestionsForRepair === 'function' ? getDefault5SQuestionsForRepair() : [];
+        const catMap = new Map();
+        canonicalCatOrder.forEach(cName => catMap.set(cName, []));
+
+        default5s.forEach((q, idx) => {
+            const cName = q.categoryName.toUpperCase().trim();
+            if (!catMap.has(cName)) catMap.set(cName, []);
+            catMap.get(cName).push({
+                questionId: `5s-q-${idx + 1}`,
+                categoryId: `5s-cat-${cName}`,
+                categoryName: cName,
+                questionText: q.questionText,
+                orderIndex: idx
+            });
+        });
+
+        resultCategories.length = 0;
+        canonicalCatOrder.forEach(cName => {
+            const qs = catMap.get(cName) || [];
+            if (qs.length > 0) {
+                resultCategories.push({
+                    categoryId: `5s-cat-${cName}`,
+                    categoryName: cName,
+                    questions: qs
+                });
+            }
+        });
+    }
+
+    return resultCategories;
+}
+
+function getCompleteAuditAnswers(audit) {
+    const existingAnswers = Array.isArray(audit?.answers) ? audit.answers : [];
+    const categoriesWithQuestions = getQuestionBankCategoriesAndQuestions(audit);
+
+    if (!categoriesWithQuestions || categoriesWithQuestions.length === 0) {
+        return existingAnswers;
+    }
+
+    const cleanStr = (s) => (s || '').toLowerCase().replace(/[^a-z0-9ğüşıöç]/gi, '').trim();
+
+    const matchedAnswers = [];
+    const usedExistingIndices = new Set();
+    let globalIdx = 0;
+
+    categoriesWithQuestions.forEach(cat => {
+        cat.questions.forEach(tq => {
+            const cleanTqText = cleanStr(tq.questionText);
+
+            // 1. Try match by questionId
+            let foundIdx = existingAnswers.findIndex((ans, idx) => !usedExistingIndices.has(idx) && ans.questionId && String(ans.questionId) === String(tq.questionId));
+
+            // 2. Try match by exact/keyword similarity in questionText
+            if (foundIdx === -1) {
+                foundIdx = existingAnswers.findIndex((ans, idx) => {
+                    if (usedExistingIndices.has(idx)) return false;
+                    const ansText = cleanStr(ans.questionText || ans.question || ans.title);
+                    if (!ansText) return false;
+                    return ansText === cleanTqText ||
+                           (cleanTqText.length > 10 && ansText.includes(cleanTqText.substring(0, 18))) ||
+                           (ansText.length > 10 && cleanTqText.includes(ansText.substring(0, 18)));
+                });
+            }
+
+            if (foundIdx !== -1) {
+                usedExistingIndices.add(foundIdx);
+                const ans = existingAnswers[foundIdx];
+                matchedAnswers.push({
+                    ...ans,
+                    questionId: tq.questionId || ans.questionId,
+                    categoryId: cat.categoryId,
+                    categoryName: cat.categoryName,
+                    questionText: tq.questionText,
+                    orderIndex: globalIdx
+                });
+            } else {
+                // Not answered -> MUAF (K.D.)
+                matchedAnswers.push({
+                    questionId: tq.questionId,
+                    categoryId: cat.categoryId,
+                    categoryName: cat.categoryName,
+                    questionText: tq.questionText,
+                    isOutOfScope: true,
+                    score: -1,
+                    rawScore: -1,
+                    displayScore: 'K.D.',
+                    orderIndex: globalIdx
+                });
+            }
+            globalIdx++;
+        });
+    });
+
+    return matchedAnswers;
+}
+
 function buildAuditDetailMetrics(audit = {}) {
-    const answers = Array.isArray(audit.answers) ? audit.answers : [];
+    if (!audit) {
+        return { rows: [], categoryAverages: [], overallPercent: 100, categoryAveragePercent: 100 };
+    }
+    if (audit._cachedMetrics && audit._cachedMetricsVersion === appData._metricsVersion) {
+        return audit._cachedMetrics;
+    }
+
+    const answers = getCompleteAuditAnswers(audit);
     if (!answers.length) {
         const legacyScore = clampAuditPercent(Number(audit.score) || 0);
-        return { rows: [], categoryAverages: [], overallPercent: legacyScore, categoryAveragePercent: legacyScore };
+        const res = { rows: [], categoryAverages: [], overallPercent: legacyScore, categoryAveragePercent: legacyScore };
+        audit._cachedMetrics = res;
+        audit._cachedMetricsVersion = appData._metricsVersion;
+        return res;
     }
 
     const rows = answers.map((ans, index) => {
-        const question = resolveAuditAnswerQuestion(audit, ans);
+        const question = resolveAuditAnswerQuestion(audit, ans, index);
         const scored = scoreAuditAnswer(audit, ans);
         return {
             ans,
             index,
             question,
-            categoryName: question.categoryName || 'Genel',
-            questionText: question.questionText || 'Soru detayi bulunamadi',
+            categoryName: question.categoryName || ans.categoryName || 'Genel',
+            questionText: question.questionText || ans.questionText || 'Soru detayi bulunamadi',
             ...scored
         };
     });
 
     const categoryMap = new Map();
     rows.forEach(row => {
-        if (row.isOutOfScope) return; // Exclude KD from average calculation!
         if (!categoryMap.has(row.categoryName)) categoryMap.set(row.categoryName, []);
-        categoryMap.get(row.categoryName).push(row.percent);
+        categoryMap.get(row.categoryName).push(row);
     });
 
-    const categoryAverages = Array.from(categoryMap.entries()).map(([categoryName, values]) => {
+    const categoryAverages = Array.from(categoryMap.entries()).map(([categoryName, rowItems]) => {
         const category = findCategoryByNameOrId(audit, categoryName);
         const weight = category && category.weight !== undefined ? Number(category.weight) : 1.0;
+        
+        const activeItems = rowItems.filter(r => !r.isOutOfScope);
+        const avgPercent = activeItems.length === 0
+            ? 100.0
+            : activeItems.reduce((sum, r) => sum + r.percent, 0) / activeItems.length;
+
         return {
-            categoryName,
+            categoryName: categoryName,
             category: categoryName,
-            count: values.length,
-            weight,
-            avgPercent: values.reduce((sum, value) => sum + value, 0) / values.length
+            avgPercent: clampAuditPercent(avgPercent),
+            weight: Number.isFinite(weight) && weight > 0 ? weight : 1.0,
+            questionCount: rowItems.length,
+            nonconformityCount: rowItems.filter(r => r.isNonconformity).length
         };
     });
 
@@ -10175,6 +10764,25 @@ function buildAuditDetailMetrics(audit = {}) {
     const overallPercent = activeRows.length
         ? activeRows.reduce((sum, row) => sum + row.percent, 0) / activeRows.length
         : 100.0;
+
+    const is5s = String(audit?.auditTypeId || audit?.auditType || '').toLowerCase().includes('5s');
+    if (is5s) {
+        const fiveSCats = ['SINIFLANDIRMA', 'SIRALAMA', 'SİLME', 'STANDARTLAŞTIRMA', 'SAHİPLENME'];
+        fiveSCats.forEach(catName => {
+            const found = categoryAverages.find(c => (c.categoryName || c.category) === catName);
+            if (!found) {
+                categoryAverages.push({
+                    categoryName: catName,
+                    category: catName,
+                    questionCount: 0,
+                    nonconformityCount: 0,
+                    weight: 1.0,
+                    avgPercent: 100.0
+                });
+            }
+        });
+        categoryAverages.sort((a, b) => fiveSCats.indexOf(a.categoryName || a.category) - fiveSCats.indexOf(b.categoryName || b.category));
+    }
 
     let weightedTotal = 0;
     let totalWeight = 0;
@@ -10185,7 +10793,10 @@ function buildAuditDetailMetrics(audit = {}) {
 
     const categoryAveragePercent = totalWeight > 0 ? weightedTotal / totalWeight : overallPercent;
 
-    return { rows, categoryAverages, overallPercent, categoryAveragePercent };
+    const result = { rows, categoryAverages, overallPercent, categoryAveragePercent };
+    audit._cachedMetrics = result;
+    audit._cachedMetricsVersion = appData._metricsVersion;
+    return result;
 }
 
 function getAuditDisplayScore(audit = {}) {
@@ -10475,6 +11086,7 @@ function buildAuditPdfNcBlockData(nc, loadedPhotos) {
     const ncClosurePaths = new Set(nc.closurePhotoPaths || []);
 
     return {
+        isNc: true,
         comment: String(nc.auditorComment || '').trim(),
         closureComment: String(nc.closureComment || '').trim(),
         isClosed: isNcClosed(nc),
@@ -10483,10 +11095,11 @@ function buildAuditPdfNcBlockData(nc, loadedPhotos) {
     };
 }
 
-function buildAuditPdfFallbackBlockData(ans, loadedPhotos) {
+function buildAuditPdfFallbackBlockData(ans, loadedPhotos, isNc = false) {
     const photos = loadedPhotos || [];
     const comment = ans ? [(ans.comment || ans.detail || '').trim(), ...(Array.isArray(ans.additionalComments) ? ans.additionalComments : [])].filter(Boolean).join('\n\n') : '';
     return {
+        isNc: Boolean(isNc),
         comment: comment,
         closureComment: '',
         isClosed: false,
@@ -10496,8 +11109,13 @@ function buildAuditPdfFallbackBlockData(ans, loadedPhotos) {
 }
 
 function estimateAuditPdfNcBlockHeight(doc, ncBlock, contentW) {
+    if (ncBlock.isNc === false && !ncBlock.comment && ncBlock.detectionPhotos.length === 0 && ncBlock.closurePhotos.length === 0) {
+        return 0;
+    }
     let h = 0;
-    h += 4; // Title spacing
+    if (ncBlock.isNc !== false || ncBlock.comment || ncBlock.detectionPhotos.length > 0) {
+        h += 4; // Title spacing
+    }
     
     if (ncBlock.comment) {
         doc.setFontSize(6.5);
@@ -10523,10 +11141,76 @@ function estimateAuditPdfNcBlockHeight(doc, ncBlock, contentW) {
     return h;
 }
 
+function getAuditQuestionBadgeConfig(audit, scoredAnswer, isNc, allClosed) {
+    const is5S = String(audit?.auditType || '').toUpperCase().includes('5S');
+    const rawScore = scoredAnswer ? (Number(scoredAnswer.rawScore) || 0) : 0;
+    const percent = scoredAnswer ? (Number(scoredAnswer.percent) || (rawScore * 20)) : 0;
+    const scoreLabel = scoredAnswer ? scoredAnswer.displayScore : '0';
+    const isOutOfScope = scoredAnswer?.isOutOfScope === true || scoredAnswer?.displayScore === 'K.D.' || rawScore === -1;
+
+    if (isOutOfScope) {
+        return {
+            text: 'MUAF (K.D.)',
+            bg: [100, 116, 139], // Slate Gray
+            fg: [255, 255, 255]
+        };
+    }
+
+    if (is5S || (rawScore > 1 || percent > 0 && !isBooleanAuditAnswer(audit, scoredAnswer?.ans || {}))) {
+        if (allClosed) {
+            return {
+                text: `${scoreLabel} PUAN (ÇÖZÜLDÜ)`,
+                bg: [16, 185, 129],
+                fg: [255, 255, 255]
+            };
+        } else if (rawScore >= 4 || percent >= 80) {
+            // 4 ve 5 Puan: Tamamen Olumlu / Yeşil
+            return {
+                text: `${scoreLabel} PUAN`,
+                bg: [16, 185, 129],
+                fg: [255, 255, 255]
+            };
+        } else if (rawScore === 3 || (percent >= 50 && percent < 80)) {
+            // 3 Puan: İyileştirme / Amber-Turuncu
+            return {
+                text: `${scoreLabel} PUAN`,
+                bg: [245, 158, 11],
+                fg: [255, 255, 255]
+            };
+        } else {
+            // 0, 1, 2 Puan: Yetersiz / Kırmızı
+            return {
+                text: `${scoreLabel} PUAN`,
+                bg: [225, 29, 72],
+                fg: [255, 255, 255]
+            };
+        }
+    } else {
+        if (allClosed) {
+            return {
+                text: '✓ ÇÖZÜLDÜ',
+                bg: [16, 185, 129],
+                fg: [255, 255, 255]
+            };
+        } else if (isNc) {
+            return {
+                text: '✗ UYGUNSUZ',
+                bg: [225, 29, 72],
+                fg: [255, 255, 255]
+            };
+        } else {
+            return {
+                text: '✓ UYGUN',
+                bg: [16, 185, 129],
+                fg: [255, 255, 255]
+            };
+        }
+    }
+}
+
 function estimateAuditQuestionBlockHeight(doc, audit, ans, questionText, loadedPhotos) {
     const contentW = 180;
     const scoredAnswer = ans ? scoreAuditAnswer(audit, ans) : null;
-    const scoreLabel = scoredAnswer ? scoredAnswer.displayScore : '0';
     const isNc = scoredAnswer ? scoredAnswer.isNonconformity : false;
     
     const ncs = findNcsForAuditAnswer(audit, ans, '', questionText);
@@ -10535,29 +11219,26 @@ function estimateAuditQuestionBlockHeight(doc, audit, ans, questionText, loadedP
         if (ncs.length > 0) {
             ncs.forEach(nc => ncBlocks.push(buildAuditPdfNcBlockData(nc, loadedPhotos)));
         } else {
-            ncBlocks.push(buildAuditPdfFallbackBlockData(ans, loadedPhotos));
+            ncBlocks.push(buildAuditPdfFallbackBlockData(ans, loadedPhotos, true));
         }
     } else {
-        ncBlocks.push(buildAuditPdfFallbackBlockData(ans, loadedPhotos));
+        const fallback = buildAuditPdfFallbackBlockData(ans, loadedPhotos, false);
+        if (fallback.comment || fallback.detectionPhotos.length > 0 || fallback.closurePhotos.length > 0) {
+            ncBlocks.push(fallback);
+        }
     }
 
-    const is5S = String(audit?.auditType || '').toUpperCase().includes('5S');
-    const allClosed = ncBlocks.length > 0 && ncBlocks.every(b => b.isClosed);
-    const resolvedText = allClosed ? ' - \u00c7\u00d6Z\u00dcLD\u00dc' : '';
-    const headerPrefix = is5S
-        ? `(${scoreLabel} Puan${resolvedText})`
-        : `[${allClosed ? '\u00c7\u00d6Z\u00dcLD\u00dc' : (isNc ? 'HAYIR' : 'EVET')}]`;
-
-    doc.setFontSize(7.5);
-    const headerLines = doc.splitTextToSize(auditPdfStr(`Soru #X ${headerPrefix}: ${questionText}`), contentW - 6);
-    const headerH = 2 + headerLines.length * 3.5;
+    doc.setFontSize(7.2);
+    const qLines = doc.splitTextToSize(auditPdfStr(questionText), contentW - 12);
+    const textH = qLines.length * 3.6;
+    const headerH = 6.5 + textH;
 
     let bodyH = 0;
     ncBlocks.forEach(block => {
         bodyH += estimateAuditPdfNcBlockHeight(doc, block, contentW);
     });
 
-    const questionH = headerH + bodyH + 3;
+    const questionH = headerH + (bodyH > 0 ? bodyH + 3 : 2);
     return questionH + 2;
 }
 
@@ -10572,12 +11253,20 @@ function drawAuditPdfNcBlock(doc, ncBlock, idx, totalNcs, startX, startY, conten
         currentY += 3;
     }
 
-    setAuditPdfFont(doc, 'bold');
-    doc.setFontSize(7);
-    const titleSuffix = totalNcs > 1 ? ` #${idx + 1}` : '';
-    setAuditPdfRgb(doc, ncBlock.isClosed ? [22, 101, 52] : [225, 29, 72]);
-    auditPdfText(doc, `Uygunsuzluk${titleSuffix}${ncBlock.isClosed ? ' (Kapatıldı)' : ''}`, margin, currentY);
-    currentY += 4;
+    if (ncBlock.isNc !== false) {
+        setAuditPdfFont(doc, 'bold');
+        doc.setFontSize(7);
+        const titleSuffix = totalNcs > 1 ? ` #${idx + 1}` : '';
+        setAuditPdfRgb(doc, ncBlock.isClosed ? [22, 101, 52] : [225, 29, 72]);
+        auditPdfText(doc, `Uygunsuzluk${titleSuffix}${ncBlock.isClosed ? ' (Kapatıldı)' : ''}`, margin, currentY);
+        currentY += 4;
+    } else if (ncBlock.comment || ncBlock.detectionPhotos.length > 0) {
+        setAuditPdfFont(doc, 'bold');
+        doc.setFontSize(7);
+        setAuditPdfRgb(doc, [71, 85, 105]);
+        auditPdfText(doc, 'Denetçi Notu', margin, currentY);
+        currentY += 4;
+    }
 
     if (ncBlock.comment) {
         setAuditPdfFont(doc, 'normal');
@@ -10654,7 +11343,6 @@ function drawAuditPdfQuestionBlock(doc, audit, index, ans, categoryName, questio
     const contentW = pageW - margin * 2;
     const scoredAnswer = ans ? scoreAuditAnswer(audit, ans) : null;
     const isNc = scoredAnswer ? scoredAnswer.isNonconformity : false;
-    const scoreLabel = scoredAnswer ? scoredAnswer.displayScore : '0';
     const ncs = findNcsForAuditAnswer(audit, ans, categoryName, questionText);
     
     const ncBlocks = [];
@@ -10662,60 +11350,88 @@ function drawAuditPdfQuestionBlock(doc, audit, index, ans, categoryName, questio
         if (ncs.length > 0) {
             ncs.forEach(nc => ncBlocks.push(buildAuditPdfNcBlockData(nc, loadedPhotos)));
         } else {
-            ncBlocks.push(buildAuditPdfFallbackBlockData(ans, loadedPhotos));
+            ncBlocks.push(buildAuditPdfFallbackBlockData(ans, loadedPhotos, true));
         }
     } else {
-        ncBlocks.push(buildAuditPdfFallbackBlockData(ans, loadedPhotos));
+        const fallback = buildAuditPdfFallbackBlockData(ans, loadedPhotos, false);
+        if (fallback.comment || fallback.detectionPhotos.length > 0 || fallback.closurePhotos.length > 0) {
+            ncBlocks.push(fallback);
+        }
     }
 
     const allClosed = ncBlocks.length > 0 && ncBlocks.every(b => b.isClosed);
-    const statusColorRgb = allClosed ? [34, 197, 94] : (isNc ? [227, 30, 36] : [34, 197, 94]);
-    const statusStr = allClosed ? '\u00c7\u00d6Z\u00dcLD\u00dc' : (isNc ? 'HAYIR' : 'EVET');
-
-    const is5S = String(audit?.auditType || '').toUpperCase().includes('5S');
-    const headerPrefix = is5S
-        ? `(${scoreLabel} Puan${allClosed ? ' - \u00c7\u00d6Z\u00dcLD\u00dc' : ''})`
-        : `[${statusStr}]`;
-    const fullHeader = auditPdfStr(`Soru #${index + 1} ${headerPrefix}: ${questionText}`);
+    const badgeConfig = getAuditQuestionBadgeConfig(audit, scoredAnswer, isNc, allClosed);
+    const badgeText = auditPdfStr(badgeConfig.text);
 
     setAuditPdfFont(doc, 'bold');
-    doc.setFontSize(7.5);
-    const headerLines = doc.splitTextToSize(fullHeader, contentW - 6);
-    const headerH = 2 + headerLines.length * 3.5;
+    doc.setFontSize(6.8);
+    const badgeW = Math.max(24, doc.getTextWidth(badgeText) + 8);
+    const badgeH = 4.8;
+    const badgeX = margin + contentW - badgeW - 3;
+
+    doc.setFontSize(7.2);
+    const qLines = doc.splitTextToSize(auditPdfStr(questionText), contentW - 12);
+    const textH = qLines.length * 3.6;
+    const headerH = 6.5 + textH;
 
     let bodyH = 0;
     ncBlocks.forEach(block => {
         bodyH += estimateAuditPdfNcBlockHeight(doc, block, contentW);
     });
 
-    const questionH = headerH + bodyH + 3;
-    y = auditPdfEnsureSpace(doc, y, questionH + 4);
+    const questionH = headerH + (bodyH > 0 ? bodyH + 3 : 2);
+    
+    // Page space check before drawing
+    y = auditPdfEnsureSpace(doc, y, questionH + 3);
 
+    const boxY = y;
+    const badgeY = boxY + 1.5;
+
+    // Question Container Box
     doc.setDrawColor(226, 232, 240);
     doc.setLineWidth(0.2);
     doc.setFillColor(252, 253, 255);
-    doc.rect(margin, y, contentW, questionH, 'FD');
-    doc.setFillColor(statusColorRgb[0], statusColorRgb[1], statusColorRgb[2]);
-    doc.rect(margin, y, 1.5, questionH, 'F');
+    doc.rect(margin, boxY, contentW, questionH, 'FD');
 
-    let currentY = y + 4;
+    // Left Border Status Stripe
+    const isMuaf = Boolean(scoredAnswer?.isOutOfScope || scoredAnswer?.displayScore === 'K.D.' || scoredAnswer?.rawScore === -1);
+    const indicatorColor = isMuaf ? [148, 163, 184] : (allClosed || !isNc ? [16, 185, 129] : [225, 29, 72]);
+    doc.setFillColor(indicatorColor[0], indicatorColor[1], indicatorColor[2]);
+    doc.rect(margin, boxY, 2, questionH, 'F');
+
+    // Top Bar: Soru No (Left)
     setAuditPdfFont(doc, 'bold');
-    doc.setFontSize(7.5);
-    setAuditPdfRgb(doc, allClosed || !isNc ? [22, 101, 52] : [153, 27, 27]);
-    auditPdfText(doc, headerLines, margin + 4, currentY);
-    currentY += headerH - 2;
+    doc.setFontSize(8);
+    setAuditPdfRgb(doc, [15, 23, 42]);
+    auditPdfText(doc, `Soru #${index + 1}`, margin + 5, boxY + 4.8);
+
+    // Top Bar: Score Pill Badge (Right)
+    setAuditPdfFill(doc, badgeConfig.bg);
+    drawAuditPdfRoundedRect(doc, badgeX, badgeY, badgeW, badgeH, 1.2, 1.2, 'F');
+    setAuditPdfFont(doc, 'bold');
+    doc.setFontSize(6.8);
+    setAuditPdfRgb(doc, badgeConfig.fg);
+    auditPdfText(doc, badgeText, badgeX + badgeW / 2, badgeY + 3.4, { align: 'center' });
+
+    // Question Body Text (Completely below Top Bar)
+    setAuditPdfFont(doc, 'normal');
+    doc.setFontSize(7.2);
+    setAuditPdfRgb(doc, [51, 65, 85]);
+    auditPdfText(doc, qLines, margin + 5, boxY + 8.8);
+
+    let currentY = boxY + headerH;
 
     if (bodyH > 0) {
         doc.setDrawColor(241, 245, 249);
         doc.line(margin + 2, currentY, pageW - margin - 2, currentY);
         currentY += 3;
+
+        ncBlocks.forEach((block, idx) => {
+            currentY = drawAuditPdfNcBlock(doc, block, idx, ncBlocks.length, margin + 5, currentY, contentW);
+        });
     }
 
-    ncBlocks.forEach((block, idx) => {
-        currentY = drawAuditPdfNcBlock(doc, block, idx, ncBlocks.length, margin + 4, currentY, contentW);
-    });
-
-    return y + questionH + 2;
+    return boxY + questionH + 2;
 }
 
 function hexToRgb(hex) {
@@ -10774,16 +11490,16 @@ async function renderAuditDetailsToPdf(doc, audit, imageCache) {
     }
     const typeColorHex = getAuditTypeColor(resolvedTypeId);
     const typeColorRgb = hexToRgb(typeColorHex);
-
-    const answers = (audit.answers && Array.isArray(audit.answers) && audit.answers.length > 0) ? audit.answers : null;
-    if (answers) {
+    const answers = getCompleteAuditAnswers(audit);
+    let questionCounter = 0;
+    if (answers && answers.length > 0) {
         for (const section of groupAuditAnswersByCategory(audit, answers)) {
             // Predict space for header AND the first question
             let firstBlockH = 30;
             if (section.items && section.items.length > 0) {
                 const firstAns = section.items[0].ans;
                 const firstQText = section.items[0].question.questionText || '';
-                const cacheKey = firstAns.questionId || 'idx_' + section.items[0].index;
+                const cacheKey = firstAns.questionId || 'idx_' + questionCounter;
                 const loadedPhotos = imageCache[cacheKey] || [];
                 firstBlockH = estimateAuditQuestionBlockHeight(doc, audit, firstAns, firstQText, loadedPhotos);
             }
@@ -10807,11 +11523,10 @@ async function renderAuditDetailsToPdf(doc, audit, imageCache) {
                 const ans = item.ans;
                 const categoryName = item.question.categoryName || section.categoryName || 'Genel';
                 const questionText = item.question.questionText || 'Soru detayı bulunamadı';
-                const cacheKey = ans.questionId || 'idx_' + item.index;
+                const cacheKey = ans.questionId || 'idx_' + questionCounter;
                 const loadedPhotos = imageCache[cacheKey] || [];
-                const blockH = estimateAuditQuestionBlockHeight(doc, audit, ans, questionText, loadedPhotos);
-                y = auditPdfEnsureSpace(doc, y, blockH);
-                y = drawAuditPdfQuestionBlock(doc, audit, item.index, ans, categoryName, questionText, loadedPhotos, y);
+                y = drawAuditPdfQuestionBlock(doc, audit, questionCounter, ans, categoryName, questionText, loadedPhotos, y);
+                questionCounter++;
             }
         }
     }
@@ -10835,7 +11550,12 @@ function drawAuditPdfHero(doc, audit, y) {
     const heroH = hasTimestamps ? 46 : 38;
     const score = getAuditDisplayScore(audit);
     const badgeColor = getAuditScoreBadgeColor(score);
-    const lineLabel = (audit.line && audit.line.length > 3) ? audit.line.substring(0, 3) : (audit.line || '');
+    const rawLine = audit.line || '';
+    const lineLabel = (rawLine.length > 3) ? rawLine.substring(0, 3) : rawLine;
+    const lineColorHex = (typeof appData !== 'undefined' && appData.lineColors && (appData.lineColors[rawLine] || appData.lineColors[lineLabel]))
+        ? (appData.lineColors[rawLine] || appData.lineColors[lineLabel])
+        : '#2563eb';
+    const lineRgb = hexToRgb(lineColorHex);
 
     const resolvedTypeId = audit.auditTypeId || (typeof appData !== 'undefined' && appData.auditTypes && appData.auditTypes.find(t => (t.title || t.name) === audit.auditType)?.id);
     const typeColorHex = getAuditTypeColor(resolvedTypeId);
@@ -10848,7 +11568,7 @@ function drawAuditPdfHero(doc, audit, y) {
     const circleX = margin + 4;
     const circleY = y + 6;
     const circleSize = 20;
-    setAuditPdfFill(doc, AUDIT_PDF_COLORS.blue700);
+    setAuditPdfFill(doc, lineRgb);
     doc.circle(circleX + circleSize / 2, circleY + circleSize / 2, circleSize / 2, 'F');
     setAuditPdfFont(doc, 'bold');
     doc.setFontSize(11);
@@ -10873,7 +11593,7 @@ function drawAuditPdfHero(doc, audit, y) {
     doc.setFontSize(8);
     setAuditPdfRgb(doc, [203, 213, 225]);
     infoY += 5;
-    auditPdfText(doc, `Denetim ID: ${String(audit.id).replace(/AUD/g, 'DNT')}`, infoX, infoY);
+    auditPdfText(doc, `Denetim No: ${getAuditDisplayId(audit)}`, infoX, infoY);
     infoY += 4;
     if (audit.startedAt && audit.completedAt) {
         const startStr = formatAuditPdfDateTime(audit.startedAt);
@@ -10934,11 +11654,7 @@ async function downloadAuditReport(id) {
         showToast('PDF Raporu hazırlanıyor...');
 
         const { jsPDF } = window.jspdf;
-        if (!jsPDF) throw new Error('jsPDF library not loaded');
-
-        const answers = (audit.answers && Array.isArray(audit.answers) && audit.answers.length > 0)
-            ? audit.answers
-            : null;
+        const answers = getCompleteAuditAnswers(audit);
 
         const doc = new jsPDF({ unit: 'mm', format: 'a4' });
         await ensureAuditPdfFonts(doc);
@@ -11037,7 +11753,8 @@ async function generateBulkAuditPDFs(action = 'download') {
     }
 
     try {
-        showToast('Toplu denetim PDF hazırlanıyor...');
+        const isSingle = selectedAudits.length === 1;
+        showToast(isSingle ? 'PDF Raporu hazırlanıyor...' : `${selectedAudits.length} adet denetim için toplu PDF hazırlanıyor...`);
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ unit: 'mm', format: 'a4' });
         await ensureAuditPdfFonts(doc);
@@ -11049,7 +11766,7 @@ async function generateBulkAuditPDFs(action = 'download') {
                 startY: 42,
                 head: [['ID', 'TARİH', 'TİP', 'HAT', 'İSTASYON', 'DENETÇİ', 'PUAN']],
                 body: selectedAudits.map(a => [
-                    toTurkishUpperCase(safePdfValue(a.id)),
+                    toTurkishUpperCase(safePdfValue(getAuditDisplayId(a))),
                     a.date ? toTurkishUpperCase(new Date(a.date).toLocaleDateString('tr-TR')) : '-',
                     toTurkishUpperCase(safePdfValue(a.auditType)),
                     toTurkishUpperCase(safePdfValue(a.line)),
@@ -11102,7 +11819,7 @@ async function generateBulkAuditPDFs(action = 'download') {
             if (selectedAudits.length > 1 || i > 0) {
                 doc.addPage();
             }
-            const answers = (audit.answers && Array.isArray(audit.answers) && audit.answers.length > 0) ? audit.answers : null;
+            const answers = getCompleteAuditAnswers(audit);
             const imageCache = {};
             if (answers) {
                 try {
@@ -11116,16 +11833,14 @@ async function generateBulkAuditPDFs(action = 'download') {
             await renderAuditDetailsToPdf(doc, audit, imageCache);
         }
 
-
-
         let outputFileName = `Toplu_Denetim_Raporu_${selectedAudits.length}_kayit.pdf`;
         if (selectedAudits.length === 1) {
             outputFileName = getAuditPdfFileName(selectedAudits[0]);
         }
-        await handleBulkPdfOutput(doc, outputFileName, 'Toplu Denetim Kayıtları Raporu', action);
+        await handleBulkPdfOutput(doc, outputFileName, isSingle ? 'Denetim Raporu' : 'Toplu Denetim Kayıtları Raporu', action);
     } catch (err) {
-        console.error('Bulk audit PDF error:', err);
-        showToast(`Toplu PDF oluşturulamadı: ${err && err.message ? err.message : 'bilinmeyen hata'}`);
+        console.error('Audit PDF error:', err);
+        showToast(`PDF oluşturulamadı: ${err && err.message ? err.message : 'bilinmeyen hata'}`);
     }
 }
 
@@ -11162,7 +11877,7 @@ async function generateBulkNCPDFs(action = 'download') {
                 body: selectedNCs.map(nc => {
                     const audit = getAccessibleAuditById(nc.auditId) || {};
                     return [
-                        toTurkishUpperCase(safePdfValue(String(nc.id).substring(0, 6))),
+                        toTurkishUpperCase(safePdfValue(getNcShortId(nc))),
                         nc.detectionDate || nc.date ? toTurkishUpperCase(new Date(nc.detectionDate || nc.date).toLocaleDateString('tr-TR')) : '-',
                         toTurkishUpperCase(safePdfValue(audit.auditType || nc.auditType || '-')),
                         toTurkishUpperCase(safePdfValue(audit.line || nc.line)),
@@ -11577,6 +12292,11 @@ function renderStationMatrix() {
 
 function updateCharts(data) {
     try {
+        const dashView = document.getElementById('dashboard-view');
+        if (dashView && (dashView.style.display === 'none' || getComputedStyle(dashView).display === 'none')) {
+            return;
+        }
+
         const chartDefaults = {
             responsive: true,
             maintainAspectRatio: false,
@@ -11592,201 +12312,215 @@ function updateCharts(data) {
         // Dashboard - Trend (Last 6 months)
         const perfCtx = document.getElementById('performanceChart')?.getContext('2d');
         if (perfCtx && filteredAudits.length > 0) {
-        if (performanceChart) performanceChart.destroy();
-
-        // Group audits by year and month for correct chronological sorting
-        const monthlyGroups = {};
-        filteredAudits.forEach(a => {
-            const d = new Date(a.date);
-            if (isNaN(d.getTime())) return;
-            const year = d.getFullYear();
-            const monthNum = String(d.getMonth() + 1).padStart(2, '0');
-            const key = `${year}-${monthNum}`;
-            if (!monthlyGroups[key]) {
-                monthlyGroups[key] = {
-                    label: d.toLocaleString('tr-TR', { month: 'short' }),
-                    scores: []
-                };
-            }
-            monthlyGroups[key].scores.push(a.score);
-        });
-
-        // Sort keys chronologically
-        const sortedKeys = Object.keys(monthlyGroups).sort();
-        const labels = sortedKeys.map(k => monthlyGroups[k].label);
-        const values = sortedKeys.map(k => {
-            const scores = monthlyGroups[k].scores;
-            const avg = scores.reduce((sum, val) => sum + val, 0) / scores.length;
-            return Number(avg.toFixed(1));
-        });
-
-        const gradient = perfCtx.createLinearGradient(0, 0, 0, 400);
-        gradient.addColorStop(0, 'rgba(139, 92, 246, 0.4)');
-        gradient.addColorStop(1, 'rgba(139, 92, 246, 0)');
-
-        const isLight = document.body.classList.contains('light-mode');
-
-        performanceChart = new Chart(perfCtx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: values,
-                    borderColor: '#8b5cf6',
-                    fill: true,
-                    backgroundColor: gradient,
-                    tension: 0.4,
-                    pointRadius: 4,
-                    pointHoverRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                layout: {
-                    padding: { top: 25, left: 10, right: 10, bottom: 5 }
-                },
-                plugins: {
-                    legend: { display: false },
-                    datalabels: {
-                        anchor: 'end',
-                        align: 'top',
-                        offset: 4,
-                        font: { weight: 'bold', size: 10 },
-                        color: isLight ? '#1e293b' : '#f1f5f9',
-                        formatter: (value) => `%${value}`
-                    }
-                },
-                scales: {
-                    y: {
-                        grid: { color: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)' },
-                        ticks: { color: '#94a3b8' },
-                        suggestedMax: 100
-                    },
-                    x: {
-                        grid: { display: false },
-                        ticks: { color: '#94a3b8' }
-                    }
+            // Group audits by year and month for correct chronological sorting
+            const monthlyGroups = {};
+            filteredAudits.forEach(a => {
+                const d = new Date(a.date);
+                if (isNaN(d.getTime())) return;
+                const year = d.getFullYear();
+                const monthNum = String(d.getMonth() + 1).padStart(2, '0');
+                const key = `${year}-${monthNum}`;
+                if (!monthlyGroups[key]) {
+                    monthlyGroups[key] = {
+                        label: d.toLocaleString('tr-TR', { month: 'short' }),
+                        scores: []
+                    };
                 }
-            }
-        });
-    }
+                monthlyGroups[key].scores.push(a.score);
+            });
 
-    // Dashboard - Category Performance
-    const catCtx = document.getElementById('categoryChart')?.getContext('2d');
-    if (catCtx && filteredAudits.length > 0) {
-        if (categoryChart) categoryChart.destroy();
+            // Sort keys chronologically
+            const sortedKeys = Object.keys(monthlyGroups).sort();
+            const labels = sortedKeys.map(k => monthlyGroups[k].label);
+            const values = sortedKeys.map(k => {
+                const scores = monthlyGroups[k].scores;
+                const avg = scores.reduce((sum, val) => sum + val, 0) / scores.length;
+                return Number(avg.toFixed(1));
+            });
 
-        const categoryMap = {};
-        const categoryTypes = {};
-        filteredAudits.forEach(audit => {
-            const typeObj = getAuditTypeForAudit(audit) || {};
-            const auditTypeName = typeObj.name || audit.auditType || audit.type || 'Diğer';
-            const metrics = buildAuditDetailMetrics(audit);
-            if (metrics.categoryAverages && metrics.categoryAverages.length > 0) {
-                metrics.categoryAverages.forEach(catAvg => {
-                    const name = catAvg.categoryName || 'Genel';
-                    if (!categoryMap[name]) categoryMap[name] = [];
-                    categoryMap[name].push(catAvg.avgPercent);
-                    categoryTypes[name] = auditTypeName;
-                });
+            const gradient = perfCtx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, 'rgba(139, 92, 246, 0.4)');
+            gradient.addColorStop(1, 'rgba(139, 92, 246, 0)');
+
+            const isLight = document.body.classList.contains('light-mode');
+
+            if (performanceChart instanceof Chart && performanceChart.ctx) {
+                performanceChart.data.labels = labels;
+                performanceChart.data.datasets[0].data = values;
+                performanceChart.data.datasets[0].backgroundColor = gradient;
+                performanceChart.update('none');
             } else {
-                // Fallback for legacy audits without answer-level breakdown
-                const categories = ['Sınıflandırma', 'Sıralama', 'Silme', 'Standartlaştırma', 'Sahiplenme'];
-                const score = Number(audit.score) || 0;
-                categories.forEach(name => {
-                    if (!categoryMap[name]) categoryMap[name] = [];
-                    categoryMap[name].push(score);
+                if (performanceChart) performanceChart.destroy();
+                performanceChart = new Chart(perfCtx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: values,
+                            borderColor: '#8b5cf6',
+                            fill: true,
+                            backgroundColor: gradient,
+                            tension: 0.4,
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        }]
+                    },
+                    options: {
+                        animation: false,
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        layout: {
+                            padding: { top: 25, left: 10, right: 10, bottom: 5 }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            datalabels: {
+                                anchor: 'end',
+                                align: 'top',
+                                offset: 4,
+                                font: { weight: 'bold', size: 10 },
+                                color: isLight ? '#1e293b' : '#f1f5f9',
+                                formatter: (value) => `%${value}`
+                            }
+                        },
+                        scales: {
+                            y: {
+                                grid: { color: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)' },
+                                ticks: { color: '#94a3b8' },
+                                suggestedMax: 100
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: '#94a3b8' }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Dashboard - Category Performance
+        const catCtx = document.getElementById('categoryChart')?.getContext('2d');
+        if (catCtx && filteredAudits.length > 0) {
+            const categoryMap = {};
+            const categoryTypes = {};
+            filteredAudits.forEach(audit => {
+                const typeObj = getAuditTypeForAudit(audit) || {};
+                const auditTypeName = typeObj.name || audit.auditType || audit.type || 'Diğer';
+                const metrics = buildAuditDetailMetrics(audit);
+                if (metrics.categoryAverages && metrics.categoryAverages.length > 0) {
+                    metrics.categoryAverages.forEach(catAvg => {
+                        const name = catAvg.categoryName || 'Genel';
+                        if (!categoryMap[name]) categoryMap[name] = [];
+                        categoryMap[name].push(catAvg.avgPercent);
+                        categoryTypes[name] = auditTypeName;
+                    });
+                } else {
+                    // Fallback for legacy audits without answer-level breakdown
+                    const categories = ['Sınıflandırma', 'Sıralama', 'Silme', 'Standartlaştırma', 'Sahiplenme'];
+                    const score = Number(audit.score) || 0;
+                    categories.forEach(name => {
+                        if (!categoryMap[name]) categoryMap[name] = [];
+                        categoryMap[name].push(score);
+                        categoryTypes[name] = '5S Denetimi';
+                    });
+                }
+            });
+
+            let labels = Object.keys(categoryMap);
+            if (labels.length === 0) {
+                labels = ['Sınıflandırma', 'Sıralama', 'Silme', 'Standartlaştırma', 'Sahiplenme'];
+                labels.forEach(name => {
+                    categoryMap[name] = [80];
                     categoryTypes[name] = '5S Denetimi';
                 });
             }
-        });
 
-        let labels = Object.keys(categoryMap);
-        if (labels.length === 0) {
-            labels = ['Sınıflandırma', 'Sıralama', 'Silme', 'Standartlaştırma', 'Sahiplenme'];
-            labels.forEach(name => {
-                categoryMap[name] = [80];
-                categoryTypes[name] = '5S Denetimi';
+            const values = labels.map(name => {
+                const avgs = categoryMap[name];
+                const avg = avgs.reduce((sum, val) => sum + val, 0) / avgs.length;
+                return Number(avg.toFixed(1));
             });
-        }
 
-        const values = labels.map(name => {
-            const avgs = categoryMap[name];
-            const avg = avgs.reduce((sum, val) => sum + val, 0) / avgs.length;
-            return Number(avg.toFixed(1));
-        });
-
-        const typeColors = {
-            '5S Denetimi': '#f43f5e',
-            'ISO 9001': '#06b6d4',
-            'İSG': '#f59e0b',
-            'Diğer': '#8b5cf6'
-        };
-        const defaultColors = ['#f43f5e', '#06b6d4', '#f59e0b', '#8b5cf6', '#10b981', '#6366f1'];
-        let colorIdx = 0;
-        const bgColors = labels.map(name => {
-            const tName = categoryTypes[name] || 'Diğer';
-            if (!typeColors[tName]) {
-                typeColors[tName] = defaultColors[colorIdx % defaultColors.length];
-                colorIdx++;
-            }
-            return typeColors[tName];
-        });
-
-        const isLight = document.body.classList.contains('light-mode');
-
-        categoryChart = new Chart(catCtx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Başarı Oranı (%)',
-                    data: values,
-                    backgroundColor: bgColors,
-                    borderRadius: 6,
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                indexAxis: 'y',
-                responsive: true,
-                maintainAspectRatio: false,
-                layout: {
-                    padding: { top: 10, left: 10, right: 40, bottom: 10 }
-                },
-                plugins: {
-                    legend: { display: false },
-                    datalabels: {
-                        anchor: 'end',
-                        align: 'end',
-                        offset: 4,
-                        clip: false,
-                        font: { weight: 'bold', size: 10 },
-                        color: isLight ? '#1e293b' : '#f1f5f9',
-                        formatter: (value) => `%${value}`
-                    }
-                },
-                scales: {
-                    x: {
-                        grid: { color: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)' },
-                        ticks: {
-                            color: '#94a3b8',
-                            callback: (value) => `%${value}`
-                        },
-                        suggestedMax: 115,
-                        beginAtZero: true
-                    },
-                    y: {
-                        grid: { display: false },
-                        ticks: { color: '#94a3b8', font: { size: 10 } }
-                    }
+            const typeColors = {
+                '5S Denetimi': '#f43f5e',
+                'ISO 9001': '#06b6d4',
+                'İSG': '#f59e0b',
+                'Diğer': '#8b5cf6'
+            };
+            const defaultColors = ['#f43f5e', '#06b6d4', '#f59e0b', '#8b5cf6', '#10b981', '#6366f1'];
+            let colorIdx = 0;
+            const bgColors = labels.map(name => {
+                const tName = categoryTypes[name] || 'Diğer';
+                if (!typeColors[tName]) {
+                    typeColors[tName] = defaultColors[colorIdx % defaultColors.length];
+                    colorIdx++;
                 }
+                return typeColors[tName];
+            });
+
+            const isLight = document.body.classList.contains('light-mode');
+
+            if (categoryChart instanceof Chart && categoryChart.ctx) {
+                categoryChart.data.labels = labels;
+                categoryChart.data.datasets[0].data = values;
+                categoryChart.data.datasets[0].backgroundColor = bgColors;
+                categoryChart.update('none');
+            } else {
+                if (categoryChart) categoryChart.destroy();
+                categoryChart = new Chart(catCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Başarı Oranı (%)',
+                            data: values,
+                            backgroundColor: bgColors,
+                            borderRadius: 6,
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        animation: false,
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        layout: {
+                            padding: { top: 10, left: 10, right: 40, bottom: 10 }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            datalabels: {
+                                anchor: 'end',
+                                align: 'end',
+                                offset: 4,
+                                clip: false,
+                                font: { weight: 'bold', size: 10 },
+                                color: isLight ? '#1e293b' : '#f1f5f9',
+                                formatter: (value) => `%${value}`
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)' },
+                                ticks: {
+                                    color: '#94a3b8',
+                                    callback: (value) => `%${value}`
+                                },
+                                suggestedMax: 115,
+                                beginAtZero: true
+                            },
+                            y: {
+                                grid: { display: false },
+                                ticks: { color: '#94a3b8', font: { size: 10 } }
+                            }
+                        }
+                    }
+                });
             }
-        });
-    } else {
-        if (categoryChart) categoryChart.destroy();
-    }
+        } else {
+            if (categoryChart) categoryChart.destroy();
+        }
 
     // Dashboard - Station Audits Chart
     renderDashboardStationAudits(filteredAudits);
@@ -12388,12 +13122,12 @@ function renderSettings() {
 const DEFAULT_MOBILE_PERMISSIONS = {
     titles: {},
     roles: {
-        "Super_Admin": { panel: true, denetim: true, takip: true, puantaj: true, analiz: true },
-        "Executive_Viewer_Global": { panel: true, denetim: false, takip: true, puantaj: false, analiz: true },
-        "Executive_Viewer_Restricted": { panel: true, denetim: false, takip: true, puantaj: false, analiz: true },
-        "Approver": { panel: true, denetim: true, takip: true, puantaj: true, analiz: true },
-        "Field_Auditor_Action_Owner": { panel: true, denetim: true, takip: true, puantaj: true, analiz: false },
-        "Field_Auditor": { panel: true, denetim: true, takip: true, puantaj: true, analiz: false }
+        "Super_Admin": { panel: true, denetim: true, takip: true, puantaj: true, analiz: true, sahaTakip: true },
+        "Executive_Viewer_Global": { panel: true, denetim: false, takip: true, puantaj: false, analiz: true, sahaTakip: false },
+        "Executive_Viewer_Restricted": { panel: true, denetim: false, takip: true, puantaj: false, analiz: true, sahaTakip: false },
+        "Approver": { panel: true, denetim: true, takip: true, puantaj: true, analiz: true, sahaTakip: true },
+        "Field_Auditor_Action_Owner": { panel: true, denetim: true, takip: true, puantaj: true, analiz: false, sahaTakip: true },
+        "Field_Auditor": { panel: true, denetim: true, takip: true, puantaj: true, analiz: false, sahaTakip: true }
     }
 };
 
@@ -12427,7 +13161,8 @@ function normalizeMobilePermissions(data) {
             denetim: rawTitles[title]?.denetim ?? DEFAULT_MOBILE_PERMISSIONS.titles[title].denetim,
             takip: rawTitles[title]?.takip ?? DEFAULT_MOBILE_PERMISSIONS.titles[title].takip,
             puantaj: rawTitles[title]?.puantaj ?? DEFAULT_MOBILE_PERMISSIONS.titles[title].puantaj,
-            analiz: rawTitles[title]?.analiz ?? DEFAULT_MOBILE_PERMISSIONS.titles[title].analiz
+            analiz: rawTitles[title]?.analiz ?? DEFAULT_MOBILE_PERMISSIONS.titles[title].analiz,
+            sahaTakip: rawTitles[title]?.sahaTakip ?? DEFAULT_MOBILE_PERMISSIONS.titles[title].sahaTakip ?? false
         };
     });
 
@@ -12440,7 +13175,8 @@ function normalizeMobilePermissions(data) {
                 denetim: rawTitles[title].denetim === true,
                 takip: rawTitles[title].takip === true,
                 puantaj: rawTitles[title].puantaj === true,
-                analiz: rawTitles[title].analiz === true
+                analiz: rawTitles[title].analiz === true,
+                sahaTakip: rawTitles[title].sahaTakip === true
             };
         }
     });
@@ -12468,7 +13204,8 @@ function normalizeMobilePermissions(data) {
                 denetim: !isManagerOrExecutive,
                 takip: true,
                 puantaj: !isSupervisor && !isManagerOrExecutive,
-                analiz: isSupervisor || isManagerOrExecutive
+                analiz: isSupervisor || isManagerOrExecutive,
+                sahaTakip: !isManagerOrExecutive
             };
         }
     });
@@ -12480,7 +13217,8 @@ function normalizeMobilePermissions(data) {
             denetim: rawRoles[role]?.denetim ?? DEFAULT_MOBILE_PERMISSIONS.roles[role].denetim,
             takip: rawRoles[role]?.takip ?? DEFAULT_MOBILE_PERMISSIONS.roles[role].takip,
             puantaj: rawRoles[role]?.puantaj ?? DEFAULT_MOBILE_PERMISSIONS.roles[role].puantaj,
-            analiz: rawRoles[role]?.analiz ?? DEFAULT_MOBILE_PERMISSIONS.roles[role].analiz
+            analiz: rawRoles[role]?.analiz ?? DEFAULT_MOBILE_PERMISSIONS.roles[role].analiz,
+            sahaTakip: rawRoles[role]?.sahaTakip ?? DEFAULT_MOBILE_PERMISSIONS.roles[role].sahaTakip
         };
     });
 
@@ -12530,57 +13268,65 @@ function renderMobilePermissions() {
                 const tr = document.createElement('tr');
                 const associatedRole = perms.associatedRole || '';
                 tr.innerHTML = `
-                    <td style="font-weight: 700;">${escapeHtml(title)}</td>
-                    <td>
-                        <select class="cms-input" style="padding: 0.3rem 0.5rem; font-size: 0.8rem; border-radius: 6px; width: 100%; border: 1px solid var(--border-main); background: var(--bg-card); color: var(--text-primary);" data-title-name="${escapeAttr(title)}" onchange="applyRoleToTitlePermissions(this, '${escapeAttr(title)}')">
+                    <td style="font-weight: 700; font-size: 0.72rem; padding: 5px 10px;">${escapeHtml(title)}</td>
+                    <td style="padding: 5px 10px;">
+                        <select class="cms-input" style="padding: 0.15rem 0.3rem; font-size: 0.68rem; border-radius: 6px; width: 100%; border: 1px solid var(--border-main); background: var(--bg-card); color: var(--text-primary); height: auto;" data-title-name="${escapeAttr(title)}" onchange="applyRoleToTitlePermissions(this, '${escapeAttr(title)}')">
                             <option value="">-- Rol Seçin --</option>
                             ${RBAC_ROLES.map(role => `
                                 <option value="${role.id}" ${associatedRole === role.id ? 'selected' : ''}>${escapeHtml(role.name)}</option>
                             `).join('')}
                         </select>
                     </td>
-                    <td style="text-align: center;" onclick="toggleMobileMatrixPerm(this.querySelector('.permission-toggle'))">
-                        <button type="button" class="permission-toggle ${perms.panel ? 'is-enabled' : 'is-disabled'}" data-type="title" data-name="${escapeAttr(title)}" data-perm="panel">
-                            <span class="permission-toggle-track">
+                    <td style="text-align: center; padding: 5px 6px;" onclick="toggleMobileMatrixPerm(this.querySelector('.permission-toggle'))">
+                        <button type="button" class="permission-toggle ${perms.panel ? 'is-enabled' : 'is-disabled'}" data-type="title" data-name="${escapeAttr(title)}" data-perm="panel" style="min-height: unset; padding: 0.05rem;">
+                            <span class="permission-toggle-track" style="transform: scale(0.85);">
                                 <span class="permission-toggle-thumb"><i class="fa-solid ${perms.panel ? 'fa-check' : 'fa-xmark'}"></i></span>
                             </span>
-                            <small>${perms.panel ? 'Açık' : 'Kapalı'}</small>
+                            <small style="font-size: 0.58rem; margin-top: 0.05rem;">${perms.panel ? 'Açık' : 'Kapalı'}</small>
                         </button>
                     </td>
-                    <td style="text-align: center;" onclick="toggleMobileMatrixPerm(this.querySelector('.permission-toggle'))">
-                        <button type="button" class="permission-toggle ${perms.denetim ? 'is-enabled' : 'is-disabled'}" data-type="title" data-name="${escapeAttr(title)}" data-perm="denetim">
-                            <span class="permission-toggle-track">
+                    <td style="text-align: center; padding: 5px 6px;" onclick="toggleMobileMatrixPerm(this.querySelector('.permission-toggle'))">
+                        <button type="button" class="permission-toggle ${perms.denetim ? 'is-enabled' : 'is-disabled'}" data-type="title" data-name="${escapeAttr(title)}" data-perm="denetim" style="min-height: unset; padding: 0.05rem;">
+                            <span class="permission-toggle-track" style="transform: scale(0.85);">
                                 <span class="permission-toggle-thumb"><i class="fa-solid ${perms.denetim ? 'fa-check' : 'fa-xmark'}"></i></span>
                             </span>
-                            <small>${perms.denetim ? 'Açık' : 'Kapalı'}</small>
+                            <small style="font-size: 0.58rem; margin-top: 0.05rem;">${perms.denetim ? 'Açık' : 'Kapalı'}</small>
                         </button>
                     </td>
-                    <td style="text-align: center;" onclick="toggleMobileMatrixPerm(this.querySelector('.permission-toggle'))">
-                        <button type="button" class="permission-toggle ${perms.takip ? 'is-enabled' : 'is-disabled'}" data-type="title" data-name="${escapeAttr(title)}" data-perm="takip">
-                            <span class="permission-toggle-track">
+                    <td style="text-align: center; padding: 5px 6px;" onclick="toggleMobileMatrixPerm(this.querySelector('.permission-toggle'))">
+                        <button type="button" class="permission-toggle ${perms.takip ? 'is-enabled' : 'is-disabled'}" data-type="title" data-name="${escapeAttr(title)}" data-perm="takip" style="min-height: unset; padding: 0.05rem;">
+                            <span class="permission-toggle-track" style="transform: scale(0.85);">
                                 <span class="permission-toggle-thumb"><i class="fa-solid ${perms.takip ? 'fa-check' : 'fa-xmark'}"></i></span>
                             </span>
-                            <small>${perms.takip ? 'Açık' : 'Kapalı'}</small>
+                            <small style="font-size: 0.58rem; margin-top: 0.05rem;">${perms.takip ? 'Açık' : 'Kapalı'}</small>
                         </button>
                     </td>
-                    <td style="text-align: center;" onclick="toggleMobileMatrixPerm(this.querySelector('.permission-toggle'))">
-                        <button type="button" class="permission-toggle ${perms.puantaj ? 'is-enabled' : 'is-disabled'}" data-type="title" data-name="${escapeAttr(title)}" data-perm="puantaj">
-                            <span class="permission-toggle-track">
+                    <td style="text-align: center; padding: 5px 6px;" onclick="toggleMobileMatrixPerm(this.querySelector('.permission-toggle'))">
+                        <button type="button" class="permission-toggle ${perms.puantaj ? 'is-enabled' : 'is-disabled'}" data-type="title" data-name="${escapeAttr(title)}" data-perm="puantaj" style="min-height: unset; padding: 0.05rem;">
+                            <span class="permission-toggle-track" style="transform: scale(0.85);">
                                 <span class="permission-toggle-thumb"><i class="fa-solid ${perms.puantaj ? 'fa-check' : 'fa-xmark'}"></i></span>
                             </span>
-                            <small>${perms.puantaj ? 'Açık' : 'Kapalı'}</small>
+                            <small style="font-size: 0.58rem; margin-top: 0.05rem;">${perms.puantaj ? 'Açık' : 'Kapalı'}</small>
                         </button>
                     </td>
-                    <td style="text-align: center;" onclick="toggleMobileMatrixPerm(this.querySelector('.permission-toggle'))">
-                        <button type="button" class="permission-toggle ${perms.analiz ? 'is-enabled' : 'is-disabled'}" data-type="title" data-name="${escapeAttr(title)}" data-perm="analiz">
-                            <span class="permission-toggle-track">
+                    <td style="text-align: center; padding: 5px 6px;" onclick="toggleMobileMatrixPerm(this.querySelector('.permission-toggle'))">
+                        <button type="button" class="permission-toggle ${perms.analiz ? 'is-enabled' : 'is-disabled'}" data-type="title" data-name="${escapeAttr(title)}" data-perm="analiz" style="min-height: unset; padding: 0.05rem;">
+                            <span class="permission-toggle-track" style="transform: scale(0.85);">
                                 <span class="permission-toggle-thumb"><i class="fa-solid ${perms.analiz ? 'fa-check' : 'fa-xmark'}"></i></span>
                             </span>
-                            <small>${perms.analiz ? 'Açık' : 'Kapalı'}</small>
+                            <small style="font-size: 0.58rem; margin-top: 0.05rem;">${perms.analiz ? 'Açık' : 'Kapalı'}</small>
                         </button>
                     </td>
-                    <td style="text-align: center;">
-                        <button class="delete-btn" onclick="deleteMobileTitle('${escapeAttr(title)}')" title="Ünvanı Sil">
+                    <td style="text-align: center; padding: 5px 6px;" onclick="toggleMobileMatrixPerm(this.querySelector('.permission-toggle'))">
+                        <button type="button" class="permission-toggle ${perms.sahaTakip ? 'is-enabled' : 'is-disabled'}" data-type="title" data-name="${escapeAttr(title)}" data-perm="sahaTakip" style="min-height: unset; padding: 0.05rem;">
+                            <span class="permission-toggle-track" style="transform: scale(0.85);">
+                                <span class="permission-toggle-thumb"><i class="fa-solid ${perms.sahaTakip ? 'fa-check' : 'fa-xmark'}"></i></span>
+                            </span>
+                            <small style="font-size: 0.58rem; margin-top: 0.05rem;">${perms.sahaTakip ? 'Açık' : 'Kapalı'}</small>
+                        </button>
+                    </td>
+                    <td style="text-align: center; padding: 5px 6px;">
+                        <button class="delete-btn" onclick="deleteMobileTitle('${escapeAttr(title)}')" title="Ünvanı Sil" style="padding: 3px 6px; font-size: 0.68rem; min-height: unset; height: auto;">
                             <i class="fas fa-trash-can"></i>
                         </button>
                     </td>
@@ -12680,6 +13426,7 @@ function applyRoleToTitlePermissions(select, title) {
             titlePerms.takip = rolePerms.takip === true;
             titlePerms.puantaj = rolePerms.puantaj === true;
             titlePerms.analiz = rolePerms.analiz === true;
+            titlePerms.sahaTakip = rolePerms.sahaTakip === true;
         }
         showToast(`"${title}" ünvanı yetkileri "${select.options[select.selectedIndex].text}" rolüne göre eşitlendi.`);
     }
@@ -12720,7 +13467,7 @@ async function saveMobilePermissions() {
         });
 
         // Super Admin permissions are always true
-        payload.roles['Super_Admin'] = { panel: true, denetim: true, takip: true, puantaj: true, analiz: true };
+        payload.roles['Super_Admin'] = { panel: true, denetim: true, takip: true, puantaj: true, analiz: true, sahaTakip: true };
 
         await db.collection('system_config').doc('mobile_permissions').set(payload);
         showToast('Mobil yetkiler başarıyla Firestore\'a kaydedildi.');
@@ -15650,9 +16397,9 @@ function getDefault5SQuestionsForRepair() {
         { categoryName: 'STANDARTLAŞTIRMA', questionText: 'Temizlik Dolabı planı var mı?' },
         { categoryName: 'STANDARTLAŞTIRMA', questionText: 'Anahtarlık Dolabı Planı var mı?' },
         { categoryName: 'STANDARTLAŞTIRMA', questionText: 'İyileştirme panosu mevcut ve pano içinde olması gereken dökümanlar bulunuyor mu? (İstasyon denetim sorumlusu, Denetim Kontrol Formu, önce/sonra fotoğrafları vb.)' },
-        { categoryName: 'SAHİPLENME', questionText: 'Tutum ve davranışlar denetim yaklaşımının faydalarının anlaşıldığını gösteriyor mu?' },
-        { categoryName: 'SAHİPLENME', questionText: 'denetim standartlarını uygularken israflardan kaçınılmış mı?' },
-        { categoryName: 'SAHİPLENME', questionText: 'denetim çalışması yaparken örnek alınacak uygulamalar geliştiriliyor mu?' }
+        { categoryName: 'SAHİPLENME', questionText: 'Tutum ve davranışlar 5s faydalarını anlaşıldığını gösteriyor mu?' },
+        { categoryName: 'SAHİPLENME', questionText: '5S uygularken israflardan kaçınılmış mı?' },
+        { categoryName: 'SAHİPLENME', questionText: '5s çalışması yaparken örnek alınacak uygulamalar geliştiriliyor mu?' }
     ].map((question, index) => ({ ...question, orderIndex: index, answerType: 'scale', maxScore: 5 }));
 }
 
@@ -16777,6 +17524,7 @@ function getFilteredDashboardData() {
 
     let audits = getFilteredAudits() || [];
     let ncs = getFilteredNCs() || [];
+    const auditMap = getAuditMap();
 
     // Apply Audit Type Filter
     audits = filterByAuditType(audits, typeFilter);
@@ -16786,7 +17534,7 @@ function getFilteredDashboardData() {
     if (lineFilters.length) {
         audits = audits.filter(a => lineFilters.includes(a.line));
         ncs = ncs.filter(nc => {
-            const audit = getAccessibleAuditById(nc.auditId) || {};
+            const audit = auditMap.get(String(nc.auditId)) || {};
             return lineFilters.includes(audit.line) || lineFilters.includes(nc.line);
         });
     }
@@ -16795,7 +17543,7 @@ function getFilteredDashboardData() {
     if (stationFilters.length) {
         audits = audits.filter(a => stationFilters.includes(a.station));
         ncs = ncs.filter(nc => {
-            const audit = getAccessibleAuditById(nc.auditId) || {};
+            const audit = auditMap.get(String(nc.auditId)) || {};
             return stationFilters.includes(audit.station) || stationFilters.includes(nc.station);
         });
     }
@@ -16810,7 +17558,7 @@ function getFilteredDashboardData() {
     if (selectedYears.length) {
         audits = audits.filter(a => selectedYears.includes(new Date(a.date).getFullYear().toString()));
         ncs = ncs.filter(nc => {
-            const audit = getAccessibleAuditById(nc.auditId) || {};
+            const audit = auditMap.get(String(nc.auditId)) || {};
             const date = nc.detectionDate || nc.createdAt || nc.date || audit.date;
             return selectedYears.includes(new Date(date).getFullYear().toString());
         });
@@ -16820,7 +17568,7 @@ function getFilteredDashboardData() {
     if (selectedMonths.length) {
         audits = audits.filter(a => selectedMonths.includes((new Date(a.date).getMonth() + 1).toString()));
         ncs = ncs.filter(nc => {
-            const audit = getAccessibleAuditById(nc.auditId) || {};
+            const audit = auditMap.get(String(nc.auditId)) || {};
             const date = nc.detectionDate || nc.createdAt || nc.date || audit.date;
             return selectedMonths.includes((new Date(date).getMonth() + 1).toString());
         });
@@ -16830,7 +17578,7 @@ function getFilteredDashboardData() {
     if (selectedWeeks.length) {
         audits = audits.filter(a => selectedWeeks.includes(getISOWeekNumber(new Date(a.date)).toString()));
         ncs = ncs.filter(nc => {
-            const audit = getAccessibleAuditById(nc.auditId) || {};
+            const audit = auditMap.get(String(nc.auditId)) || {};
             const date = nc.detectionDate || nc.createdAt || nc.date || audit.date;
             return selectedWeeks.includes(getISOWeekNumber(new Date(date)).toString());
         });
@@ -16840,7 +17588,7 @@ function getFilteredDashboardData() {
     if (selectedDays.length) {
         audits = audits.filter(a => selectedDays.includes(getLocalDateString(a.date)));
         ncs = ncs.filter(nc => {
-            const audit = getAccessibleAuditById(nc.auditId) || {};
+            const audit = auditMap.get(String(nc.auditId)) || {};
             const date = nc.detectionDate || nc.createdAt || nc.date || audit.date;
             return selectedDays.includes(getLocalDateString(date));
         });

@@ -9427,7 +9427,7 @@ body.light-mode .feedback-card-date {
 
 #permissions-view .permissions-matrix-table {
     width: 100%;
-    min-width: 0;
+    min-width: 1080px;
     border-collapse: separate;
     border-spacing: 0;
     table-layout: fixed;
@@ -13479,6 +13479,170 @@ body.light-mode #permissions-view .permission-module-column small {
 
 body.light-mode #permissions-view .permission-role-heading strong {
     color: #0f172a !important;
+}
+
+
+/* ==========================================================================
+   FIELD TRACKING (SAHA TAKİP) STYLING RULES
+   ========================================================================== */
+.field-tracking-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.field-tracking-map {
+    height: 450px;
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--border-main);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    background-color: var(--bg-card);
+    z-index: 1; /* Keep leaflet beneath modals/popups */
+}
+
+/* Timeline */
+.field-tracking-timeline {
+    position: relative;
+    padding-left: 2.2rem;
+    margin: 1rem 0;
+    border-left: 2px solid var(--border-main);
+}
+
+.field-tracking-timeline-item {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.field-tracking-timeline-badge {
+    position: absolute;
+    left: -2.2rem;
+    margin-left: -13px;
+    top: 4px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background-color: var(--border-main);
+    border: 3px solid var(--bg-card);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+}
+
+.field-tracking-timeline-badge.station-badge {
+    background-color: #2563eb;
+}
+
+.field-tracking-timeline-badge.travel-badge {
+    background-color: #f59e0b;
+}
+
+.field-tracking-timeline-badge.start-badge {
+    background-color: #10b981;
+}
+
+.field-tracking-timeline-badge.end-badge {
+    background-color: #ef4444;
+}
+
+.field-tracking-timeline-content {
+    background: var(--bg-card-sub);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-main);
+}
+
+.field-tracking-timeline-time {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-top: 4px;
+}
+
+/* Matrix cell colors */
+.matrix-cell-saha {
+    text-align: center;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.matrix-cell-saha:hover {
+    transform: scale(1.05);
+    box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.field-duration-high {
+    background-color: rgba(16, 185, 129, 0.15) !important;
+    color: #10b981 !important;
+}
+
+.field-duration-medium {
+    background-color: rgba(245, 158, 11, 0.15) !important;
+    color: #f59e0b !important;
+}
+
+.field-duration-low {
+    background-color: rgba(239, 68, 68, 0.15) !important;
+    color: #ef4444 !important;
+}
+
+.field-duration-off {
+    background-color: rgba(100, 116, 139, 0.1) !important;
+    color: var(--text-dim) !important;
+    cursor: default !important;
+}
+
+.field-duration-none {
+    color: var(--text-dim) !important;
+}
+
+/* Light mode support */
+body.light-mode .field-tracking-timeline-content {
+    background-color: #f8fafc;
+}
+
+body.light-mode .field-duration-high {
+    background-color: rgba(16, 185, 129, 0.2) !important;
+    color: #047857 !important;
+}
+
+body.light-mode .field-duration-medium {
+    background-color: rgba(245, 158, 11, 0.2) !important;
+    color: #b45309 !important;
+}
+
+body.light-mode .field-duration-low {
+    background-color: rgba(239, 68, 68, 0.2) !important;
+    color: #b91c1c !important;
+}
+
+/* Mobile Permissions Matrix First Column Layout Fix */
+#permissions-view .permissions-matrix-table th:first-child {
+    position: static !important;
+    min-width: 180px !important;
+    box-shadow: none !important;
+    border-right: 1px solid var(--border-main) !important;
+    background: var(--bg-input) !important;
+}
+body:not(.light-mode) #permissions-view .permissions-matrix-table th:first-child {
+    background-color: #102f52 !important;
+}
+#permissions-view .permissions-matrix-table td:first-child {
+    position: static !important;
+    min-width: 180px !important;
+    box-shadow: none !important;
+    border-right: 1px solid var(--border-main) !important;
+    background: var(--bg-card) !important;
+}
+body:not(.light-mode) #permissions-view .permissions-matrix-table td:first-child {
+    background-color: #0b223d !important;
+}
+body:not(.light-mode) #permissions-view .permissions-matrix-table tr:hover td:first-child {
+    background-color: #12395f !important;
+}
+body.light-mode #permissions-view .permissions-matrix-table tr:hover td:first-child {
+    background-color: rgba(37, 99, 235, 0.04) !important;
 }
 
 

@@ -14,6 +14,30 @@ let statsSelectedYear = new Date().getFullYear();
 let statsSelectedMonth = new Date().getMonth() + 1;
 let statsSelectedLine = 'Tümü';
 
+function getRosterTitleMobilePermission(title, permissionKey) {
+    if (!title) return false;
+    const permissions = appData.mobilePermissions || {};
+    const titleObj = permissions.titles?.[title.trim()];
+    if (titleObj) {
+        return titleObj[permissionKey] === true;
+    }
+    
+    const defaultMobilePerms = {
+        'titles': {},
+        'roles': {
+            'Super_Admin': {'panel': true, 'denetim': true, 'takip': true, 'puantaj': true, 'analiz': true, 'sahaTakip': true},
+            'Executive_Viewer_Global': {'panel': true, 'denetim': false, 'takip': true, 'puantaj': false, 'analiz': true, 'sahaTakip': false},
+            'Executive_Viewer_Restricted': {'panel': true, 'denetim': false, 'takip': true, 'puantaj': false, 'analiz': true, 'sahaTakip': false},
+            'Approver': {'panel': true, 'denetim': true, 'takip': true, 'puantaj': true, 'analiz': true, 'sahaTakip': true},
+            'Field_Auditor_Action_Owner': {'panel': true, 'denetim': true, 'takip': true, 'puantaj': true, 'analiz': false, 'sahaTakip': true},
+            'Field_Auditor': {'panel': true, 'denetim': true, 'takip': true, 'puantaj': true, 'analiz': false, 'sahaTakip': true},
+        }
+    };
+    
+    const associatedRole = defaultMobilePerms.titles[title.trim()]?.associatedRole || 'Field_Auditor';
+    return defaultMobilePerms.roles[associatedRole]?.[permissionKey] === true;
+}
+
 // ----------------------------------------------------
 // DB Listeners & Data Fetching
 // ----------------------------------------------------
@@ -591,9 +615,14 @@ async function renderPersonalStats() {
             const matchedShift = activeShifts.find(s => s.code === shift);
             const isWorking = matchedShift ? matchedShift.type === 'work' : ['S', 'A', 'G', 'N', 'S8', 'S10'].includes(shift);
             
-            const targetAuditCount = (matchedShift && matchedShift.requiredAuditCount !== undefined && matchedShift.requiredAuditCount !== null)
-                ? parseInt(matchedShift.requiredAuditCount)
-                : 10; // Default fallback to 10 if not defined
+            // Check if user has both puantaj and denetim permissions enabled
+            const hasPuantaj = getRosterTitleMobilePermission(user.title || user.jobTitle, 'puantaj');
+            const hasDenetim = getRosterTitleMobilePermission(user.title || user.jobTitle, 'denetim');
+            const targetAuditCount = (hasPuantaj && hasDenetim)
+                ? ((matchedShift && matchedShift.requiredAuditCount !== undefined && matchedShift.requiredAuditCount !== null)
+                    ? parseInt(matchedShift.requiredAuditCount)
+                    : 10)
+                : 0;
 
             // Check if cell is in the future
             const cellDate = new Date(statsSelectedYear, statsSelectedMonth - 1, day);
@@ -603,7 +632,7 @@ async function renderPersonalStats() {
 
             // Tracking for KPIs
             if (!isFuture) {
-                if (isWorking && !excuse) {
+                if (isWorking && !excuse && targetAuditCount > 0) {
                     totalWorkingDays++;
                     if (auditCount >= targetAuditCount) {
                         totalTargetMetDays++;
@@ -631,7 +660,18 @@ async function renderPersonalStats() {
             let cellContent = '';
             let cursor = auditCount > 0 ? 'pointer' : 'default';
 
-            if (auditCount > 0) {
+            if (targetAuditCount === 0) {
+                // Sadece saha takibi yapan biri, denetim hedefi yoktur
+                if (auditCount > 0) {
+                    bg = 'rgba(100, 116, 139, 0.12)'; // Nötr açık gri arka plan
+                    borderColor = 'rgba(100, 116, 139, 0.3)';
+                    cellContent = `<span style="color:var(--text-primary); font-size:0.65rem; font-weight:900; z-index:2;">${auditCount}</span>`;
+                } else {
+                    bg = 'var(--hm-empty-bg)';
+                    borderColor = 'var(--hm-empty-border)';
+                    cellContent = '';
+                }
+            } else if (auditCount > 0) {
                 cellContent = `<span style="color:#ffffff; font-size:0.65rem; font-weight:900; z-index:2; text-shadow:0 1px 2px rgba(0,0,0,0.3);">${auditCount}</span>`;
                 if (auditCount >= targetAuditCount) {
                     bg = 'var(--hm-met-bg)'; // Target Met
