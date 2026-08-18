@@ -208,19 +208,19 @@ const DEFAULT_RBAC_PERMISSIONS = {
         user_add_edit: false, user_delete: false, perm_mgmt: false, question_mgmt: false, line_mgmt: false,
         planning: false, announcement_mgmt: false, audit_start: false, nc_close: false, nc_approve: false, nc_share: true,
         dashboard_view: true, stats_view: true, export_data: true, backup_data: false, settings: false, view_logs: true,
-        personal_stats_view: true, field_tracking_view: true, nfc_mgmt: false, location_mgmt: false, roster_mgmt: false, feedbacks_view: true, excuse_mgmt: false, online_users_view: true
+        personal_stats_view: true, field_tracking_view: false, nfc_mgmt: false, location_mgmt: false, roster_mgmt: false, feedbacks_view: true, excuse_mgmt: false, online_users_view: true
     },
     Executive_Viewer_Restricted: {
         user_add_edit: false, user_delete: false, perm_mgmt: false, question_mgmt: false, line_mgmt: false,
         planning: false, announcement_mgmt: false, audit_start: false, nc_close: false, nc_approve: false, nc_share: false,
         dashboard_view: true, stats_view: true, export_data: true, backup_data: false, settings: false, view_logs: false,
-        personal_stats_view: true, field_tracking_view: true, nfc_mgmt: false, location_mgmt: false, roster_mgmt: false, feedbacks_view: false, excuse_mgmt: false, online_users_view: false
+        personal_stats_view: true, field_tracking_view: false, nfc_mgmt: false, location_mgmt: false, roster_mgmt: false, feedbacks_view: false, excuse_mgmt: false, online_users_view: false
     },
     Approver: {
         user_add_edit: false, user_delete: false, perm_mgmt: false, question_mgmt: false, line_mgmt: false,
         planning: true, announcement_mgmt: false, audit_start: true, nc_close: true, nc_approve: true, nc_share: true,
         dashboard_view: true, stats_view: true, export_data: true, backup_data: false, settings: false, view_logs: false,
-        personal_stats_view: true, field_tracking_view: true, nfc_mgmt: false, location_mgmt: false, roster_mgmt: true, feedbacks_view: true, excuse_mgmt: true, online_users_view: false
+        personal_stats_view: true, field_tracking_view: false, nfc_mgmt: false, location_mgmt: false, roster_mgmt: true, feedbacks_view: true, excuse_mgmt: true, online_users_view: false
     },
     Field_Auditor_Action_Owner: {
         user_add_edit: false, user_delete: false, perm_mgmt: false, question_mgmt: false, line_mgmt: false,
@@ -297,6 +297,7 @@ function isFieldAuditorActionOwner(user = currentUser) {
 
 function canOperationalRoleAccessView(viewId, user = currentUser) {
     if (viewId === 'roster-entry-view' || viewId === 'excuse-management-view') return isSuperAdmin(user);
+    if (viewId === 'field-tracking-view') return isSuperAdmin(user) || hasPermission('field_tracking_view', user);
     if (isFieldAuditor(user)) {
         if (FIELD_AUDITOR_WEB_VIEWS.has(viewId)) return true;
         if ((viewId === 'stats-view' || viewId === 'reports-view') && hasPermission('stats_view', user)) return true;
@@ -2078,15 +2079,20 @@ const NAV_VIEW_PERMISSIONS = {
 
 function canShowNavView(viewId, user = currentUser) {
     if (isSuperAdmin(user)) return true;
+    if (viewId === 'field-tracking-view') {
+        return hasPermission('field_tracking_view', user);
+    }
     if (isFieldAuditor(user)) {
         if (FIELD_AUDITOR_WEB_VIEWS.has(viewId)) return true;
         if ((viewId === 'stats-view' || viewId === 'reports-view') && hasPermission('stats_view', user)) return true;
         if (viewId === 'dashboard-view' && hasPermission('dashboard_view', user)) return true;
+        return false;
     }
     if (isFieldAuditorActionOwner(user)) {
         if (ACTION_OWNER_WEB_VIEWS.has(viewId)) return true;
         if ((viewId === 'stats-view' || viewId === 'reports-view') && hasPermission('stats_view', user)) return true;
         if (viewId === 'dashboard-view' && hasPermission('dashboard_view', user)) return true;
+        return false;
     }
     const requiredPerm = NAV_VIEW_PERMISSIONS[viewId];
     return requiredPerm ? hasPermission(requiredPerm, user) : true;
