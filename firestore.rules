@@ -79,12 +79,7 @@ service cloud.firestore {
     match /system_config/{docId} {
       allow read: if isSignedIn();
       allow create, delete: if isAdmin();
-      allow update: if isAdmin() && (
-        docId != 'lines_stations' || (
-          (!request.resource.data.keys().hasAll(['stationLocations']) || request.resource.data.stationLocations.size() >= resource.data.stationLocations.size()) &&
-          (!request.resource.data.keys().hasAll(['stations']) || request.resource.data.stations.size() >= resource.data.stations.size())
-        )
-      );
+      allow update: if isSignedIn();
     }
 
     match /reports/{reportId} {
@@ -104,7 +99,7 @@ service cloud.firestore {
 
     match /auditTypes/{typeId} {
       allow read: if isSignedIn();
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if isSignedIn();
     }
 
     match /auditQuestionGroups/{groupId} {
@@ -135,9 +130,17 @@ service cloud.firestore {
     }
 
     match /feedbacks/{feedbackId} {
-      allow read: if isAdmin();
-      allow create: if isSignedIn();
+      allow read, create: if isSignedIn();
       allow update, delete: if isAdmin();
+    }
+
+    match /system_logs/{logId} {
+      allow read, create: if isSignedIn();
+      allow update, delete: if isAdmin();
+    }
+
+    match /online_users/{userId} {
+      allow read, write: if isSignedIn();
     }
 
     match /{document=**} {
@@ -145,3 +148,4 @@ service cloud.firestore {
     }
   }
 }
+
