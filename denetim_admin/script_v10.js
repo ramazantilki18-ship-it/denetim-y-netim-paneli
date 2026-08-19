@@ -22,13 +22,15 @@ if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
     Chart.register(ChartDataLabels);
 }
 
-// Enable offline persistence
-db.enablePersistence()
+// Enable offline persistence with multi-tab sync
+db.enablePersistence({ synchronizeTabs: true })
+    .then(() => console.log('Firestore offline persistence enabled (multi-tab sync active).'))
     .catch(function (err) {
-        if (err.code == 'failed-precondition') {
-            console.warn('Multiple tabs open, persistence can only be enabled in one tab at a a time.');
-        } else if (err.code == 'unimplemented') {
-            console.warn('The current browser does not support all of the features required to enable persistence');
+        if (err.code === 'failed-precondition') {
+            console.warn('Firestore multi-tab persistence fallback: single tab or precondition issue.');
+            db.enablePersistence().catch(() => {});
+        } else if (err.code === 'unimplemented') {
+            console.warn('The current browser does not support persistence.');
         }
     });
 
@@ -3585,70 +3587,60 @@ async function autoMigrateMissingAuditAndNcNumbers() {
 
     const missingAudits = appData.audits.filter(a => !a.auditNo);
     const missingNCs = appData.nonconformities.filter(n => !n.ncNo);
+    _autoMigrationAttempted = true;
+
     if (missingAudits.length === 0 && missingNCs.length === 0) {
-        _autoMigrationAttempted = true;
         return;
     }
 
-    _autoMigrationAttempted = true;
     _isAutoMigrationRunning = true;
-    console.log(`[AutoMigration] Migrating ${missingAudits.length} audits and ${missingNCs.length} NCs...`);
+    console.log(`[AutoMigration] Assigning numbers to ${missingAudits.length} new audits and ${missingNCs.length} new NCs...`);
 
     try {
         const batch = db.batch();
         let ops = 0;
-        let auditCount = 0;
-        let ncCount = 0;
 
-        if (missingAudits.length > 0) {
-            const sortedAudits = [...appData.audits].sort((a, b) => {
-                const aTime = a.date ? new Date(a.date).getTime() : 0;
-                const bTime = b.date ? new Date(b.date).getTime() : 0;
-                return aTime - bTime;
-            });
-            for (let i = 0; i < sortedAudits.length; i++) {
-                auditCount++;
-                const a = sortedAudits[i];
-                const num = `D-${String(auditCount).padStart(5, '0')}`;
-                if (a.auditNo !== num) {
-                    a.auditNo = num;
-                    if (ops < 450) {
-                        batch.update(db.collection('audits').doc(a.id), { auditNo: num });
-                        ops++;
-                    }
-                }
+        // Mevcut en yüksek numaraları bul
+        let maxAuditNum = 0;
+        appData.audits.forEach(a => {
+            if (a.auditNo && a.auditNo.startsWith('D-')) {
+                const n = parseInt(a.auditNo.replace('D-', ''), 10);
+                if (!isNaN(n) && n > maxAuditNum) maxAuditNum = n;
+            }
+        });
+
+        let maxNcNum = 0;
+        appData.nonconformities.forEach(n => {
+            if (n.ncNo && n.ncNo.startsWith('U-')) {
+                const num = parseInt(n.ncNo.replace('U-', ''), 10);
+                if (!isNaN(num) && num > maxNcNum) maxNcNum = num;
+            }
+        });
+
+        // Sadece numarası eksik olanlara yeni numara ata (Mevcutları ASLA yeniden yazma!)
+        for (const a of missingAudits) {
+            maxAuditNum++;
+            const num = `D-${String(maxAuditNum).padStart(5, '0')}`;
+            a.auditNo = num;
+            if (ops < 450) {
+                batch.update(db.collection('audits').doc(a.id), { auditNo: num });
+                ops++;
             }
         }
 
-        if (missingNCs.length > 0) {
-            const sortedNCs = [...appData.nonconformities].sort((a, b) => {
-                const aTime = a.detectionDate || a.date ? new Date(a.detectionDate || a.date).getTime() : 0;
-                const bTime = b.detectionDate || b.date ? new Date(b.detectionDate || b.date).getTime() : 0;
-                return aTime - bTime;
-            });
-            for (let i = 0; i < sortedNCs.length; i++) {
-                ncCount++;
-                const n = sortedNCs[i];
-                const num = `U-${String(ncCount).padStart(5, '0')}`;
-                if (n.ncNo !== num) {
-                    n.ncNo = num;
-                    if (ops < 450) {
-                        batch.update(db.collection('nonconformities').doc(n.id), { ncNo: num });
-                        ops++;
-                    }
-                }
+        for (const n of missingNCs) {
+            maxNcNum++;
+            const num = `U-${String(maxNcNum).padStart(5, '0')}`;
+            n.ncNo = num;
+            if (ops < 450) {
+                batch.update(db.collection('nonconformities').doc(n.id), { ncNo: num });
+                ops++;
             }
         }
 
         if (ops > 0) {
             await batch.commit().catch(err => console.warn('AutoMigration batch commit error:', err));
         }
-
-        await db.collection('system_config').doc('counters').set({
-            lastAuditNumber: auditCount > 0 ? auditCount : (appData.audits ? appData.audits.length : 0),
-            lastNcNumber: ncCount > 0 ? ncCount : (appData.nonconformities ? appData.nonconformities.length : 0),
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true }).catch(() => {});
 
         console.log('[AutoMigration] Migration finished successfully.');
     } catch (e) {
