@@ -3,7 +3,7 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // ─── Yardımcı fonksiyonlar ───────────────────────────────────────────
+    // ─── Yardımcı Fonksiyonlar ───────────────────────────────────────────
     function isSignedIn() {
       return request.auth != null;
     }
@@ -13,41 +13,49 @@ service firebase.storage {
         && request.resource.contentType.matches('image/.*');
     }
 
-    function isUnder10MB() {
+    function isUnder15MB() {
       return request.resource != null
-        && request.resource.size < 10 * 1024 * 1024;
+        && request.resource.size < 15 * 1024 * 1024;
     }
 
     function isAdmin() {
       return isSignedIn() &&
-        (firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in ['admin', 'Super_Admin']
-         || firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.roleId == 'Super_Admin');
+        firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
+        (
+          firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.get('role', '') in ['admin', 'Super_Admin', 'superAdmin', 'super_admin', 'Admin']
+          || firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.get('roleId', '') in ['Super_Admin', 'admin', 'superAdmin', 'super_admin', 'Admin']
+        );
     }
 
-    // ─── Denetim fotoğrafları: audits/{auditId}/answers/... ─────────────
+    // ─── Denetim Fotoğrafları ─────────────────────────────────────────────
     match /audits/{auditId}/{allPaths=**} {
-      // PDF ve web panelde görüntüleme için okuma açık
       allow read: if true;
-      // Yükleme: giriş yapmış + resim + max 10 MB
-      allow write: if isSignedIn() && isImage() && isUnder10MB();
+      allow write: if isSignedIn() && isImage() && isUnder15MB();
       allow delete: if isAdmin();
     }
 
-    // ─── Diğer dosyalar (gelecek kullanım) ──────────────────────────────
-    match /uploads/{allPaths=**} {
-      allow read: if true;
-      allow write: if isSignedIn() && isImage() && isUnder10MB();
-      allow delete: if isAdmin();
-    }
-
-    // ─── Uygunsuzluk kapatma fotoğrafları ─────────────────────────────────
+    // ─── Uygunsuzluk Tespit & Kapatma Fotoğrafları ─────────────────────────
     match /nonconformities/{allPaths=**} {
       allow read: if true;
-      allow write: if isSignedIn() && isImage() && isUnder10MB();
+      allow write: if isSignedIn() && isImage() && isUnder15MB();
       allow delete: if isAdmin();
     }
 
-    // ─── Varsayılan: kapalı ───────────────────────────────────────────────
+    // ─── Geri Bildirim Ekleri / Fotoğrafları ──────────────────────────────
+    match /feedbacks/{allPaths=**} {
+      allow read: if true;
+      allow write: if isSignedIn() && isImage() && isUnder15MB();
+      allow delete: if isAdmin();
+    }
+
+    // ─── Genel / Ekstra Dosya Yüklemeleri ─────────────────────────────────
+    match /uploads/{allPaths=**} {
+      allow read: if true;
+      allow write: if isSignedIn() && isUnder15MB();
+      allow delete: if isAdmin();
+    }
+
+    // ─── Varsayılan ───────────────────────────────────────────────────────
     match /{allPaths=**} {
       allow read, write: if false;
     }

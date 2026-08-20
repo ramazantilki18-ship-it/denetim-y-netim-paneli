@@ -51,8 +51,11 @@ function initFieldTrackingLayout(container) {
                 border-radius: 12px;
                 padding: 5px;
                 gap: 4px;
-                margin-bottom: 1.5rem;
+                margin-bottom: 6px;
                 box-sizing: border-box;
+                overflow-x: auto;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
             }
 
             body.light-mode .field-tracking-tabs {
@@ -65,13 +68,13 @@ function initFieldTrackingLayout(container) {
             }
 
             .field-tab-btn {
-                flex: 1;
+                flex: 1 0 auto;
                 background: transparent;
                 color: var(--text-secondary);
                 border: none;
                 font-size: 0.78rem;
                 font-weight: 700;
-                padding: 10px 8px;
+                padding: 8px 14px;
                 border-radius: 8px;
                 cursor: pointer;
                 transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
@@ -81,7 +84,7 @@ function initFieldTrackingLayout(container) {
                 gap: 6px;
                 white-space: nowrap;
                 text-align: center;
-                min-width: 0;
+                min-width: max-content;
             }
 
             .field-tab-btn i {
@@ -107,8 +110,8 @@ function initFieldTrackingLayout(container) {
             .field-stat-grid {
                 display: grid;
                 grid-template-columns: repeat(5, minmax(0, 1fr));
-                gap: 1rem;
-                margin-bottom: 1.5rem;
+                gap: 0.75rem;
+                margin-bottom: 0.75rem;
             }
 
             @media (max-width: 1024px) {
@@ -133,10 +136,10 @@ function initFieldTrackingLayout(container) {
                 background: var(--bg-card);
                 border: 1px solid var(--border-main);
                 border-radius: 12px;
-                padding: 16px;
+                padding: 12px;
                 display: flex;
                 flex-direction: column;
-                min-height: 100px;
+                min-height: 90px;
                 box-sizing: border-box;
             }
 
@@ -145,7 +148,7 @@ function initFieldTrackingLayout(container) {
                 color: var(--text-dim);
                 font-weight: 700;
                 text-transform: uppercase;
-                margin-bottom: 8px;
+                margin-bottom: 6px;
                 line-height: 1.3;
                 display: flex;
                 justify-content: space-between;
@@ -154,11 +157,11 @@ function initFieldTrackingLayout(container) {
 
             .field-stat-card .stat-label i {
                 flex-shrink: 0;
-                font-size: 1.1rem;
+                font-size: 1.05rem;
             }
 
             .field-stat-card .stat-value {
-                font-size: 1.5rem;
+                font-size: 1.4rem;
                 font-weight: 800;
                 margin: 0;
                 line-height: 1.2;
@@ -178,16 +181,16 @@ function initFieldTrackingLayout(container) {
             .field-chart-grid {
                 display: grid;
                 grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-                gap: 1.25rem;
-                margin-top: 1.25rem;
-                margin-bottom: 1.5rem;
+                gap: 0.75rem;
+                margin-top: 0.5rem;
+                margin-bottom: 0.75rem;
             }
 
             .field-chart-card {
                 background: var(--bg-card);
                 border: 1px solid var(--border-main);
                 border-radius: 12px;
-                padding: 16px;
+                padding: 14px;
                 box-sizing: border-box;
             }
 
@@ -223,7 +226,7 @@ function initFieldTrackingLayout(container) {
             </div>
 
             <!-- Üst Filtre Barı (Premium Custom Select & Akıllı Tarih Entegrasyonu) -->
-            <div class="filter-card" style="margin-bottom: 1.25rem; max-width: 100%; width: 100%; padding: 0.45rem 0.75rem; border-radius: 12px; background: transparent !important; border: 1px solid rgba(249, 115, 22, 0.35); box-shadow: 0 8px 24px rgba(249, 115, 22, 0.15); display: flex; flex-direction: row; justify-content: space-between; align-items: center; gap: 1rem; z-index: 10; position: relative; flex-wrap: wrap;">
+            <div class="filter-card" style="margin-bottom: 0.75rem; max-width: 100%; width: 100%; padding: 0.45rem 0.75rem; border-radius: 12px; background: transparent !important; border: 1px solid rgba(249, 115, 22, 0.35); box-shadow: 0 8px 24px rgba(249, 115, 22, 0.15); display: flex; flex-direction: row; justify-content: space-between; align-items: center; gap: 1rem; z-index: 10; position: relative; flex-wrap: wrap;">
                 <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; flex: 1;">
                     
                     <!-- Akıllı Tarih Seçici (Tüm Zamanlar) -->
@@ -277,27 +280,21 @@ function initFieldTrackingLayout(container) {
             <!-- Sekme Seçici (Premium Segmented Control) -->
             <div class="field-tracking-tabs">
                 <button class="field-tab-btn active" id="field-tab-matrix" onclick="switchFieldTab('matrix')">
-                    <i class="fas fa-table"></i> Saha Matrisi
+                    <i class="fas fa-calendar-alt"></i> Vardiya Planı
                 </button>
                 <button class="field-tab-btn" id="field-tab-general" onclick="switchFieldTab('general')">
-                    <i class="fas fa-chart-line"></i> Genel İstatistikler
-                </button>
-                <button class="field-tab-btn" id="field-tab-stations" onclick="switchFieldTab('stations')">
-                    <i class="fas fa-train"></i> İstasyon Analizi
+                    <i class="fas fa-chart-line"></i> Genel Analiz
                 </button>
                 <button class="field-tab-btn" id="field-tab-individual" onclick="switchFieldTab('individual')">
-                    <i class="fas fa-user"></i> Bireysel Performans
-                </button>
-                <button class="field-tab-btn" id="field-tab-comparison" onclick="switchFieldTab('comparison')">
-                    <i class="fas fa-users-viewfinder"></i> Sıralama & Kıyaslama
+                    <i class="fas fa-user-clock"></i> Personel Analizi
                 </button>
                 <button class="field-tab-btn" id="field-tab-reports" onclick="switchFieldTab('reports')">
-                    <i class="fas fa-file-pdf"></i> Raporlar
+                    <i class="fas fa-file-invoice"></i> Raporlar
                 </button>
             </div>
 
             <!-- Sekme İçerik Alanı -->
-            <div id="field-tracking-tab-content" style="margin-top: 1.5rem; margin-bottom: 1.5rem;">
+            <div id="field-tracking-tab-content" style="margin-top: 0px; margin-bottom: 0.75rem;">
                 <!-- İçerik fonksiyonlar tarafından dinamik yüklenecek -->
             </div>
         </div>
@@ -308,8 +305,9 @@ function initFieldTrackingLayout(container) {
  * Filtrelerden seçili olan aktif yıl ve ayı bulur (Hata önleyici)
  */
 function getFieldActiveYearAndMonth() {
-    let year = 2026;
-    let month = 7; // Varsayılan Temmuz 2026
+    const now = new Date();
+    let year = now.getFullYear();
+    let month = now.getMonth() + 1; // Varsayılan geçerli yıl ve ay
 
     if (typeof unifiedDateFilters !== 'undefined' && unifiedDateFilters.field) {
         const uYears = unifiedDateFilters.field.years || [];
@@ -601,6 +599,7 @@ async function loadFieldTrackingData(force = false) {
  */
 function applyFieldFilters() {
     let filtered = [...rawFieldSessionsCache];
+    const { year: activeYear, month: activeMonth } = getFieldActiveYearAndMonth();
 
     // 1. Akıllı Tarih Filtreleme
     if (typeof unifiedDateFilters !== 'undefined' && unifiedDateFilters.field) {
@@ -609,20 +608,37 @@ function applyFieldFilters() {
         const uWeeks = unifiedDateFilters.field.weeks || [];
         const uDays = unifiedDateFilters.field.days || [];
 
+        // YIL filtresi var ise yıl bazlı, yok ise aktif yıla göre filtrele
         if (uYears.length > 0) {
             filtered = filtered.filter(s => {
                 let date = s.startTime || s.date;
                 if (date && !(date instanceof Date)) date = new Date(date);
                 return date && uYears.includes(date.getFullYear().toString());
             });
+        } else {
+            filtered = filtered.filter(s => {
+                let date = s.startTime || s.date;
+                if (date && !(date instanceof Date)) date = new Date(date);
+                return date && date.getFullYear() === activeYear;
+            });
         }
+
+        // AY filtresi var ise ay bazlı, yok ise aktif aya göre filtrele
         if (uMonths.length > 0) {
             filtered = filtered.filter(s => {
                 let date = s.startTime || s.date;
                 if (date && !(date instanceof Date)) date = new Date(date);
                 return date && uMonths.includes((date.getMonth() + 1).toString());
             });
+        } else {
+            filtered = filtered.filter(s => {
+                let date = s.startTime || s.date;
+                if (date && !(date instanceof Date)) date = new Date(date);
+                return date && (date.getMonth() + 1) === activeMonth;
+            });
         }
+
+        // Hafta filtresi varsa uygula
         if (uWeeks.length > 0) {
             filtered = filtered.filter(s => {
                 let date = s.startTime || s.date;
@@ -630,6 +646,8 @@ function applyFieldFilters() {
                 return date && uWeeks.includes(getISOWeekNumber(date).toString());
             });
         }
+
+        // Gün filtresi varsa uygula
         if (uDays.length > 0) {
             filtered = filtered.filter(s => {
                 let date = s.startTime || s.date;
@@ -637,6 +655,13 @@ function applyFieldFilters() {
                 return date && uDays.includes(getLocalDateString(date));
             });
         }
+    } else {
+        // Eğer unifiedDateFilters.field tanımsızsa da aktif yıl ve aya göre filtrele
+        filtered = filtered.filter(s => {
+            let date = s.startTime || s.date;
+            if (date && !(date instanceof Date)) date = new Date(date);
+            return date && date.getFullYear() === activeYear && (date.getMonth() + 1) === activeMonth;
+        });
     }
 
     // 2. Hat Filtreleme (Çoklu Seçim)
@@ -716,12 +741,8 @@ function renderActiveTabContent() {
         renderFieldMatrix(contentWrapper);
     } else if (fieldTrackingActiveTab === 'general') {
         renderFieldGeneralStats(contentWrapper);
-    } else if (fieldTrackingActiveTab === 'stations') {
-        renderFieldStationAnalysis(contentWrapper);
     } else if (fieldTrackingActiveTab === 'individual') {
         renderFieldIndividualPerf(contentWrapper);
-    } else if (fieldTrackingActiveTab === 'comparison') {
-        renderFieldComparison(contentWrapper);
     } else if (fieldTrackingActiveTab === 'reports') {
         renderFieldReports(contentWrapper);
     }
@@ -778,87 +799,139 @@ function renderFieldMatrix(container) {
         dayHeadersHtml += `<th style="text-align: center; padding: 8px 4px; font-size: 0.75rem; min-width: 42px;">${d}</th>`;
     }
 
-    let rowsHtml = '';
+    // Hatta göre gruplandırma yap
+    const groupedUsers = {};
     filteredUsers.forEach(user => {
-        const roster = fieldRosterCache[user.id] || {};
-        const daysObj = roster.days || {};
-
-        let userTotalMinutes = 0;
-        let dayCellsHtml = '';
-
-        for (let d = 1; d <= daysInMonth; d++) {
-            const dayRoster = daysObj[d] || '';
-            const shiftStr = (typeof dayRoster === 'object' ? (dayRoster.shift || '') : dayRoster).toString();
-            const isOff = ['İ', 'Yİ', 'R', 'OFF'].includes(shiftStr.toUpperCase());
-            
-            // Toplantı/Eğitim/Diğer bilgileri
-            const meetingDuration = (typeof dayRoster === 'object' && dayRoster.meetingDuration) ? dayRoster.meetingDuration : 0;
-            const meetingStart = (typeof dayRoster === 'object' && dayRoster.meetingStart) ? dayRoster.meetingStart : '';
-            const meetingEnd = (typeof dayRoster === 'object' && dayRoster.meetingEnd) ? dayRoster.meetingEnd : '';
-            const meetingType = (typeof dayRoster === 'object' && dayRoster.meetingType) ? dayRoster.meetingType : '';
-            const meetingDescription = (typeof dayRoster === 'object' && dayRoster.meetingDescription) ? dayRoster.meetingDescription : '';
-            
-            let meetingLabel = 'Toplantı/Eğitim';
-            if (meetingType === 'meeting') meetingLabel = 'Toplantı';
-            else if (meetingType === 'training') meetingLabel = 'Eğitim';
-            else if (meetingType === 'other') meetingLabel = `Diğer (${meetingDescription})`;
-
-            const expectedMinutes = 480 - meetingDuration; // Beklenen net saha süresi
-
-            // O günün seansını bul
-            const session = fieldSessionsCache.find(s => {
-                const sDate = s.date;
-                return s.userId === user.id && sDate && sDate.getDate() === d;
-            });
-
-            if (session) {
-                const duration = session.totalDuration || 0;
-                userTotalMinutes += duration;
-                
-                // Toplantı ikonu (Hafif mor gösterge)
-                const meetingBadge = meetingDuration > 0 
-                    ? `<div style="position:absolute; top:-2px; right:-2px; width:12px; height:12px; background:#8b5cf6; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:6px; color:white; z-index:3; border:1px solid var(--bg-card);" title="${escapeAttr(meetingLabel)}: ${meetingStart} - ${meetingEnd} (${formatFieldDuration(meetingDuration)})"><i class="fas fa-chalkboard-teacher" style="font-size:6px;"></i></div>` 
-                    : '';
-
-                dayCellsHtml += `
-                    <td class="matrix-cell-saha" style="position:relative; background-color: rgba(249, 115, 22, 0.08) !important; color: var(--text-primary) !important; font-weight:600;" onclick="openFieldSessionDetail('${escapeAttr(session.id)}')" title="${formatFieldDuration(duration)}${meetingDuration > 0 ? ' | ' + meetingLabel + ': ' + formatFieldDuration(meetingDuration) + ' (' + meetingStart + '-' + meetingEnd + ')' : ''}">
-                        ${meetingBadge}
-                        ${formatFieldDuration(duration)}
-                    </td>
-                `;
-            } else if (isOff) {
-                dayCellsHtml += `<td class="matrix-cell-saha field-duration-off" title="İzin Günü">OFF</td>`;
+        const lines = Array.isArray(user.authorizedLines) ? user.authorizedLines.filter(Boolean) : [];
+        let lineGroup = 'Tüm Hatlar (Global)';
+        if (lines.length > 0) {
+            if (lines.includes('ALL')) {
+                lineGroup = 'Tüm Hatlar (Global)';
             } else {
-                dayCellsHtml += `<td class="matrix-cell-saha field-duration-none">—</td>`;
+                lineGroup = lines.join(', ');
             }
         }
+        if (!groupedUsers[lineGroup]) {
+            groupedUsers[lineGroup] = [];
+        }
+        groupedUsers[lineGroup].push(user);
+    });
 
-        const totalFormatted = formatFieldDuration(userTotalMinutes);
+    // Grupları sırala (Önce M1, M2 vs., en son Tüm Hatlar)
+    const sortedGroupKeys = Object.keys(groupedUsers).sort((a, b) => {
+        const isAGlobal = a.includes('Tüm') || a.includes('Global') || a.includes('Diğer');
+        const isBGlobal = b.includes('Tüm') || b.includes('Global') || b.includes('Diğer');
+        if (isAGlobal && !isBGlobal) return 1;
+        if (!isAGlobal && isBGlobal) return -1;
+        return a.localeCompare(b, 'tr');
+    });
 
+    // Her grubu kendi içinde ada göre alfabetik sırala
+    sortedGroupKeys.forEach(groupName => {
+        groupedUsers[groupName].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'tr'));
+    });
+
+    let rowsHtml = '';
+    sortedGroupKeys.forEach(groupName => {
+        let lineLogosHtml = '';
+        if (groupName.includes('Tüm Hatlar') || groupName.includes('Global')) {
+            lineLogosHtml = `<div class="line-logo" style="background:#475569; color:white; font-size:0.6rem; font-weight:800; border-radius:50%; width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; box-shadow:0 1px 3px rgba(0,0,0,0.1); margin-right: 8px;" title="Tüm Hatlar"><i class="fas fa-globe" style="font-size:0.65rem;"></i></div>`;
+        } else {
+            const groupLines = groupName.split(',').map(l => l.trim()).filter(Boolean);
+            lineLogosHtml = groupLines.map((line, idx) => {
+                const color = (appData.lineColors && appData.lineColors[line]) || '#2563eb';
+                return `
+                    <div class="line-logo" style="background:${color}; color:white; font-size:0.62rem; font-weight:800; border-radius:50%; width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; box-shadow:0 1px 3px rgba(0,0,0,0.1); margin-left:${idx > 0 ? '-6px' : '0px'}; margin-right:${idx === groupLines.length - 1 ? '8px' : '0px'}; border:1px solid var(--bg-card); z-index:${5 - idx};" title="${line}">${line}</div>
+                `;
+            }).join('');
+        }
+
+        // Grup Başlığı Satırı
         rowsHtml += `
-            <tr>
-                <td class="matrix-user-cell" style="font-weight: 700; border-right: 2px solid var(--border-main); padding: 8px 10px; overflow: hidden;">
-                    <div style="display:flex; align-items:center; gap:0.45rem;">
-                        <div style="display:flex; flex-shrink:0;">
-                            ${typeof renderUserRosterLineLogos === 'function' ? renderUserRosterLineLogos(user) : ''}
-                        </div>
-                        <div style="display:flex; flex-direction:column; min-width:0; overflow:hidden;">
-                            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:0.78rem;">${escapeHtml(user.name)}</span>
-                            <small style="color:var(--text-dim); font-weight:normal; font-size:0.65rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapeAttr(user.title || user.jobTitle || 'Saha')}">${escapeHtml(user.title || user.jobTitle || 'Saha')}</small>
-                        </div>
+            <tr class="matrix-group-header-row">
+                <td colspan="${daysInMonth + 2}" style="background: rgba(37, 99, 235, 0.08) !important; color: var(--text-primary); font-weight: 800; font-size: 0.8rem; text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border-main); position: sticky; left: 0;">
+                    <div style="display:inline-flex; align-items:center; vertical-align:middle;">
+                        ${lineLogosHtml}
+                        <span style="font-weight: 800; font-size: 0.8rem; color: var(--text-primary);">${escapeHtml(groupName)}</span>
                     </div>
                 </td>
-                ${dayCellsHtml}
-                <td style="font-weight: 800; text-align: center; color: var(--accent); background: rgba(37, 99, 235, 0.05);">${totalFormatted}</td>
             </tr>
         `;
+
+        groupedUsers[groupName].forEach(user => {
+            const roster = fieldRosterCache[user.id] || {};
+            const daysObj = roster.days || {};
+
+            let userTotalMinutes = 0;
+            let dayCellsHtml = '';
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dayRoster = daysObj[d] || '';
+                const shiftStr = (typeof dayRoster === 'object' ? (dayRoster.shift || '') : dayRoster).toString();
+                const isOff = ['İ', 'Yİ', 'R', 'OFF'].includes(shiftStr.toUpperCase());
+                
+                const meetingDuration = (typeof dayRoster === 'object' && dayRoster.meetingDuration) ? dayRoster.meetingDuration : 0;
+                const meetingStart = (typeof dayRoster === 'object' && dayRoster.meetingStart) ? dayRoster.meetingStart : '';
+                const meetingEnd = (typeof dayRoster === 'object' && dayRoster.meetingEnd) ? dayRoster.meetingEnd : '';
+                const meetingType = (typeof dayRoster === 'object' && dayRoster.meetingType) ? dayRoster.meetingType : '';
+                const meetingDescription = (typeof dayRoster === 'object' && dayRoster.meetingDescription) ? dayRoster.meetingDescription : '';
+                
+                let meetingLabel = 'Toplantı/Eğitim';
+                if (meetingType === 'meeting') meetingLabel = 'Toplantı';
+                else if (meetingType === 'training') meetingLabel = 'Eğitim';
+                else if (meetingType === 'other') meetingLabel = `Diğer (${meetingDescription})`;
+
+                const session = fieldSessionsCache.find(s => {
+                    let sDate = s.startTime || s.date;
+                    if (sDate && !(sDate instanceof Date)) sDate = new Date(sDate);
+                    return s.userId === user.id && sDate && sDate.getDate() === d && sDate.getFullYear() === activeYear && (sDate.getMonth() + 1) === activeMonth;
+                });
+
+                if (session) {
+                    const duration = session.totalDuration || 0;
+                    userTotalMinutes += duration;
+                    
+                    const meetingBadge = meetingDuration > 0 
+                        ? `<div style="position:absolute; top:-2px; right:-2px; width:12px; height:12px; background:#8b5cf6; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:6px; color:white; z-index:3; border:1px solid var(--bg-card);" title="${escapeAttr(meetingLabel)}: ${meetingStart} - ${meetingEnd} (${formatFieldDuration(meetingDuration)})"><i class="fas fa-chalkboard-teacher" style="font-size:6px;"></i></div>` 
+                        : '';
+
+                    dayCellsHtml += `
+                        <td class="matrix-cell-saha" style="position:relative; background-color: rgba(249, 115, 22, 0.08) !important; color: var(--text-primary) !important; font-weight:600;" onclick="openFieldSessionDetail('${escapeAttr(session.id)}')" title="${formatFieldDuration(duration)}${meetingDuration > 0 ? ' | ' + meetingLabel + ': ' + formatFieldDuration(meetingDuration) + ' (' + meetingStart + '-' + meetingEnd + ')' : ''}">
+                            ${meetingBadge}
+                            ${formatFieldDuration(duration)}
+                        </td>
+                    `;
+                } else if (isOff) {
+                    dayCellsHtml += `<td class="matrix-cell-saha field-duration-off" title="İzin Günü">OFF</td>`;
+                } else {
+                    dayCellsHtml += `<td class="matrix-cell-saha field-duration-none">—</td>`;
+                }
+            }
+
+            const totalFormatted = formatFieldDuration(userTotalMinutes);
+
+            rowsHtml += `
+                <tr>
+                    <td class="matrix-user-cell" style="font-weight: 700; border-right: 2px solid var(--border-main); padding: 8px 10px; overflow: hidden;">
+                        <div style="display:flex; align-items:center; gap:0.45rem;">
+                            <div style="display:flex; flex-direction:column; min-width:0; overflow:hidden;">
+                                <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:0.78rem;">${escapeHtml(user.name)}</span>
+                                <small style="color:var(--text-dim); font-weight:normal; font-size:0.65rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapeAttr(user.title || user.jobTitle || 'Saha')}">${escapeHtml(user.title || user.jobTitle || 'Saha')}</small>
+                            </div>
+                        </div>
+                    </td>
+                    ${dayCellsHtml}
+                    <td style="font-weight: 800; text-align: center; color: var(--accent); background: rgba(37, 99, 235, 0.05);">${totalFormatted}</td>
+                </tr>
+            `;
+        });
     });
 
     const monthNamesTr = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
     const selectedMonthName = monthNamesTr[activeMonth - 1] || 'Saha';
 
     container.innerHTML = `
-        <div class="card shadow-sm border-0" style="background:var(--bg-card); border: 1px solid var(--border-main) !important; border-radius: 12px; margin-top: 1rem; margin-bottom: 1.5rem;">
+        <div class="card shadow-sm border-0" style="background:var(--bg-card); border: 1px solid var(--border-main) !important; border-radius: 12px; margin-top: 0px; margin-bottom: 0.75rem;">
             <div class="card-header border-0 d-flex justify-content-between align-items-center p-3 flex-wrap gap-3" style="background:none;">
                 <h4 class="card-title mb-0" style="font-size:1.1rem; font-weight:700;">
                     <i class="fas fa-calendar-alt mr-2" style="color:var(--accent);"></i> 
@@ -898,15 +971,8 @@ function getTitleMobilePermission(title, permissionKey) {
     return false;
 }
 
-/**
- * -----------------------------------------------------------------------------
- * SEKME 2: GENEL İSTATİSTİKLER VE CHARTLAR
- * -----------------------------------------------------------------------------
- */
 function renderFieldGeneralStats(container) {
-    // Toplam değerleri hesapla
     const sessions = fieldSessionsCache;
-    const totalDays = sessions.length;
     
     let totalMinutes = 0;
     let totalTravelMinutes = 0;
@@ -918,16 +984,11 @@ function renderFieldGeneralStats(container) {
 
     sessions.forEach(s => {
         totalMinutes += s.totalDuration || 0;
-        
-        // Personel toplamları
         userTotals[s.userName] = (userTotals[s.userName] || 0) + (s.totalDuration || 0);
-
-        // Günlük toplamlar
         const d = s.date.getDate();
         dailyTotals[d] = (dailyTotals[d] || 0) + (s.totalDuration || 0);
         dailyCounts[d] = (dailyCounts[d] || 0) + 1;
 
-        // İstasyon ziyaretleri
         if (Array.isArray(s.visits)) {
             s.visits.forEach(v => {
                 visitedStationsSet.add(v.stationName);
@@ -935,7 +996,6 @@ function renderFieldGeneralStats(container) {
             });
         }
 
-        // Yolculuk süreleri
         if (Array.isArray(s.travels)) {
             s.travels.forEach(t => {
                 totalTravelMinutes += t.duration || 0;
@@ -965,7 +1025,6 @@ function renderFieldGeneralStats(container) {
         }
     });
 
-    // En yoğun istasyonu bul
     let topStation = '—';
     let topStationMinutes = 0;
     Object.keys(stationDurations).forEach(st => {
@@ -975,72 +1034,221 @@ function renderFieldGeneralStats(container) {
         }
     });
 
-    // Filtreli dönemdeki toplam denetim sayısı
+    // Time Distribution Calculations
+    const lineSelect = document.getElementById('field-filter-line');
+    const userSelect = document.getElementById('field-filter-user');
+    const selectedLines = lineSelect ? getMultiSelectValues(lineSelect) : [];
+    const selectedUsers = userSelect ? getMultiSelectValues(userSelect) : [];
+    
+    let activeUsers = (appData.users || []).filter(u => {
+        const title = (u.title || u.jobTitle || '').toLowerCase();
+        return title.includes('vardiya') || title.includes('supervizor') || title.includes('süpervizör');
+    });
+    
+    if (selectedUsers.length > 0) {
+        activeUsers = activeUsers.filter(u => selectedUsers.includes(u.id));
+    }
+    if (selectedLines.length > 0) {
+        activeUsers = activeUsers.filter(u => {
+            const hasSessionOnLine = sessions.some(s => s.userId === u.id);
+            const hasLineAccess = Array.isArray(u.authorizedLines) && u.authorizedLines.some(l => selectedLines.includes(l));
+            return hasSessionOnLine || hasLineAccess;
+        });
+    }
+
     const { year: activeYear, month: activeMonth } = getFieldActiveYearAndMonth();
-    const totalAuditsCount = (appData.audits || []).filter(a => {
-        let aDate = a.date ? new Date(a.date) : null;
-        if (!aDate || isNaN(aDate.getTime())) return false;
-        return aDate.getFullYear() === activeYear && (aDate.getMonth() + 1) === activeMonth;
-    }).length;
+    const daysInMonth = new Date(activeYear, activeMonth, 0).getDate();
+    
+    const weeklyData = {};
+    const userData = {};
+    const titleData = {};
+    const lineData = {};
+    
+    for (let d = 1; d <= daysInMonth; d++) {
+        const weekName = getMonthWeekName(d);
+        if (!weeklyData[weekName]) {
+            weeklyData[weekName] = { saha: 0, meeting: 0, office: 0, workDays: 0 };
+        }
+    }
+    
+    let totalSahaHours = 0;
+    let totalMeetingHours = 0;
+    let totalOfficeHours = 0;
+    let totalWorkDays = 0;
+
+    activeUsers.forEach(user => {
+        const rosterUser = fieldRosterCache[user.id] || {};
+        const days = rosterUser.days || {};
+        
+        const title = user.title || user.jobTitle || 'Saha Amiri';
+        if (!titleData[title]) {
+            titleData[title] = { saha: 0, meeting: 0, office: 0, workDays: 0 };
+        }
+        
+        const primaryLine = (Array.isArray(user.authorizedLines) && user.authorizedLines.length > 0) 
+            ? user.authorizedLines[0] 
+            : 'Tümü';
+            
+        if (!lineData[primaryLine]) {
+            lineData[primaryLine] = { saha: 0, meeting: 0, office: 0, workDays: 0 };
+        }
+        
+        if (!userData[user.name]) {
+            userData[user.name] = { saha: 0, meeting: 0, office: 0, workDays: 0 };
+        }
+        
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dayKey = String(day);
+            const dayData = days[dayKey];
+            
+            const daySessions = sessions.filter(s => {
+                const sDate = s.startTime ? (s.startTime instanceof Date ? s.startTime : new Date(s.startTime)) : (s.date instanceof Date ? s.date : new Date(s.date));
+                return s.userId === user.id && sDate && sDate.getDate() === day;
+            });
+            
+            let sahaMinutes = 0;
+            daySessions.forEach(s => {
+                sahaMinutes += (s.totalDuration || 0);
+            });
+            
+            let meetingMinutes = 0;
+            let shiftCode = '';
+            if (dayData) {
+                meetingMinutes = dayData.hasMeeting ? (dayData.meetingDuration || 120) : 0;
+                shiftCode = dayData.shift || '';
+            }
+            
+            const shiftCodeLower = (shiftCode || '').toLowerCase();
+            const isOffShift = ['i', 'yi', 'r', 'izin', 'rapor', 'tatil'].includes(shiftCodeLower) || shiftCodeLower.includes('izin');
+            const worked = sahaMinutes > 0 || meetingMinutes > 0;
+            const isWorkDay = worked || (shiftCode && !isOffShift);
+            
+            if (isWorkDay) {
+                const shiftDuration = 480;
+                let officeMinutes = Math.max(0, shiftDuration - sahaMinutes - meetingMinutes);
+                
+                const sahaHours = sahaMinutes / 60;
+                const meetingHours = meetingMinutes / 60;
+                const officeHours = officeMinutes / 60;
+                
+                const weekName = getMonthWeekName(day);
+                
+                weeklyData[weekName].saha += sahaHours;
+                weeklyData[weekName].meeting += meetingHours;
+                weeklyData[weekName].office += officeHours;
+                weeklyData[weekName].workDays += 1;
+                
+                userData[user.name].saha += sahaHours;
+                userData[user.name].meeting += meetingHours;
+                userData[user.name].office += officeHours;
+                userData[user.name].workDays += 1;
+                
+                titleData[title].saha += sahaHours;
+                titleData[title].meeting += meetingHours;
+                titleData[title].office += officeHours;
+                titleData[title].workDays += 1;
+                
+                lineData[primaryLine].saha += sahaHours;
+                lineData[primaryLine].meeting += meetingHours;
+                lineData[primaryLine].office += officeHours;
+                lineData[primaryLine].workDays += 1;
+
+                totalSahaHours += sahaHours;
+                totalMeetingHours += meetingHours;
+                totalOfficeHours += officeHours;
+                totalWorkDays += 1;
+            }
+        }
+    });
+
+    const totalHours = totalSahaHours + totalMeetingHours + totalOfficeHours;
+    const totalShiftDays = totalWorkDays;
+
+    Object.keys(titleData).forEach(k => { if (titleData[k].workDays === 0) delete titleData[k]; });
+    Object.keys(lineData).forEach(k => { if (lineData[k].workDays === 0) delete lineData[k]; });
+    Object.keys(userData).forEach(k => { if (userData[k].workDays === 0) delete userData[k]; });
+
+    // İstasyon Bazlı Kalma ve Ziyaret Yoğunluğu Hesaplamaları
+    let stationStats = {};
+    sessions.forEach(s => {
+        if (Array.isArray(s.visits)) {
+            s.visits.forEach(v => {
+                if (!v.stationName) return;
+                if (!stationStats[v.stationName]) {
+                    stationStats[v.stationName] = {
+                        totalMinutes: 0,
+                        visitsCount: 0,
+                        uniqueUsers: new Set()
+                    };
+                }
+                stationStats[v.stationName].totalMinutes += (v.duration || 0);
+                stationStats[v.stationName].visitsCount++;
+                stationStats[v.stationName].uniqueUsers.add(s.userId);
+            });
+        }
+    });
+
+    const sortedStations = Object.keys(stationStats).map(name => ({
+        name: name,
+        totalMinutes: stationStats[name].totalMinutes,
+        visitsCount: stationStats[name].visitsCount,
+        usersCount: stationStats[name].uniqueUsers.size
+    })).sort((a, b) => b.totalMinutes - a.totalMinutes);
+
+    let stationRowsHtml = '';
+    if (sortedStations.length === 0) {
+        stationRowsHtml = `<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-dim);">Bu dönemde istasyon ziyareti bulunmuyor.</td></tr>`;
+    } else {
+        sortedStations.forEach((st, idx) => {
+            const avgStay = st.visitsCount > 0 ? Math.round(st.totalMinutes / st.visitsCount) : 0;
+            stationRowsHtml += `
+                <tr>
+                    <td style="font-weight:700; text-align:center; width:50px;">${idx + 1}</td>
+                    <td style="font-weight:700; color:var(--text-primary);"><i class="fas fa-map-marker-alt mr-2" style="color:var(--accent);"></i> ${escapeHtml(st.name)}</td>
+                    <td style="text-align:center; font-weight:700; color:#8b5cf6;">${st.visitsCount} Giriş</td>
+                    <td style="text-align:center; font-weight:700; color:#3b82f6;">${formatFieldDuration(st.totalMinutes)}</td>
+                    <td style="text-align:center; font-weight:600;">Ort. ${avgStay} dk</td>
+                    <td style="text-align:center; font-weight:600; color:#10b981;">${st.usersCount} Personel</td>
+                </tr>
+            `;
+        });
+    }
 
     container.innerHTML = `
-        <div class="field-stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-            <div class="field-stat-card">
-                <div class="stat-label">
-                    <span>Toplam Saha Görevi</span>
-                    <i class="fas fa-person-walking-luggage" style="color:var(--accent);"></i>
-                </div>
-                <h3 class="stat-value">${totalMissions} Sefer</h3>
-                <small class="stat-desc">${uniqueDays} Farklı Takvim Günü (${activeUsersCount} Personel)</small>
-            </div>
-            
-            <div class="field-stat-card">
-                <div class="stat-label">
-                    <span>Toplam Saha Süresi</span>
-                    <i class="fas fa-clock" style="color:#3b82f6;"></i>
-                </div>
-                <h3 class="stat-value">${formatFieldDuration(totalMinutes)}</h3>
-                <small class="stat-desc">Günlük Ort: ${formatFieldDuration(avgDailyMinutes)}</small>
-            </div>
-
-            <div class="field-stat-card">
-                <div class="stat-label">
-                    <span>Görev Başına Ort. Süre</span>
-                    <i class="fas fa-hourglass-half" style="color:#f59e0b;"></i>
-                </div>
-                <h3 class="stat-value">${formatFieldDuration(avgMissionDuration)}</h3>
-                <small class="stat-desc">Sefer başına ortalama sahada kalış</small>
-            </div>
-
-            <div class="field-stat-card">
-                <div class="stat-label">
-                    <span>İstasyon Ziyaretleri</span>
-                    <i class="fas fa-train-subway" style="color:#8b5cf6;"></i>
-                </div>
-                <h3 class="stat-value">${totalVisitsCount} Giriş</h3>
-                <small class="stat-desc">${allUniqueStations.size} Farklı İstasyon Kapsandı</small>
-            </div>
-
-            <div class="field-stat-card">
-                <div class="stat-label">
-                    <span>Saha Denetimleri</span>
-                    <i class="fas fa-clipboard-check" style="color:#10b981;"></i>
-                </div>
-                <h3 class="stat-value">${totalAuditsCount} Denetim</h3>
-                <small class="stat-desc">Dönem içinde tamamlanan denetimler</small>
-            </div>
-
-            <div class="field-stat-card">
-                <div class="stat-label">
-                    <span>En Yoğun İstasyon</span>
-                    <i class="fas fa-map-pin" style="color:#ec4899;"></i>
-                </div>
-                <h3 class="stat-value" style="font-size:1.15rem;" title="${escapeHtml(topStation)}">${escapeHtml(topStation)}</h3>
-                <small class="stat-desc">Toplam Kalınan Süre: ${formatFieldDuration(topStationMinutes)}</small>
-            </div>
-        </div>
-
         <div class="field-chart-grid">
+            <!-- Haftalık Zaman Dağılımı Dikey Grafik -->
+            <div class="field-chart-card">
+                <h4><i class="fas fa-chart-bar mr-2" style="color:#8b5cf6;"></i>Haftalık Zaman Dağılımı (Orta. Günlük 8 Saat)</h4>
+                <div style="position:relative; height:300px; width:100%;">
+                    <canvas id="chart-time-weekly"></canvas>
+                </div>
+            </div>
+
+            <!-- Ünvan Bazlı Zaman Dağılımı Dikey Grafik -->
+            <div class="field-chart-card">
+                <h4><i class="fas fa-users-gear mr-2" style="color:#3b82f6;"></i>Ünvan Bazlı Zaman Dağılımı (Orta. Günlük 8 Saat)</h4>
+                <div style="position:relative; height:300px; width:100%;">
+                    <canvas id="chart-time-title"></canvas>
+                </div>
+            </div>
+
+            <!-- Hat Bazlı Zaman Dağılımı Dikey Grafik -->
+            <div class="field-chart-card">
+                <h4><i class="fas fa-route mr-2" style="color:#10b981;"></i>Hat Bazlı Zaman Dağılımı (Orta. Günlük 8 Saat)</h4>
+                <div style="position:relative; height:300px; width:100%;">
+                    <canvas id="chart-time-line"></canvas>
+                </div>
+            </div>
+
+            <!-- Kişi Bazlı Zaman Dağılımı Dikey Grafik -->
+            <div class="field-chart-card">
+                <h4><i class="fas fa-user-clock mr-2" style="color:#f59e0b;"></i>Kişi Bazlı Günlük Zaman Dağılımı (Orta. Günlük 8 Saat)</h4>
+                <div style="position:relative; height:300px; width:100%;">
+                    <canvas id="chart-time-user"></canvas>
+                </div>
+            </div>
+
+            <!-- Kişi Bazlı Toplam Saha Süreleri -->
             <div class="field-chart-card">
                 <h4><i class="fas fa-chart-bar mr-2" style="color:rgb(37,99,235);"></i>Kişi Bazlı Toplam Saha Süreleri</h4>
                 <div style="position:relative; height:300px; width:100%;">
@@ -1062,11 +1270,37 @@ function renderFieldGeneralStats(container) {
                 </div>
             </div>
         </div>
+
+        <!-- İstasyon Bazlı Kalma ve Ziyaret Yoğunluğu Tablosu -->
+        <div class="card shadow-sm border-0" style="background:var(--bg-card); border: 1px solid var(--border-main) !important; border-radius: 12px; margin-top: 1rem; margin-bottom: 1.5rem;">
+            <div class="card-header border-0 p-3" style="background:none;">
+                <h4 class="card-title mb-0" style="font-size:1.1rem; font-weight:700;"><i class="fas fa-train mr-2" style="color:var(--accent);"></i> İstasyon Bazlı Kalma ve Ziyaret Yoğunluğu</h4>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead>
+                            <tr style="background:var(--bg-card-sub); border-bottom:1px solid var(--border-main); font-size:0.75rem;">
+                                <th style="padding:12px 16px; text-align:center; width:50px;">#</th>
+                                <th style="text-align:left;">İstasyon Adı</th>
+                                <th style="text-align:center;">Ziyaret Sayısı</th>
+                                <th style="text-align:center;">Toplam Geçirilen Süre</th>
+                                <th style="text-align:center;">Ziyaret Başına Ort. Kalma</th>
+                                <th style="text-align:center;">Bulunan Kişi Sayısı</th>
+                            </tr>
+                        </thead>
+                        <tbody style="font-size:0.8rem;">
+                            ${stationRowsHtml}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     `;
 
-    // Grafik verilerini hazırla ve çiz
     setTimeout(() => {
         buildGeneralCharts(userTotals, dailyTotals, dailyCounts, stationDurations);
+        buildTimeDistributionCharts(weeklyData, userData, titleData, lineData);
     }, 50);
 }
 
@@ -1406,7 +1640,6 @@ function renderFieldIndividualPerf(container) {
     const avgMissionDuration = totalMissions > 0 ? Math.round(totalMinutes / totalMissions) : 0;
     const avgDailyDuration = uniqueDays > 0 ? Math.round(totalMinutes / uniqueDays) : 0;
     
-    // Ortalama giriş/çıkış saatleri formatı
     const avgStartMinutes = totalMissions > 0 ? Math.round(startTimesSum / totalMissions) : 0;
     const avgEndMinutes = validEndCount > 0 ? Math.round(endTimesSum / validEndCount) : 0;
 
@@ -1417,7 +1650,6 @@ function renderFieldIndividualPerf(container) {
         return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
     };
 
-    // Aktif tarih filtre yıl/ayında seçilen personelin yaptığı denetimler
     const { year: activeYear, month: activeMonth } = getFieldActiveYearAndMonth();
     const userAudits = (appData.audits || []).filter(a => {
         const isMatchUser = a.auditorId === fieldTrackingSelectedUserForPerf || 
@@ -1429,12 +1661,9 @@ function renderFieldIndividualPerf(container) {
     });
 
     const totalAuditsCount = userAudits.length;
-    const auditsPerMission = totalMissions > 0 ? (totalAuditsCount / totalMissions).toFixed(1) : '0';
-    const avgAuditScore = totalAuditsCount > 0 ? Math.round(userAudits.reduce((sum, a) => sum + (Number(a.score) || 0), 0) / totalAuditsCount) : 0;
     const uniqueStationsCount = Object.keys(userStationDurations).length;
     const avgStationStay = totalVisitsCount > 0 ? Math.round(Object.values(userStationDurations).reduce((sum, v) => sum + v.minutes, 0) / totalVisitsCount) : 0;
 
-    // En çok ziyaret ettiği ilk 5 istasyon listesi
     const sortedUserStations = Object.keys(userStationDurations).map(st => ({
         name: st,
         minutes: userStationDurations[st].minutes,
@@ -1463,7 +1692,6 @@ function renderFieldIndividualPerf(container) {
         });
     }
 
-    // Seans Geçmişi Tablosu Satırları
     let sessionRowsHtml = '';
     const sortedSessions = [...userSessions].sort((a, b) => {
         let da = a.startTime ? (a.startTime instanceof Date ? a.startTime : new Date(a.startTime)) : (a.date instanceof Date ? a.date : new Date(a.date));
@@ -1472,7 +1700,7 @@ function renderFieldIndividualPerf(container) {
     });
 
     if (sortedSessions.length === 0) {
-        sessionRowsHtml = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-dim);">Bu dönemde saha seansı kaydı bulunmuyor.</td></tr>`;
+        sessionRowsHtml = `<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-dim);">Bu dönemde saha seansı kaydı bulunmuyor.</td></tr>`;
     } else {
         sortedSessions.forEach((s, idx) => {
             let sDate = s.startTime ? (s.startTime instanceof Date ? s.startTime : new Date(s.startTime)) : (s.date instanceof Date ? s.date : new Date(s.date));
@@ -1483,7 +1711,6 @@ function renderFieldIndividualPerf(container) {
             const startStr = st ? `${String(st.getHours()).padStart(2, '0')}:${String(st.getMinutes()).padStart(2, '0')}` : '—';
             const endStr = et ? `${String(et.getHours()).padStart(2, '0')}:${String(et.getMinutes()).padStart(2, '0')}` : (s.status === 'active' ? '<span style="color:#10b981; font-weight:700;">Devam Ediyor</span>' : '—');
 
-            // Ziyaret edilen istasyonlar listesi
             let visitsBadges = '—';
             if (Array.isArray(s.visits) && s.visits.length > 0) {
                 visitsBadges = s.visits.map(v => {
@@ -1494,22 +1721,6 @@ function renderFieldIndividualPerf(container) {
                 }).join(' ');
             }
 
-            // O seans gününde yapılan denetimler
-            const sessionDayStr = sDate ? getLocalDateString(sDate) : '';
-            const matchingAudits = userAudits.filter(a => {
-                let aDate = a.date ? new Date(a.date) : null;
-                return aDate && getLocalDateString(aDate) === sessionDayStr;
-            });
-
-            let auditBadges = '—';
-            if (matchingAudits.length > 0) {
-                auditBadges = matchingAudits.map(a => 
-                    `<span style="display:inline-flex; align-items:center; gap:4px; margin:2px; padding:3px 8px; border-radius:6px; background:rgba(16, 185, 129, 0.15); color:#10b981; font-size:0.72rem; font-weight:800; border:1px solid rgba(16, 185, 129, 0.3);">
-                        <i class="fas fa-check-circle"></i> ${getAuditDisplayId(a)} (%${Number(a.score) || 0})
-                    </span>`
-                ).join(' ');
-            }
-
             sessionRowsHtml += `
                 <tr style="cursor:pointer;" onclick="openFieldSessionDetail('${escapeAttr(s.id)}')">
                     <td style="font-weight:700; text-align:center; width:45px;">${idx + 1}</td>
@@ -1518,7 +1729,6 @@ function renderFieldIndividualPerf(container) {
                     <td style="text-align:center; white-space:nowrap;">${startStr} - ${endStr}</td>
                     <td style="text-align:center; font-weight:800; color:var(--accent);">${formatFieldDuration(s.totalDuration || 0)}</td>
                     <td style="max-width:280px;">${visitsBadges}</td>
-                    <td style="text-align:center;">${auditBadges}</td>
                     <td style="text-align:center; white-space:nowrap;">
                         <button onclick="event.stopPropagation(); openFieldSessionDetail('${escapeAttr(s.id)}')" class="btn-outline" style="padding:4px 10px; font-size:0.75rem; border-radius:6px; font-weight:700; color:var(--accent); border-color:rgba(249,115,22,0.4);">
                             <i class="fas fa-route mr-1"></i> Rapor
@@ -1529,8 +1739,83 @@ function renderFieldIndividualPerf(container) {
         });
     }
 
+    // Sıralama ve Kıyaslama hesaplamaları (Liderlik Tablosu)
+    let userRankings = {};
+    fieldSessionsCache.forEach(s => {
+        if (!userRankings[s.userId]) {
+            userRankings[s.userId] = {
+                id: s.userId,
+                name: s.userName,
+                title: s.userTitle || 'Saha Personeli',
+                totalDuration: 0,
+                missionsCount: 0,
+                daysSet: new Set(),
+                totalVisits: 0
+            };
+        }
+        userRankings[s.userId].totalDuration += (s.totalDuration || 0);
+        userRankings[s.userId].missionsCount++;
+        let d = s.startTime || s.date;
+        if (d && !(d instanceof Date)) d = new Date(d);
+        if (d) userRankings[s.userId].daysSet.add(getLocalDateString(d));
+        if (Array.isArray(s.visits)) {
+            userRankings[s.userId].totalVisits += s.visits.length;
+        }
+    });
+
+    Object.values(userRankings).forEach(rank => {
+        rank.daysCount = rank.daysSet.size;
+    });
+
+    const sortedRankings = Object.values(userRankings).sort((a, b) => b.totalDuration - a.totalDuration);
+
+    let compareRowsHtml = '';
+    if (sortedRankings.length === 0) {
+        compareRowsHtml = `<tr><td colspan="8" style="text-align:center; padding:2rem; color:var(--text-dim);">Sıralama verisi bulunmuyor.</td></tr>`;
+    } else {
+        sortedRankings.forEach((rank, index) => {
+            const isChecked = fieldTrackingCompareUsers.includes(rank.id);
+            const avgDuration = rank.missionsCount > 0 ? Math.round(rank.totalDuration / rank.missionsCount) : 0;
+            const isHighlighted = rank.id === fieldTrackingSelectedUserForPerf ? 'style="background: rgba(249, 115, 22, 0.05); border-left: 3px solid var(--accent);"' : '';
+
+            compareRowsHtml += `
+                <tr ${isHighlighted} style="cursor:pointer;" onclick="selectUserForDetail('${escapeAttr(rank.id)}')">
+                    <td style="text-align:center; width:50px;" onclick="event.stopPropagation();">
+                        <input type="checkbox" class="compare-checkbox" value="${rank.id}" ${isChecked ? 'checked' : ''} onchange="toggleCompareUser(this)" style="cursor:pointer; width:16px; height:16px;">
+                    </td>
+                    <td style="font-weight:700; text-align:center; width:60px;">
+                        ${index + 1 === 1 ? '🏆' : index + 1 === 2 ? '🥈' : index + 1 === 3 ? '🥉' : index + 1}
+                    </td>
+                    <td>
+                        <div style="display:flex; flex-direction:column; max-width: 180px; overflow: hidden;">
+                            <span style="font-weight:700; font-size:0.85rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(rank.name)}</span>
+                            <small style="color:var(--text-dim); font-size:0.7rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeAttr(rank.title)}">${escapeHtml(rank.title)}</small>
+                        </div>
+                    </td>
+                    <td style="text-align:center; font-weight:700; color:var(--accent);">${rank.missionsCount} Sefer</td>
+                    <td style="text-align:center; font-weight:600;">${rank.daysCount} Gün</td>
+                    <td style="text-align:center; font-weight:700; color:#3b82f6;">${formatFieldDuration(rank.totalDuration)}</td>
+                    <td style="text-align:center;">${formatFieldDuration(avgDuration)}</td>
+                    <td style="text-align:center; font-weight:600; color:#8b5cf6;">${rank.totalVisits} Ziyaret</td>
+                </tr>
+            `;
+        });
+    }
+
+    let compareGraphHtml = '';
+    if (fieldTrackingCompareUsers.length > 0) {
+        compareGraphHtml = `
+            <div class="card shadow-sm border-0 p-3" style="background:var(--bg-card); border: 1px solid var(--border-main) !important; border-radius: 12px; margin-bottom:1.5rem;">
+                <h4 style="font-size:0.95rem; font-weight:700; margin-bottom:1rem; color:var(--text-primary);"><i class="fas fa-users mr-2" style="color:var(--accent);"></i> Seçilen Personellerin Saha Karşılaştırması</h4>
+                <div style="position:relative; height:300px; width:100%;">
+                    <canvas id="chart-field-compare"></canvas>
+                </div>
+            </div>
+        `;
+    }
+
     container.innerHTML = `
-        <div class="card shadow-sm border-0" style="background:rgba(11, 34, 61, 0.3); border:1px solid var(--border-main) !important; border-radius:12px; margin-top: 0.5rem; margin-bottom: 1.25rem;">
+        <div class="card shadow-sm border-0" style="background:rgba(11, 34, 61, 0.3); border:1px solid var(--border-main) !important; border-radius:12px; margin-top: 0px; margin-bottom: 0.5rem;">
             <div class="card-body p-3 d-flex align-items-center gap-3 flex-wrap justify-content-between">
                 <div class="d-flex align-items-center gap-3 flex-wrap">
                     <span style="font-weight:700; color:var(--text-primary);"><i class="fas fa-user-gear mr-2" style="color:var(--accent);"></i> İncelenen Personel:</span>
@@ -1541,62 +1826,6 @@ function renderFieldIndividualPerf(container) {
                 <div style="font-size:0.8rem; color:var(--text-dim);">
                     <i class="fas fa-info-circle mr-1" style="color:#3b82f6;"></i> Saha görevleri ve denetim kayıtları anlık olarak senkronize edilmiştir.
                 </div>
-            </div>
-        </div>
-
-        <div class="field-stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-            <div class="field-stat-card">
-                <div class="stat-label">
-                    <span>Toplam Saha Görevi</span>
-                    <i class="fas fa-person-walking-luggage" style="color:var(--accent);"></i>
-                </div>
-                <h3 class="stat-value">${totalMissions} Sefer</h3>
-                <small class="stat-desc">Saha takip çıkış adedi</small>
-            </div>
-
-            <div class="field-stat-card">
-                <div class="stat-label">
-                    <span>Aktif Saha Günü</span>
-                    <i class="fas fa-calendar-check" style="color:#10b981;"></i>
-                </div>
-                <h3 class="stat-value">${uniqueDays} Gün</h3>
-                <small class="stat-desc">Farklı takvim günü sayısı</small>
-            </div>
-            
-            <div class="field-stat-card">
-                <div class="stat-label">
-                    <span>Toplam Saha Süresi</span>
-                    <i class="fas fa-clock" style="color:#3b82f6;"></i>
-                </div>
-                <h3 class="stat-value">${formatFieldDuration(totalMinutes)}</h3>
-                <small class="stat-desc">Günlük Ort: ${formatFieldDuration(avgDailyDuration)}</small>
-            </div>
-
-            <div class="field-stat-card">
-                <div class="stat-label">
-                    <span>Görev Başına Ort. Süre</span>
-                    <i class="fas fa-hourglass-half" style="color:#f59e0b;"></i>
-                </div>
-                <h3 class="stat-value">${formatFieldDuration(avgMissionDuration)}</h3>
-                <small class="stat-desc">Çıkış: ${formatTimeOfDay(avgStartMinutes)} | Dönüş: ${formatTimeOfDay(avgEndMinutes)}</small>
-            </div>
-
-            <div class="field-stat-card">
-                <div class="stat-label">
-                    <span>İstasyon Ziyareti</span>
-                    <i class="fas fa-train-subway" style="color:#8b5cf6;"></i>
-                </div>
-                <h3 class="stat-value">${totalVisitsCount} Giriş</h3>
-                <small class="stat-desc">${uniqueStationsCount} Farklı İstasyon (Ort: ${avgStationStay} dk)</small>
-            </div>
-
-            <div class="field-stat-card">
-                <div class="stat-label">
-                    <span>Saha Denetimleri</span>
-                    <i class="fas fa-clipboard-check" style="color:#06b6d4;"></i>
-                </div>
-                <h3 class="stat-value">${totalAuditsCount} Denetim</h3>
-                <small class="stat-desc">Sefer Başına: ${auditsPerMission} | Ort: %${avgAuditScore}</small>
             </div>
         </div>
 
@@ -1619,7 +1848,7 @@ function renderFieldIndividualPerf(container) {
         </div>
 
         <!-- Seans Geçmişi ve Saha Günlüğü Tablosu -->
-        <div class="card shadow-sm border-0" style="background:var(--bg-card); border: 1px solid var(--border-main) !important; border-radius: 12px; margin-top: 1.5rem; margin-bottom: 1.5rem;">
+        <div class="card shadow-sm border-0" style="background:var(--bg-card); border: 1px solid var(--border-main) !important; border-radius: 12px; margin-top: 0.75rem; margin-bottom: 0.75rem;">
             <div class="card-header border-0 d-flex justify-content-between align-items-center p-3" style="background:none;">
                 <h4 class="card-title mb-0" style="font-size:1rem; font-weight:700;"><i class="fas fa-history mr-2" style="color:var(--accent);"></i> Saha Görev ve Seans Günlüğü</h4>
                 <span style="font-size:0.75rem; color:var(--text-dim); background:rgba(255,255,255,0.05); padding:4px 10px; border-radius:6px;">Toplam ${totalMissions} Sefer Kaydı</span>
@@ -1635,7 +1864,6 @@ function renderFieldIndividualPerf(container) {
                                 <th style="text-align:center;">Çıkış - Dönüş</th>
                                 <th style="text-align:center;">Saha Süresi</th>
                                 <th style="text-align:left;">Ziyaret Edilen İstasyonlar</th>
-                                <th style="text-align:center;">Yapılan Denetimler</th>
                                 <th style="text-align:center; width:90px;">İşlem</th>
                             </tr>
                         </thead>
@@ -1646,12 +1874,21 @@ function renderFieldIndividualPerf(container) {
                 </div>
             </div>
         </div>
+
     `;
 
-    // Trend grafiği çiz
     setTimeout(() => {
         buildIndividualTrendChart(userSessions);
     }, 50);
+}
+
+function selectUserForDetail(userId) {
+    fieldTrackingSelectedUserForPerf = userId;
+    renderActiveTabContent();
+    const el = document.getElementById('field-perf-user-select');
+    if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
 }
 
 function onFieldPerfUserChange() {
@@ -1941,7 +2178,11 @@ function buildCompareChart(userRankings) {
         const userSessions = fieldSessionsCache.filter(s => s.userId === uId);
 
         for (let d = 1; d <= daysInMonth; d++) {
-            const session = userSessions.find(s => s.date.getDate() === d);
+            const session = userSessions.find(s => {
+                let sDate = s.startTime || s.date;
+                if (sDate && !(sDate instanceof Date)) sDate = new Date(sDate);
+                return sDate && sDate.getDate() === d && sDate.getFullYear() === activeYear && (sDate.getMonth() + 1) === activeMonth;
+            });
             dataArray.push(session ? Math.round((session.totalDuration / 60) * 10) / 10 : 0);
         }
 
@@ -2329,9 +2570,27 @@ function renderFieldReports(container) {
             color: '#3b82f6',
             title: 'Saha Süre Takip Matrisi',
             desc: 'Personel bazlı günlük saha çalışma sürelerini içeren aylık matris tablosu. Her personelin hangi gün ne kadar sahada kaldığını gösteren detaylı rapor.',
-            sheets: 'Saha Matrisi + İstasyon Detayları',
-            format: 'xlsx',
-            action: 'exportFieldDataToExcel()'
+            sheets: 'Matris Tablosu',
+            format: 'pdf',
+            action: 'exportFieldMatrixPDF()'
+        },
+        {
+            icon: 'fa-user-chart',
+            color: '#10b981',
+            title: 'Saha Haftalık/Aylık Performans Raporu',
+            desc: 'Görsel 1 standardına uygun; personellerin hat bazlı gruplandığı, aktif gün, saha ve ofis sürelerinin yüzdeleriyle gösterildiği liste raporu.',
+            sheets: 'Performans Listesi',
+            format: 'pdf',
+            action: 'exportFieldPerformancePDF()'
+        },
+        {
+            icon: 'fa-file-lines',
+            color: '#ec4899',
+            title: 'Kurumsal Personel Çalışma Verileri',
+            desc: 'Görsel 3 standardına uygun; her personelin toplam çalışma/saha/toplantı sürelerini ve en çok/en az/hiç ziyaret ettiği istasyonları içeren detaylı kurumsal analiz raporu.',
+            sheets: 'Kurumsal Detay Raporu',
+            format: 'pdf',
+            action: 'exportFieldIndividualPDF()'
         },
         {
             icon: 'fa-train',
@@ -2339,35 +2598,17 @@ function renderFieldReports(container) {
             title: 'İstasyon Ziyaret Analizi',
             desc: 'İstasyon bazlı ziyaret sayıları, toplam kalma süreleri ve ortalama ziyaret sürelerini içeren detaylı analiz raporu.',
             sheets: 'İstasyon Detayları',
-            format: 'xlsx',
-            action: 'exportFieldStationReport()'
-        },
-        {
-            icon: 'fa-user-chart',
-            color: '#10b981',
-            title: 'Bireysel Performans Özeti',
-            desc: 'Her personelin aylık toplam saha süresi, günlük ortalama, çıkış/dönüş saatleri ve en çok bulunduğu istasyonları içeren kişisel performans raporu.',
-            sheets: 'Bireysel Performans',
-            format: 'xlsx',
-            action: 'exportFieldIndividualReport()'
+            format: 'pdf',
+            action: 'exportFieldStationPDF()'
         },
         {
             icon: 'fa-ranking-star',
             color: '#f59e0b',
             title: 'Saha Performans Sıralaması',
-            desc: 'Tüm saha personelinin toplam saha sürelerine göre sıralaması, gün sayıları ve günlük ortalamaları içeren liderlik tablosu raporu.',
+            desc: 'Tüm saha personelinin toplam saha sürelerine göre sıralaması, gün sayıları ve günlük ortalamaları içeren sıralama raporu.',
             sheets: 'Sıralama Tablosu',
-            format: 'xlsx',
-            action: 'exportFieldRankingReport()'
-        },
-        {
-            icon: 'fa-file-lines',
-            color: '#ec4899',
-            title: 'Genel Saha Özet Raporu (Tam Paket)',
-            desc: 'Tüm saha verilerini tek dosyada birleştiren kapsamlı rapor. Matris, istasyon analizi, bireysel performans ve sıralama sayfalarını içerir.',
-            sheets: 'Matris + İstasyonlar + Performans + Sıralama',
-            format: 'xlsx',
-            action: 'exportFieldFullReport()'
+            format: 'pdf',
+            action: 'exportFieldRankingPDF()'
         }
     ];
 
@@ -2390,7 +2631,7 @@ function renderFieldReports(container) {
     `).join('');
 
     container.innerHTML = `
-        <div style="margin-top: 1rem; margin-bottom: 1.5rem;">
+        <div style="margin-top: 0px; margin-bottom: 0.75rem;">
             <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem;">
                 <div style="width: 44px; height: 44px; border-radius: 14px; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; display: grid; place-items: center; font-size: 1.15rem; flex-shrink: 0;">
                     <i class="fas fa-file-arrow-down"></i>
@@ -2401,12 +2642,12 @@ function renderFieldReports(container) {
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 0.75rem;">
                 ${cardsHtml}
             </div>
 
             <!-- Veri Yönetimi Bölümü -->
-            <div style="margin-top: 2.5rem; border-top: 1px solid var(--border-main); padding-top: 1.5rem;">
+            <div style="margin-top: 1.25rem; border-top: 1px solid var(--border-main); padding-top: 0.75rem;">
                 <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem;">
                     <div style="width: 44px; height: 44px; border-radius: 14px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; display: grid; place-items: center; font-size: 1.15rem; flex-shrink: 0;">
                         <i class="fas fa-database"></i>
@@ -2570,13 +2811,852 @@ async function deleteSelectedFieldSessions() {
 }
 
 /**
- * İstasyon Ziyaret Analizi Raporu
+ * Akıllı filtrelerden aktif olan günleri belirler
  */
-function exportFieldStationReport() {
-    if (typeof XLSX === 'undefined') { showToast('Excel kitaplığı yüklenemedi.'); return; }
+function getSelectedPeriodDays(activeYear, activeMonth) {
+    const daysInMonth = new Date(activeYear, activeMonth, 0).getDate();
+    let periodDays = [];
+    
+    if (typeof unifiedDateFilters !== 'undefined' && unifiedDateFilters.field) {
+        const uDays = unifiedDateFilters.field.days || [];
+        const uWeeks = unifiedDateFilters.field.weeks || [];
+        
+        if (uDays.length > 0) {
+            uDays.forEach(dStr => {
+                const dt = new Date(dStr);
+                if (dt.getFullYear() === activeYear && (dt.getMonth() + 1) === activeMonth) {
+                    periodDays.push(dt.getDate());
+                }
+            });
+        } else if (uWeeks.length > 0) {
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dt = new Date(activeYear, activeMonth - 1, d);
+                const wNum = getISOWeekNumber(dt);
+                if (uWeeks.includes(wNum.toString())) {
+                    periodDays.push(d);
+                }
+            }
+        }
+    }
+    
+    if (periodDays.length === 0) {
+        for (let d = 1; d <= daysInMonth; d++) {
+            periodDays.push(d);
+        }
+    }
+    
+    return periodDays.sort((a, b) => a - b);
+}
+
+/**
+ * Filtre detaylarına göre rapor aralığı, dönem tipi ve başlık eklerini hesaplar
+ */
+function getReportPeriodDetails(activeYear, activeMonth) {
+    const periodDays = getSelectedPeriodDays(activeYear, activeMonth);
+    let firstDayDate = new Date(activeYear, activeMonth - 1, periodDays[0]);
+    let lastDayDate = new Date(activeYear, activeMonth - 1, periodDays[periodDays.length - 1]);
+    let dateRangeStr = `${firstDayDate.toLocaleDateString('tr-TR')} - ${lastDayDate.toLocaleDateString('tr-TR')}`;
+    
+    let periodType = 'aylik'; // 'aylik', 'haftalik', 'gunluk'
+    let periodName = '';
+    let docTitleSuffix = '';
+    
+    if (typeof unifiedDateFilters !== 'undefined' && unifiedDateFilters.field) {
+        const uDays = unifiedDateFilters.field.days || [];
+        const uWeeks = unifiedDateFilters.field.weeks || [];
+        const uMonths = unifiedDateFilters.field.months || [];
+        
+        if (uDays.length > 0) {
+            periodType = 'gunluk';
+            periodName = `${getLocalDateString(firstDayDate)}_${getLocalDateString(lastDayDate)}`;
+            docTitleSuffix = dateRangeStr;
+        } else if (uWeeks.length > 0) {
+            periodType = 'haftalik';
+            periodName = `Hafta_${uWeeks[0]}`;
+            docTitleSuffix = `${uWeeks[0]}. HAFTA`;
+        } else if (uMonths.length > 0) {
+            const monthNamesTr = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+            periodType = 'aylik';
+            periodName = `${activeYear}_${uMonths[0]}`;
+            docTitleSuffix = `${monthNamesTr[parseInt(uMonths[0]) - 1].toUpperCase()} ${activeYear}`;
+        }
+    }
+    
+    if (!periodName) {
+        const monthNamesTr = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+        periodName = `${activeYear}_${activeMonth}`;
+        docTitleSuffix = `${monthNamesTr[activeMonth - 1].toUpperCase()} ${activeYear}`;
+    }
+    
+    return {
+        periodDays,
+        dateRangeStr,
+        periodType,
+        periodName,
+        docTitleSuffix
+    };
+}
+
+/**
+ * Belirli bir dönem için personelin çalışma, saha ve toplantı sürelerini hesaplar
+ */
+function calculateUserMetricsForPeriod(user, activeYear, activeMonth, sessions, periodDays) {
+    const roster = fieldRosterCache[user.id] || {};
+    const daysObj = roster.days || {};
+    
+    let sahaMinutesTotal = 0;
+    let meetingMinutesTotal = 0;
+    let officeMinutesTotal = 0;
+    let workDaysCount = 0;
+    
+    let stationDurations = {}; // stationName -> { minutes, count }
+    
+    periodDays.forEach(day => {
+        const dayKey = String(day);
+        const dayData = daysObj[dayKey];
+        
+        const daySessions = sessions.filter(s => {
+            let sDate = s.startTime || s.date;
+            if (sDate && !(sDate instanceof Date)) sDate = new Date(sDate);
+            return s.userId === user.id && sDate && sDate.getDate() === day && sDate.getFullYear() === activeYear && (sDate.getMonth() + 1) === activeMonth;
+        });
+        
+        let sahaMinutes = 0;
+        daySessions.forEach(s => {
+            sahaMinutes += (s.totalDuration || 0);
+            if (Array.isArray(s.visits)) {
+                s.visits.forEach(v => {
+                    const stName = v.stationName || 'Bilinmiyor';
+                    if (!stationDurations[stName]) {
+                        stationDurations[stName] = { minutes: 0, count: 0 };
+                    }
+                    stationDurations[stName].minutes += (v.duration || 0);
+                    stationDurations[stName].count += 1;
+                });
+            }
+        });
+        
+        let meetingMinutes = 0;
+        let shiftCode = '';
+        if (dayData) {
+            meetingMinutes = dayData.hasMeeting ? (dayData.meetingDuration || 120) : 0;
+            shiftCode = dayData.shift || '';
+        }
+        
+        const shiftCodeLower = (shiftCode || '').toLowerCase();
+        const isOffShift = ['i', 'yi', 'r', 'izin', 'rapor', 'tatil'].includes(shiftCodeLower) || shiftCodeLower.includes('izin');
+        const worked = sahaMinutes > 0 || meetingMinutes > 0;
+        const isWorkDay = worked || (shiftCode && !isOffShift);
+        
+        if (isWorkDay) {
+            const shiftDuration = 480; // 8 saat
+            let officeMinutes = Math.max(0, shiftDuration - sahaMinutes - meetingMinutes);
+            
+            sahaMinutesTotal += sahaMinutes;
+            meetingMinutesTotal += meetingMinutes;
+            officeMinutesTotal += officeMinutes;
+            workDaysCount += 1;
+        }
+    });
+    
+    const totalMinutes = sahaMinutesTotal + meetingMinutesTotal + officeMinutesTotal;
+    const pctSaha = totalMinutes > 0 ? Math.round((sahaMinutesTotal / totalMinutes) * 100) : 0;
+    const pctMeeting = totalMinutes > 0 ? Math.round((meetingMinutesTotal / totalMinutes) * 100) : 0;
+    const pctOffice = totalMinutes > 0 ? Math.round((officeMinutesTotal / totalMinutes) * 100) : 0;
+    
+    return {
+        workDays: workDaysCount,
+        sahaMin: sahaMinutesTotal,
+        meetingMin: meetingMinutesTotal,
+        officeMin: officeMinutesTotal,
+        pctSaha,
+        pctMeeting,
+        pctOffice,
+        stationDurations
+    };
+}
+
+/**
+ * PDF için Türkçe karakter destekli DejaVuSans fontunu hazırlar
+ */
+async function ensureFieldPdfFonts(doc) {
+    if (typeof ensureAuditPdfFonts === 'function') {
+        await ensureAuditPdfFonts(doc);
+        return 'DejaVuSans';
+    }
     try {
-        const stationHeaders = ['İstasyon Adı', 'Ziyaret Sayısı', 'Toplam Süre (Dakika)', 'Ortalama Kalma (Dakika)', 'En Aktif Ziyaretçi'];
-        const stationData = [];
+        if (typeof window._auditPdfFontCache === 'undefined') {
+            window._auditPdfFontCache = null;
+        }
+        if (!window._auditPdfFontCache) {
+            const fetchFont = async (url) => {
+                const resp = await fetch(url);
+                return await resp.arrayBuffer();
+            };
+            const toBase64 = (buf) => {
+                let binary = '';
+                const bytes = new Uint8Array(buf);
+                for (let i = 0; i < bytes.byteLength; i++) {
+                    binary += String.fromCharCode(bytes[i]);
+                }
+                return btoa(binary);
+            };
+            const [reg, bld] = await Promise.all([
+                fetchFont('https://raw.githubusercontent.com/dompdf/dompdf/master/lib/fonts/DejaVuSans.ttf'),
+                fetchFont('https://raw.githubusercontent.com/dompdf/dompdf/master/lib/fonts/DejaVuSans-Bold.ttf')
+            ]);
+            window._auditPdfFontCache = { regular: toBase64(reg), bold: toBase64(bld) };
+        }
+        doc.addFileToVFS('DejaVuSans.ttf', window._auditPdfFontCache.regular);
+        doc.addFont('DejaVuSans.ttf', 'DejaVuSans', 'normal');
+        doc.addFileToVFS('DejaVuSans-Bold.ttf', window._auditPdfFontCache.bold);
+        doc.addFont('DejaVuSans-Bold.ttf', 'DejaVuSans', 'bold');
+        return 'DejaVuSans';
+    } catch (e) {
+        console.warn('Field PDF font load warning:', e);
+        return 'helvetica';
+    }
+}
+
+/**
+ * Kurumsal Personel Raporu sayfa üst bilgisi
+ */
+function drawReportHeaderAndFooterPortrait(doc, fontName, pageNumber, totalPages, pDetails, showRunningTitle = true) {
+    doc.setFont(fontName, 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(148, 163, 184);
+    doc.text("METRO İSTANBUL", 10, 11);
+    
+    const nowStr = new Date().toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    doc.text(`Rapor Tarihi: ${nowStr}`, 200, 11, { align: 'right' });
+    
+    doc.setLineWidth(0.2);
+    doc.setDrawColor(226, 232, 240);
+    doc.line(10, 13, 200, 13);
+    
+    if (showRunningTitle) {
+        doc.setFont(fontName, 'bold');
+        doc.setFontSize(9.5);
+        doc.setTextColor(15, 23, 42);
+        doc.text(`${pDetails.docTitleSuffix} PERSONEL ÇALIŞMA VERİLERİ`, 105, 19, { align: 'center' });
+        
+        doc.setLineWidth(0.4);
+        doc.setDrawColor(71, 85, 105);
+        doc.line(10, 22, 200, 22);
+    }
+    
+    doc.setFont(fontName, 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(148, 163, 184);
+    doc.text(`Sayfa: ${pageNumber} / ${totalPages}`, 105, 287, { align: 'center' });
+    doc.text("Saha Denetim ve Performans Raporlama", 10, 287);
+}
+
+function drawReportHeaderAndFooterLandscape(doc, fontName, pageNumber, totalPages, pDetails) {
+    doc.setFont(fontName, 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(148, 163, 184);
+    doc.text("METRO İSTANBUL", 10, 11);
+    
+    const nowStr = new Date().toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    doc.text(`Rapor Tarihi: ${nowStr}`, 287, 11, { align: 'right' });
+    
+    doc.setLineWidth(0.2);
+    doc.setDrawColor(226, 232, 240);
+    doc.line(10, 13, 287, 13);
+    
+    doc.setFont(fontName, 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(148, 163, 184);
+    doc.text(`Sayfa: ${pageNumber} / ${totalPages}`, 148, 200, { align: 'center' });
+    doc.text("Saha Denetim ve Performans Raporlama", 10, 200);
+}
+
+/**
+ * 1. Haftalık/Aylık Performans Raporu (Görsel 1 ile Tam Uyumlu)
+ */
+async function exportFieldPerformancePDF() {
+    const { jsPDF } = window.jspdf;
+    if (!jsPDF) {
+        showToast('PDF kitaplığı yüklenemedi. Lütfen sayfayı yenileyin.');
+        return;
+    }
+    
+    try {
+        const { year: activeYear, month: activeMonth } = getFieldActiveYearAndMonth();
+        const pDetails = getReportPeriodDetails(activeYear, activeMonth);
+        const periodDays = pDetails.periodDays;
+        
+        showToast(`${pDetails.docTitleSuffix} Performans Raporu PDF formatında hazırlanıyor...`);
+        
+        const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+        const fontName = await ensureFieldPdfFonts(doc);
+        
+        let filteredUsers = (appData.users || []).filter(u => {
+            const title = (u.title || u.jobTitle || '').toLowerCase();
+            return title.includes('vardiya') || title.includes('supervizor') || title.includes('süpervizör');
+        });
+        
+        const usersWithStats = filteredUsers.map(user => {
+            const stats = calculateUserMetricsForPeriod(user, activeYear, activeMonth, fieldSessionsCache, periodDays);
+            return {
+                user,
+                stats,
+                primaryLine: (user.primaryLine || user.line || 'M1').toUpperCase()
+            };
+        });
+        
+        const grouped = {};
+        usersWithStats.forEach(item => {
+            const lineName = item.primaryLine;
+            if (!grouped[lineName]) grouped[lineName] = [];
+            grouped[lineName].push(item);
+        });
+        
+        const sortedLines = Object.keys(grouped).sort((a, b) => a.localeCompare(b, 'tr'));
+        const bodyData = [];
+        let counter = 1;
+        
+        sortedLines.forEach(lineName => {
+            const grpHdr = [`${lineName} HATTI AMİRLERİ`, '', '', '', '', '', '', '', ''];
+            grpHdr.isGroupHeader = true;
+            grpHdr.lineName = lineName;
+            bodyData.push(grpHdr);
+            
+            const lineUsers = grouped[lineName].sort((a, b) => a.user.name.localeCompare(b.user.name, 'tr'));
+            
+            lineUsers.forEach(item => {
+                const u = item.user;
+                const s = item.stats;
+                
+                const formatMin = (mins) => {
+                    if (mins === 0) return '0 dk';
+                    const hrs = Math.floor(mins / 60);
+                    const rm = Math.round(mins % 60);
+                    if (hrs > 0) return `${hrs} sa ${rm} dk`;
+                    return `${rm} dk`;
+                };
+                
+                const row = [
+                    counter++,
+                    u.name.toUpperCase(),
+                    u.title || u.jobTitle || 'Hat Vardiya Amiri',
+                    lineName,
+                    s.workDays,
+                    formatMin(s.sahaMin),
+                    `%${s.pctSaha}`,
+                    formatMin(s.officeMin),
+                    `%${s.pctOffice}`
+                ];
+                row.isGroupHeader = false;
+                bodyData.push(row);
+            });
+        });
+        
+        // Mavi Banner (Slick Modern Header)
+        doc.setFillColor(30, 58, 138); // Deep Navy (#1e3a8a)
+        doc.roundedRect(10, 15, 190, 16, 2, 2, 'F');
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFont(fontName, 'bold');
+        doc.setFontSize(10.5);
+        
+        const isTram = sortedLines.some(l => l.startsWith('T'));
+        const lineType = isTram ? 'TRAMVAY' : 'METRO';
+        let bannerTitle = '';
+        if (pDetails.periodType === 'haftalik') {
+            bannerTitle = `${lineType} HATTI HAFTALIK PERFORMANS RAPORU (${pDetails.docTitleSuffix})`;
+        } else if (pDetails.periodType === 'aylik') {
+            bannerTitle = `${lineType} HATTI AYLIK PERFORMANS RAPORU (${pDetails.docTitleSuffix})`;
+        } else {
+            bannerTitle = `${lineType} HATTI PERFORMANS RAPORU (${pDetails.docTitleSuffix})`;
+        }
+        doc.text(bannerTitle, 15, 25);
+        
+        // Rapor Aralığı
+        doc.setTextColor(71, 85, 105);
+        doc.setFont(fontName, 'normal');
+        doc.setFontSize(8.5);
+        doc.text(`Rapor Aralığı: ${pDetails.dateRangeStr}`, 10, 38);
+        
+        doc.setLineWidth(0.3);
+        doc.setDrawColor(226, 232, 240);
+        doc.line(10, 41, 200, 41);
+        
+        // Premium Tablo Çizimi
+        doc.autoTable({
+            startY: 44,
+            head: [['NO', 'AD SOYAD', 'ÜNVAN', 'HAT', 'GÜN', 'SAHA SÜRESİ', '%SAHA', 'OFİS / İDARİ', '%OFİS']],
+            body: bodyData,
+            theme: 'striped',
+            styles: {
+                font: fontName,
+                fontSize: 8,
+                cellPadding: 3,
+                valign: 'middle',
+                textColor: [51, 65, 85],
+                lineColor: [241, 245, 249],
+                lineWidth: 0.1
+            },
+            headStyles: {
+                font: fontName,
+                fontStyle: 'bold',
+                fillColor: [30, 58, 138],
+                textColor: [255, 255, 255],
+                fontSize: 8.5
+            },
+            columnStyles: {
+                0: { halign: 'center', width: 10 },
+                1: { halign: 'left', width: 35 },
+                2: { halign: 'left', width: 35 },
+                3: { halign: 'center', width: 12 },
+                4: { halign: 'center', width: 12 },
+                5: { halign: 'left', width: 24 },
+                6: { halign: 'center', width: 15 },
+                7: { halign: 'left', width: 24 },
+                8: { halign: 'center', width: 15 }
+            },
+            didParseCell: function(data) {
+                const rawRow = data.row.raw;
+                if (rawRow && rawRow.isGroupHeader) {
+                    data.cell.styles.fillColor = [239, 246, 255]; // Blue-50
+                    data.cell.styles.textColor = [29, 78, 216]; // Blue-700
+                    data.cell.styles.fontStyle = 'bold';
+                    data.cell.styles.fontSize = 8.5;
+                    data.cell.styles.cellPadding = 3.5;
+                    if (data.column.index > 0) {
+                        data.cell.text = '';
+                    }
+                } else if (rawRow && !rawRow.isGroupHeader) {
+                    if (data.column.index === 5 || data.column.index === 6) {
+                        data.cell.styles.textColor = [21, 128, 61]; // Green-700
+                        data.cell.styles.fontStyle = 'bold';
+                    }
+                    if (data.column.index === 7 || data.column.index === 8) {
+                        data.cell.styles.textColor = [29, 78, 216]; // Blue-700
+                        data.cell.styles.fontStyle = 'bold';
+                    }
+                }
+            },
+            willDrawCell: function(data) {
+                const rawRow = data.row.raw;
+                if (rawRow && rawRow.isGroupHeader && data.column.index === 0) {
+                    data.cell.width = 190;
+                }
+            },
+            didDrawCell: function(data) {
+                const rawRow = data.row.raw;
+                if (rawRow && rawRow.isGroupHeader && data.column.index === 0) {
+                    doc.setFillColor(37, 99, 235);
+                    doc.rect(data.cell.x, data.cell.y, 2.5, data.cell.height, 'F');
+                }
+            },
+            margin: { left: 10, right: 10, top: 28, bottom: 15 }
+        });
+        
+        // Header & Footer Render
+        const totalPages = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+            doc.setPage(i);
+            drawReportHeaderAndFooterPortrait(doc, fontName, i, totalPages, pDetails, i > 1);
+        }
+        
+        doc.save(`saha_performans_raporu_${pDetails.periodName}.pdf`);
+        showToast('Performans raporu PDF olarak indirildi.');
+    } catch (err) {
+        console.error('PDF error:', err);
+        showToast('PDF raporu üretilirken hata oluştu.');
+    }
+}
+
+/**
+ * 2. Kurumsal Personel Çalışma Verileri (Görsel 3 ile Tam Uyumlu)
+ */
+async function exportFieldIndividualPDF() {
+    const { jsPDF } = window.jspdf;
+    if (!jsPDF) {
+        showToast('PDF kitaplığı yüklenemedi. Lütfen sayfayı yenileyin.');
+        return;
+    }
+    
+    try {
+        const { year: activeYear, month: activeMonth } = getFieldActiveYearAndMonth();
+        const pDetails = getReportPeriodDetails(activeYear, activeMonth);
+        const periodDays = pDetails.periodDays;
+        
+        showToast(`${pDetails.docTitleSuffix} Kurumsal Detay Raporu PDF formatında hazırlanıyor...`);
+        
+        const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+        const fontName = await ensureFieldPdfFonts(doc);
+        
+        let filteredUsers = (appData.users || []).filter(u => {
+            const title = (u.title || u.jobTitle || '').toLowerCase();
+            return title.includes('vardiya') || title.includes('supervizor') || title.includes('süpervizör');
+        });
+        
+        const usersWithStats = filteredUsers.map(user => {
+            const stats = calculateUserMetricsForPeriod(user, activeYear, activeMonth, fieldSessionsCache, periodDays);
+            return {
+                user,
+                stats,
+                primaryLine: (user.primaryLine || user.line || 'M1').toUpperCase()
+            };
+        });
+        
+        const grouped = {};
+        usersWithStats.forEach(item => {
+            const lineName = item.primaryLine;
+            if (!grouped[lineName]) grouped[lineName] = [];
+            grouped[lineName].push(item);
+        });
+        
+        const sortedLines = Object.keys(grouped).sort((a, b) => a.localeCompare(b, 'tr'));
+        
+        let currentY = 28;
+        const pageHeightLimit = 270;
+        const blockHeight = 44;
+        const blockGap = 4;
+        
+        sortedLines.forEach(lineName => {
+            if (currentY + 8 + blockHeight > pageHeightLimit) {
+                doc.addPage();
+                currentY = 28;
+            }
+            
+            doc.setFont(fontName, 'bold');
+            doc.setFontSize(9.5);
+            doc.setTextColor(37, 99, 235);
+            doc.text(`${lineName} HATTI AMİRLERİ`, 10, currentY);
+            
+            currentY += 5;
+            
+            const lineUsers = grouped[lineName].sort((a, b) => a.user.name.localeCompare(b.user.name, 'tr'));
+            
+            lineUsers.forEach(item => {
+                if (currentY + blockHeight > pageHeightLimit) {
+                    doc.addPage();
+                    
+                    doc.setFont(fontName, 'bold');
+                    doc.setFontSize(8.5);
+                    doc.setTextColor(37, 99, 235);
+                    doc.text(`${lineName} HATTI AMİRLERİ (DEVAM)`, 10, 28);
+                    currentY = 33;
+                }
+                
+                const u = item.user;
+                const stats = item.stats;
+                const blockStartY = currentY;
+                
+                // --- SÜTUN 1: ÖZET BİLGİ KARTI ---
+                doc.setFillColor(248, 250, 252); // Slate-50 background
+                doc.roundedRect(10, blockStartY, 58, 44, 2, 2, 'F');
+                doc.setFillColor(37, 99, 235); // Blue-600 left bar
+                doc.rect(10, blockStartY, 1.5, 44, 'F');
+                
+                doc.setFont(fontName, 'bold');
+                doc.setFontSize(8);
+                doc.setTextColor(15, 23, 42);
+                doc.text(u.name.toUpperCase(), 13, blockStartY + 5);
+                
+                doc.setFont(fontName, 'normal');
+                doc.setFontSize(6.8);
+                doc.setTextColor(100, 116, 139);
+                doc.text(u.title || 'Hat Vardiya Amiri', 13, blockStartY + 9);
+                
+                doc.setLineWidth(0.15);
+                doc.setDrawColor(226, 232, 240);
+                doc.line(13, blockStartY + 11, 64, blockStartY + 11);
+                
+                const formatMinCompact = (mins) => {
+                    const hrs = Math.floor(mins / 60);
+                    const rm = Math.round(mins % 60);
+                    if (hrs > 0) return `${hrs}sa ${rm}dk`;
+                    return `${rm}dk`;
+                };
+                
+                doc.setFont(fontName, 'normal');
+                doc.setFontSize(7.2);
+                doc.setTextColor(71, 85, 105);
+                
+                doc.text("Aylık Mesai:", 13, blockStartY + 17);
+                doc.setFont(fontName, 'bold');
+                doc.setTextColor(15, 23, 42);
+                doc.text(`${stats.workDays} Gün`, 35, blockStartY + 17);
+                
+                doc.setFont(fontName, 'normal');
+                doc.setTextColor(71, 85, 105);
+                doc.text("Saha Süresi:", 13, blockStartY + 23);
+                doc.setFont(fontName, 'bold');
+                doc.setTextColor(22, 163, 74); // Green-600
+                doc.text(`${formatMinCompact(stats.sahaMin)} (%${stats.pctSaha})`, 35, blockStartY + 23);
+                
+                doc.setFont(fontName, 'normal');
+                doc.setTextColor(71, 85, 105);
+                doc.text("Toplantı:", 13, blockStartY + 29);
+                doc.setFont(fontName, 'bold');
+                doc.setTextColor(147, 51, 234); // Purple-600
+                doc.text(`${formatMinCompact(stats.meetingMin)} (%${stats.pctMeeting})`, 35, blockStartY + 29);
+                
+                doc.setFont(fontName, 'normal');
+                doc.setTextColor(71, 85, 105);
+                doc.text("Ofis / İdari:", 13, blockStartY + 35);
+                doc.setFont(fontName, 'bold');
+                doc.setTextColor(37, 99, 235); // Blue-600
+                doc.text(`${formatMinCompact(stats.officeMin)} (%${stats.pctOffice})`, 35, blockStartY + 35);
+                
+                // --- SÜTUN 2: EN ÇOK ZİYARET EDİLENLER KARTI ---
+                doc.setFillColor(239, 246, 255); // Blue-50 background
+                doc.roundedRect(72, blockStartY, 62, 44, 2, 2, 'F');
+                doc.setFillColor(59, 130, 246); // Blue-500 left bar
+                doc.rect(72, blockStartY, 1.2, 44, 'F');
+                
+                doc.setFont(fontName, 'bold');
+                doc.setFontSize(7.5);
+                doc.setTextColor(29, 78, 216); // Blue-700
+                doc.text("EN ÇOK ZİYARET EDİLENLER", 76, blockStartY + 5);
+                
+                const visitedList = Object.entries(stats.stationDurations).map(([name, data]) => ({
+                    name,
+                    minutes: data.minutes,
+                    count: data.count
+                }));
+                const mostVisited = [...visitedList].sort((a, b) => b.minutes - a.minutes).slice(0, 8);
+                
+                doc.setFont(fontName, 'normal');
+                doc.setFontSize(6.8);
+                doc.setTextColor(51, 65, 85);
+                
+                let mvY = blockStartY + 10;
+                if (mostVisited.length === 0) {
+                    doc.setFont(fontName, 'normal');
+                    doc.setTextColor(148, 163, 184);
+                    doc.text("• Ziyaret kaydı bulunmuyor.", 76, mvY);
+                } else {
+                    mostVisited.forEach(st => {
+                        const trName = st.name.toUpperCase();
+                        const displayName = trName.length > 15 ? trName.substring(0, 13) + '..' : trName;
+                        
+                        doc.setFont(fontName, 'normal');
+                        doc.setTextColor(71, 85, 105);
+                        doc.text(`• ${displayName}`, 76, mvY);
+                        
+                        doc.setFont(fontName, 'bold');
+                        doc.setTextColor(29, 78, 216);
+                        doc.text(`${st.count}g / ${formatMinCompact(st.minutes)}`, 131, mvY, { align: 'right' });
+                        mvY += 4.5;
+                    });
+                }
+                
+                // --- SÜTUN 3: EN AZ VE HİÇ ZİYARET EDİLMEYEN KARTLARI ---
+                // Üst Kart: En Az Ziyaret Edilenler
+                doc.setFillColor(254, 242, 242); // Red-50 background
+                doc.roundedRect(138, blockStartY, 62, 21, 2, 2, 'F');
+                doc.setFillColor(239, 68, 68); // Red-500 left bar
+                doc.rect(138, blockStartY, 1.2, 21, 'F');
+                
+                doc.setFont(fontName, 'bold');
+                doc.setFontSize(7.2);
+                doc.setTextColor(185, 28, 28); // Red-700
+                doc.text("EN AZ ZİYARET EDİLENLER", 142, blockStartY + 4.5);
+                
+                const leastVisited = [...visitedList].sort((a, b) => a.count - b.count).slice(0, 3);
+                
+                doc.setFont(fontName, 'normal');
+                doc.setFontSize(6.5);
+                
+                let lvY = blockStartY + 9;
+                if (leastVisited.length === 0) {
+                    doc.setTextColor(148, 163, 184);
+                    doc.text("• Ziyaret kaydı bulunmuyor.", 142, lvY);
+                } else {
+                    leastVisited.forEach(st => {
+                        const trName = st.name.toUpperCase();
+                        const displayName = trName.length > 18 ? trName.substring(0, 16) + '..' : trName;
+                        doc.setFont(fontName, 'normal');
+                        doc.setTextColor(127, 29, 29);
+                        doc.text(`• ${displayName}`, 142, lvY);
+                        
+                        doc.setFont(fontName, 'bold');
+                        doc.text(`${st.count} kez`, 197, lvY, { align: 'right' });
+                        lvY += 4.2;
+                    });
+                }
+                
+                // Alt Kart: Hiç Ziyaret Edilmeyenler
+                doc.setFillColor(248, 250, 252); // Slate-50 background
+                doc.roundedRect(138, blockStartY + 23, 62, 21, 2, 2, 'F');
+                doc.setFillColor(100, 116, 139); // Slate-500 left bar
+                doc.rect(138, blockStartY + 23, 1.2, 21, 'F');
+                
+                doc.setFont(fontName, 'bold');
+                doc.setFontSize(7.2);
+                doc.setTextColor(71, 85, 105);
+                doc.text("HİÇ ZİYARET EDİLMEYENLER", 142, blockStartY + 27.5);
+                
+                const allLineStations = getSortedLineStations(item.primaryLine);
+                const visitedNamesSet = new Set(visitedList.map(v => v.name.toLowerCase().trim()));
+                const neverVisited = allLineStations.filter(stName => !visitedNamesSet.has(stName.toLowerCase().trim())).slice(0, 3);
+                
+                doc.setFont(fontName, 'normal');
+                doc.setFontSize(6.5);
+                doc.setTextColor(100, 116, 139);
+                
+                let nvY = blockStartY + 32;
+                if (neverVisited.length === 0) {
+                    doc.text("• Tüm istasyonlar ziyaret edildi.", 142, nvY);
+                } else {
+                    neverVisited.forEach(stName => {
+                        const trName = stName.toUpperCase();
+                        const displayName = trName.length > 22 ? trName.substring(0, 20) + '..' : trName;
+                        doc.text(`• ${displayName}`, 142, nvY);
+                        nvY += 4.2;
+                    });
+                }
+                
+                currentY += blockHeight + blockGap;
+            });
+            
+            currentY += 4;
+        });
+        
+        // Header & Footer Render
+        const totalPages = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+            doc.setPage(i);
+            drawReportHeaderAndFooterPortrait(doc, fontName, i, totalPages, pDetails, true);
+        }
+        
+        doc.save(`kurumsal_personel_calisma_verileri_${pDetails.periodName}.pdf`);
+        showToast('Kurumsal detay raporu PDF olarak indirildi.');
+    } catch (err) {
+        console.error('Individual PDF error:', err);
+        showToast('PDF raporu üretilirken hata oluştu.');
+    }
+}
+
+/**
+ * 3. Saha Süre Takip Matrisi (Yatay PDF Tablosu)
+ */
+async function exportFieldMatrixPDF() {
+    const { jsPDF } = window.jspdf;
+    if (!jsPDF) { showToast('PDF kitaplığı yüklenemedi.'); return; }
+    
+    try {
+        const { year: activeYear, month: activeMonth } = getFieldActiveYearAndMonth();
+        const pDetails = getReportPeriodDetails(activeYear, activeMonth);
+        const daysInMonth = new Date(activeYear, activeMonth, 0).getDate();
+        
+        showToast(`${pDetails.docTitleSuffix} Saha Süre Takip Matrisi PDF formatında hazırlanıyor...`);
+        
+        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+        const fontName = await ensureFieldPdfFonts(doc);
+        
+        const headers = ['Personel', 'Ünvan'];
+        for (let d = 1; d <= daysInMonth; d++) headers.push(`${d}`);
+        headers.push('Toplam');
+        
+        let filteredUsers = (appData.users || []).filter(u => {
+            const title = (u.title || u.jobTitle || '').toLowerCase();
+            return (title.includes('vardiya') || title.includes('supervizor') || title.includes('süpervizör')) && (fieldSessionsCache.some(s => s.userId === u.id) || getTitleMobilePermission(u.title || u.jobTitle, 'sahaTakip'));
+        });
+        
+        const tableRows = [];
+        filteredUsers.forEach(user => {
+            const roster = fieldRosterCache[user.id] || {};
+            const daysObj = roster.days || {};
+            let totalMin = 0;
+            const row = [user.name.toUpperCase(), user.title || 'Saha Personeli'];
+            
+            for (let d = 1; d <= daysInMonth; d++) {
+                const shiftCode = daysObj[d] || '';
+                const shiftStr = (typeof shiftCode === 'object' ? (shiftCode.shift || '') : shiftCode).toString();
+                const isOff = ['İ', 'Yİ', 'R', 'OFF'].includes(shiftStr.toUpperCase());
+                
+                const session = fieldSessionsCache.find(s => {
+                    let sDate = s.startTime || s.date;
+                    if (sDate && !(sDate instanceof Date)) sDate = new Date(sDate);
+                    return s.userId === user.id && sDate && sDate.getDate() === d && sDate.getFullYear() === activeYear && (sDate.getMonth() + 1) === activeMonth;
+                });
+                
+                if (session) {
+                    const duration = session.totalDuration || 0;
+                    const hrs = Math.floor(duration / 60);
+                    const rm = Math.round(duration % 60);
+                    row.push(hrs > 0 ? `${hrs}s` : `${rm}d`);
+                    totalMin += duration;
+                } else if (isOff) {
+                    row.push('OFF');
+                } else {
+                    row.push('—');
+                }
+            }
+            
+            const totalHrs = Math.floor(totalMin / 60);
+            const totalRm = Math.round(totalMin % 60);
+            row.push(totalHrs > 0 ? `${totalHrs}sa` : `${totalRm}dk`);
+            tableRows.push(row);
+        });
+        
+        doc.setFillColor(37, 99, 235);
+        doc.rect(10, 12, 277, 14, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont(fontName, 'bold');
+        doc.setFontSize(11);
+        doc.text(`SAHA SÜRE TAKİP MATRİSİ (${pDetails.docTitleSuffix})`, 15, 21);
+        
+        doc.autoTable({
+            startY: 32,
+            head: [headers],
+            body: tableRows,
+            styles: {
+                font: fontName,
+                fontSize: 6.2,
+                cellPadding: 1.5,
+                valign: 'middle',
+                halign: 'center',
+                textColor: [51, 65, 85],
+                lineWidth: 0.1,
+                lineColor: [226, 232, 240]
+            },
+            columnStyles: {
+                0: { halign: 'left', fontStyle: 'bold', width: 35 },
+                1: { halign: 'left', width: 32 }
+            },
+            headStyles: { font: fontName, fontStyle: 'bold', fillColor: [37, 99, 235], textColor: [255, 255, 255] },
+            alternateRowStyles: { fillColor: [248, 250, 252] },
+            didDrawPage: function(data) {
+                doc.setFont(fontName, 'normal');
+                doc.setFontSize(7.5);
+                doc.setTextColor(148, 163, 184);
+                doc.text(`Sayfa: ${doc.internal.getNumberOfPages()} / ${doc.internal.getNumberOfPages()}`, 148, 200, { align: 'center' });
+            },
+            margin: { left: 10, right: 10, bottom: 15 }
+        });
+        
+        doc.save(`saha_sure_takip_matrisi_${pDetails.periodName}.pdf`);
+        showToast('Saha matris raporu PDF olarak indirildi.');
+    } catch (err) {
+        console.error(err);
+        showToast('PDF raporu üretilirken hata oluştu.');
+    }
+}
+
+/**
+ * 4. İstasyon Ziyaret Analizi PDF Tablosu
+ */
+async function exportFieldStationPDF() {
+    const { jsPDF } = window.jspdf;
+    if (!jsPDF) { showToast('PDF kitaplığı yüklenemedi.'); return; }
+    
+    try {
+        const { year: activeYear, month: activeMonth } = getFieldActiveYearAndMonth();
+        const pDetails = getReportPeriodDetails(activeYear, activeMonth);
+        
+        showToast(`${pDetails.docTitleSuffix} İstasyon Ziyaret Analiz Raporu PDF formatında hazırlanıyor...`);
+        
+        const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+        const fontName = await ensureFieldPdfFonts(doc);
+        
         let stationStats = {};
         fieldSessionsCache.forEach(s => {
             if (Array.isArray(s.visits)) {
@@ -2589,315 +3669,138 @@ function exportFieldStationReport() {
                 });
             }
         });
+        
+        const stationData = [];
+        let counter = 1;
         Object.values(stationStats).sort((a, b) => b.total - a.total).forEach(stat => {
             let topVisitor = '—';
             let topMin = 0;
-            Object.entries(stat.visitors).forEach(([name, mins]) => { if (mins > topMin) { topVisitor = name; topMin = mins; } });
-            stationData.push([stat.name, stat.count, stat.total, Math.round(stat.total / stat.count), topVisitor]);
-        });
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([stationHeaders, ...stationData]), 'İstasyon Analizi');
-        const { year: _sy, month: _sm } = getFieldActiveYearAndMonth();
-        XLSX.writeFile(wb, `istasyon_analizi_${_sy}_${_sm}.xlsx`);
-        showToast('İstasyon analiz raporu indirildi.');
-    } catch (e) { console.error(e); showToast('Rapor üretilirken hata oluştu.'); }
-}
-
-/**
- * Bireysel Performans Raporu
- */
-function exportFieldIndividualReport() {
-    if (typeof XLSX === 'undefined') { showToast('Excel kitaplığı yüklenemedi.'); return; }
-    try {
-        const { year: activeYear, month: activeMonth } = getFieldActiveYearAndMonth();
-        const headers = ['Personel', 'Ünvan', 'Saha Görevi (Sefer)', 'Aktif Saha Günü (Gün)', 'Toplam Saha (Dk)', 'Görev Başına Ort. (Dk)', 'Günlük Ort. (Dk)', 'İstasyon Ziyareti', 'Yapılan Denetim', 'En Çok Ziyaret Ettiği İstasyon'];
-        const rows = [];
-        const userMap = {};
-        fieldSessionsCache.forEach(s => {
-            if (!userMap[s.userId]) userMap[s.userId] = { name: s.userName, title: s.userTitle || 'Saha', missions: 0, daysSet: new Set(), total: 0, visits: 0, stations: {} };
-            userMap[s.userId].missions++;
-            let d = s.startTime || s.date;
-            if (d && !(d instanceof Date)) d = new Date(d);
-            if (d) userMap[s.userId].daysSet.add(getLocalDateString(d));
-            userMap[s.userId].total += s.totalDuration || 0;
-            if (Array.isArray(s.visits)) {
-                userMap[s.userId].visits += s.visits.length;
-                s.visits.forEach(v => { 
-                    userMap[s.userId].stations[v.stationName] = (userMap[s.userId].stations[v.stationName] || 0) + (v.duration || 0); 
-                });
-            }
-        });
-        Object.values(userMap).sort((a, b) => b.total - a.total).forEach(u => {
-            let topSt = '—';
-            let topMin = 0;
-            Object.entries(u.stations).forEach(([name, mins]) => { if (mins > topMin) { topSt = name; topMin = mins; } });
-            const daysCount = u.daysSet.size;
-            const uAudits = (appData.audits || []).filter(a => {
-                const isMatch = (a.auditorName && a.auditorName.trim().toLowerCase() === u.name.trim().toLowerCase());
-                if (!isMatch) return false;
-                let aDate = a.date ? new Date(a.date) : null;
-                return aDate && aDate.getFullYear() === activeYear && (aDate.getMonth() + 1) === activeMonth;
+            Object.entries(stat.visitors).forEach(([name, mins]) => {
+                if (mins > topMin) { topVisitor = name; topMin = mins; }
             });
-            rows.push([
-                u.name, 
-                u.title, 
-                u.missions, 
-                daysCount, 
-                u.total, 
-                u.missions > 0 ? Math.round(u.total / u.missions) : 0,
-                daysCount > 0 ? Math.round(u.total / daysCount) : 0, 
-                u.visits,
-                uAudits.length,
-                topSt
-            ]);
-        });
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([headers, ...rows]), 'Bireysel Performans');
-        const { year: _iy, month: _im } = getFieldActiveYearAndMonth();
-        XLSX.writeFile(wb, `bireysel_performans_${_iy}_${_im}.xlsx`);
-        showToast('Bireysel performans raporu indirildi.');
-    } catch (e) { console.error(e); showToast('Rapor üretilirken hata oluştu.'); }
-}
-
-/**
- * Saha Performans Sıralaması Raporu
- */
-function exportFieldRankingReport() {
-    if (typeof XLSX === 'undefined') { showToast('Excel kitaplığı yüklenemedi.'); return; }
-    try {
-        const { year: activeYear, month: activeMonth } = getFieldActiveYearAndMonth();
-        const headers = ['Sıra', 'Personel', 'Ünvan', 'Saha Görevi (Sefer)', 'Aktif Gün', 'Toplam Saha (Dk)', 'Görev Başına Ort. (Dk)', 'İstasyon Ziyareti', 'Yapılan Denetim'];
-        const rows = [];
-        const userMap = {};
-        fieldSessionsCache.forEach(s => {
-            if (!userMap[s.userId]) userMap[s.userId] = { id: s.userId, name: s.userName, title: s.userTitle || 'Saha', missions: 0, daysSet: new Set(), total: 0, visits: 0 };
-            userMap[s.userId].missions++;
-            let d = s.startTime || s.date;
-            if (d && !(d instanceof Date)) d = new Date(d);
-            if (d) userMap[s.userId].daysSet.add(getLocalDateString(d));
-            userMap[s.userId].total += s.totalDuration || 0;
-            if (Array.isArray(s.visits)) {
-                userMap[s.userId].visits += s.visits.length;
-            }
-        });
-        Object.values(userMap).sort((a, b) => b.total - a.total).forEach((u, idx) => {
-            const daysCount = u.daysSet.size;
-            const uAudits = (appData.audits || []).filter(a => {
-                const isMatch = a.auditorId === u.id || (a.auditorName && a.auditorName.trim().toLowerCase() === u.name.trim().toLowerCase());
-                if (!isMatch) return false;
-                let aDate = a.date ? new Date(a.date) : null;
-                return aDate && aDate.getFullYear() === activeYear && (aDate.getMonth() + 1) === activeMonth;
-            });
-            rows.push([
-                idx + 1, 
-                u.name, 
-                u.title, 
-                u.missions, 
-                daysCount, 
-                u.total, 
-                u.missions > 0 ? Math.round(u.total / u.missions) : 0,
-                u.visits,
-                uAudits.length
-            ]);
-        });
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([headers, ...rows]), 'Sıralama Tablosu');
-        const { year: _ry, month: _rm } = getFieldActiveYearAndMonth();
-        XLSX.writeFile(wb, `saha_siralama_${_ry}_${_rm}.xlsx`);
-        showToast('Sıralama raporu indirildi.');
-    } catch (e) { console.error(e); showToast('Rapor üretilirken hata oluştu.'); }
-}
-
-/**
- * Genel Saha Özet Raporu (Tam Paket - Tüm sayfalar tek dosyada)
- */
-function exportFieldFullReport() {
-    if (typeof XLSX === 'undefined') { showToast('Excel kitaplığı yüklenemedi.'); return; }
-    try {
-        const wb = XLSX.utils.book_new();
-        const { year: _fy, month: _fm } = getFieldActiveYearAndMonth();
-        const daysInMonth = new Date(_fy, _fm, 0).getDate();
-
-        // Sayfa 1: Matris
-        const mHeaders = ['Personel', 'Vardiya'];
-        for (let d = 1; d <= daysInMonth; d++) mHeaders.push(`${d}`);
-        mHeaders.push('Toplam (Dk)');
-        const mRows = [];
-        let filteredUsers = (appData.users || []).filter(u => {
-            const title = (u.title || u.jobTitle || '').toLowerCase();
-            return (title.includes('vardiya') || title.includes('supervizor') || title.includes('süpervizör')) && (fieldSessionsCache.some(s => s.userId === u.id) || getTitleMobilePermission(u.title || u.jobTitle, 'sahaTakip'));
-        });
-        filteredUsers.forEach(user => {
-            const roster = fieldRosterCache[user.id] || {};
-            const daysObj = roster.days || {};
-            let totalMin = 0;
-            const row = [user.name, user.title || 'Saha Personeli'];
-            for (let d = 1; d <= daysInMonth; d++) {
-                const shiftCode = daysObj[d] || '';
-                const shiftStr = (typeof shiftCode === 'object' ? (shiftCode.shift || '') : shiftCode).toString();
-                const isOff = ['İ', 'Yİ', 'R', 'OFF'].includes(shiftStr.toUpperCase());
-                const session = fieldSessionsCache.find(s => s.userId === user.id && s.date && s.date.getDate() === d);
-                if (session) { row.push(session.totalDuration); totalMin += session.totalDuration; }
-                else if (isOff) { row.push('OFF'); }
-                else { row.push(0); }
-            }
-            row.push(totalMin);
-            mRows.push(row);
-        });
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([mHeaders, ...mRows]), 'Saha Matrisi');
-
-        // Sayfa 2: İstasyon Detayları
-        const sHeaders = ['İstasyon Adı', 'Ziyaret Sayısı', 'Toplam Süre (Dk)', 'Ort. Kalma (Dk)', 'En Aktif Ziyaretçi'];
-        const sRows = [];
-        let stStats = {};
-        fieldSessionsCache.forEach(s => {
-            if (Array.isArray(s.visits)) s.visits.forEach(v => {
-                if (!stStats[v.stationName]) stStats[v.stationName] = { name: v.stationName, count: 0, total: 0, visitors: {} };
-                stStats[v.stationName].count++;
-                stStats[v.stationName].total += v.duration || 0;
-                stStats[v.stationName].visitors[s.userName] = (stStats[v.stationName].visitors[s.userName] || 0) + (v.duration || 0);
-            });
-        });
-        Object.values(stStats).sort((a, b) => b.total - a.total).forEach(st => {
-            let top = '—', topM = 0;
-            Object.entries(st.visitors).forEach(([n, m]) => { if (m > topM) { top = n; topM = m; } });
-            sRows.push([st.name, st.count, st.total, Math.round(st.total / st.count), top]);
-        });
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([sHeaders, ...sRows]), 'İstasyon Detayları');
-
-        // Sayfa 3: Bireysel Performans
-        const pHeaders = ['Personel', 'Ünvan', 'Gün', 'Toplam (Dk)', 'Ort. (Dk)', 'En Çok İstasyon'];
-        const pRows = [];
-        const uMap = {};
-        fieldSessionsCache.forEach(s => {
-            if (!uMap[s.userId]) uMap[s.userId] = { name: s.userName, title: s.userTitle || 'Saha', days: 0, total: 0, stations: {} };
-            uMap[s.userId].days++;
-            uMap[s.userId].total += s.totalDuration || 0;
-            if (Array.isArray(s.visits)) s.visits.forEach(v => { uMap[s.userId].stations[v.stationName] = (uMap[s.userId].stations[v.stationName] || 0) + (v.duration || 0); });
-        });
-        Object.values(uMap).sort((a, b) => b.total - a.total).forEach(u => {
-            let ts = '—', tm = 0;
-            Object.entries(u.stations).forEach(([n, m]) => { if (m > tm) { ts = n; tm = m; } });
-            pRows.push([u.name, u.title, u.days, u.total, u.days > 0 ? Math.round(u.total / u.days) : 0, ts]);
-        });
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([pHeaders, ...pRows]), 'Bireysel Performans');
-
-        // Sayfa 4: Sıralama
-        const rHeaders = ['Sıra', 'Personel', 'Ünvan', 'Gün', 'Toplam (Dk)', 'Ort. (Dk)'];
-        const rRows = [];
-        Object.values(uMap).sort((a, b) => b.total - a.total).forEach((u, idx) => {
-            rRows.push([idx + 1, u.name, u.title, u.days, u.total, u.days > 0 ? Math.round(u.total / u.days) : 0]);
-        });
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([rHeaders, ...rRows]), 'Sıralama Tablosu');
-
-        XLSX.writeFile(wb, `saha_tam_rapor_${_fy}_${_fm}.xlsx`);
-        showToast('Genel saha özet raporu (tam paket) indirildi.');
-    } catch (e) { console.error(e); showToast('Rapor üretilirken hata oluştu.'); }
-}
-
-function exportFieldDataToExcel() {
-    if (typeof XLSX === 'undefined') {
-        showToast('Excel kitaplığı yüklenemedi. Lütfen sayfayı yenileyip tekrar deneyin.');
-        return;
-    }
-
-    try {
-        const { year: _ey, month: _em } = getFieldActiveYearAndMonth();
-        const daysInMonth = new Date(_ey, _em, 0).getDate();
-        
-        // 1. Matris Sekmesi Verilerini Hazırla
-        const matrixHeaders = ['Personel', 'Vardiya'];
-        for (let d = 1; d <= daysInMonth; d++) matrixHeaders.push(`${d}`);
-        matrixHeaders.push('Toplam (Dakika)');
-
-        const matrixData = [];
-        
-        let filteredUsers = (appData.users || []).filter(u => {
-            const title = (u.title || u.jobTitle || '').toLowerCase();
-            const isValidRole = title.includes('vardiya') || title.includes('supervizor') || title.includes('süpervizör');
-            if (!isValidRole) return false;
-
-            const hasSession = fieldSessionsCache.some(s => s.userId === u.id);
-            const hasTrackingPerm = getTitleMobilePermission(u.title || u.jobTitle, 'sahaTakip');
-            return hasSession || hasTrackingPerm;
-        });
-
-        filteredUsers.forEach(user => {
-            const roster = fieldRosterCache[user.id] || {};
-            const daysObj = roster.days || {};
-
-            let totalMin = 0;
-            const row = [user.name, user.title || 'Saha Personeli'];
-
-            for (let d = 1; d <= daysInMonth; d++) {
-                const shiftCode = daysObj[d] || '';
-                const shiftStr = (typeof shiftCode === 'object' ? (shiftCode.shift || '') : shiftCode).toString();
-                const isOff = ['İ', 'Yİ', 'R', 'OFF'].includes(shiftStr.toUpperCase());
-                
-                const session = fieldSessionsCache.find(s => {
-                    const sDate = s.date;
-                    return s.userId === user.id && sDate && sDate.getDate() === d;
-                });
-
-                if (session) {
-                    row.push(session.totalDuration);
-                    totalMin += session.totalDuration;
-                } else if (isOff) {
-                    row.push('OFF');
-                } else {
-                    row.push(0);
-                }
-            }
-            row.push(totalMin);
-            matrixData.push(row);
-        });
-
-        // 2. Detaylı İstasyon Bazlı Excel Tablosu Hazırla
-        const stationHeaders = ['İstasyon Adı', 'Ziyaret Sayısı', 'Toplam Süre (Dakika)', 'Ortalama Kalma (Dakika)'];
-        const stationData = [];
-        
-        let stationStats = {};
-        fieldSessionsCache.forEach(s => {
-            if (Array.isArray(s.visits)) {
-                s.visits.forEach(v => {
-                    const st = v.stationName;
-                    if (!stationStats[st]) {
-                        stationStats[st] = { name: st, count: 0, total: 0 };
-                    }
-                    stationStats[st].count++;
-                    stationStats[st].total += v.duration || 0;
-                });
-            }
-        });
-
-        Object.values(stationStats).sort((a, b) => b.total - a.total).forEach(stat => {
+            
+            const formatMin = (mins) => {
+                const hrs = Math.floor(mins / 60);
+                const rm = Math.round(mins % 60);
+                if (hrs > 0) return `${hrs} sa ${rm} dk`;
+                return `${rm} dk`;
+            };
+            
             stationData.push([
-                stat.name,
-                stat.count,
-                stat.total,
-                Math.round(stat.total / stat.count)
+                counter++,
+                stat.name.toUpperCase(),
+                `${stat.count} Giriş`,
+                formatMin(stat.total),
+                `${Math.round(stat.total / stat.count)} dk`,
+                topVisitor.toUpperCase()
             ]);
         });
-
-        // Excel dosyasını (Workbook) oluştur
-        const wb = XLSX.utils.book_new();
-
-        // Sayfa 1: Saha Matrisi
-        const wsMatrix = XLSX.utils.aoa_to_sheet([matrixHeaders, ...matrixData]);
-        XLSX.utils.book_append_sheet(wb, wsMatrix, 'Saha Matrisi');
-
-        // Sayfa 2: İstasyon Analizleri
-        const wsStations = XLSX.utils.aoa_to_sheet([stationHeaders, ...stationData]);
-        XLSX.utils.book_append_sheet(wb, wsStations, 'İstasyon Detayları');
-
-        // Dosyayı indir
-        const filename = `saha_takip_raporu_${_ey}_${_em}.xlsx`;
-        XLSX.writeFile(wb, filename);
-        showToast('Saha raporu başarıyla indirildi.');
-
+        
+        doc.setFillColor(168, 85, 247);
+        doc.rect(10, 12, 190, 14, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont(fontName, 'bold');
+        doc.setFontSize(11);
+        doc.text(`İSTASYON BAZLI SAHA ZİYARET ANALİZİ (${pDetails.docTitleSuffix})`, 15, 21);
+        
+        doc.autoTable({
+            startY: 32,
+            head: [['NO', 'İSTASYON ADI', 'ZİYARET SAYISI', 'TOPLAM GEÇİRİLEN SÜRE', 'ORT. KALMA SÜRESİ', 'EN AKTİF ZİYARETÇİ']],
+            body: stationData,
+            styles: { font: fontName, fontSize: 8.5, cellPadding: 3.5, valign: 'middle', textColor: [51, 65, 85] },
+            headStyles: { font: fontName, fontStyle: 'bold', fillColor: [168, 85, 247], textColor: [255, 255, 255] },
+            alternateRowStyles: { fillColor: [250, 245, 255] },
+            didDrawPage: function(data) {
+                doc.setFont(fontName, 'normal');
+                doc.setFontSize(7.5);
+                doc.setTextColor(148, 163, 184);
+                doc.text(`Sayfa: ${doc.internal.getNumberOfPages()} / ${doc.internal.getNumberOfPages()}`, 105, 287, { align: 'center' });
+            }
+        });
+        
+        doc.save(`istasyon_ziyaret_analizi_${pDetails.periodName}.pdf`);
+        showToast('İstasyon analiz raporu PDF olarak indirildi.');
     } catch (err) {
-        console.error('Excel export error:', err);
-        showToast('Excel raporu üretilirken hata oluştu.');
+        console.error(err);
+        showToast('PDF raporu üretilirken hata oluştu.');
+    }
+}
+
+/**
+ * 5. Saha Performans Sıralaması (Liderlik PDF Tablosu)
+ */
+async function exportFieldRankingPDF() {
+    const { jsPDF } = window.jspdf;
+    if (!jsPDF) { showToast('PDF kitaplığı yüklenemedi.'); return; }
+    
+    try {
+        const { year: activeYear, month: activeMonth } = getFieldActiveYearAndMonth();
+        const pDetails = getReportPeriodDetails(activeYear, activeMonth);
+        const periodDays = pDetails.periodDays;
+        
+        showToast(`${pDetails.docTitleSuffix} Sıralama Raporu PDF formatında hazırlanıyor...`);
+        
+        const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+        const fontName = await ensureFieldPdfFonts(doc);
+        
+        let filteredUsers = (appData.users || []).filter(u => {
+            const title = (u.title || u.jobTitle || '').toLowerCase();
+            return title.includes('vardiya') || title.includes('supervizor') || title.includes('süpervizör');
+        });
+        
+        const rankings = filteredUsers.map(user => {
+            const stats = calculateUserMetricsForPeriod(user, activeYear, activeMonth, fieldSessionsCache, periodDays);
+            return {
+                user,
+                stats
+            };
+        }).sort((a, b) => b.stats.sahaMin - a.stats.sahaMin);
+        
+        const formatMin = (mins) => {
+            const hrs = Math.floor(mins / 60);
+            const rm = Math.round(mins % 60);
+            if (hrs > 0) return `${hrs} sa ${rm} dk`;
+            return `${rm} dk`;
+        };
+        
+        const tableRows = rankings.map((r, idx) => [
+            idx + 1 === 1 ? '🏆 1' : idx + 1 === 2 ? '🥈 2' : idx + 1 === 3 ? '🥉 3' : idx + 1,
+            r.user.name.toUpperCase(),
+            r.user.title || 'Vardiya Amiri',
+            `${r.stats.workDays} Gün`,
+            formatMin(r.stats.sahaMin),
+            formatMin(r.stats.workDays > 0 ? Math.round(r.stats.sahaMin / r.stats.workDays) : 0),
+            `%${r.stats.pctSaha}`,
+            `%${r.stats.pctOffice}`
+        ]);
+        
+        doc.setFillColor(245, 158, 11);
+        doc.rect(10, 12, 190, 14, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont(fontName, 'bold');
+        doc.setFontSize(11);
+        doc.text(`SAHA PERFORMANS SIRALAMASI VE LİDERLİK TABLOSU (${pDetails.docTitleSuffix})`, 15, 21);
+        
+        doc.autoTable({
+            startY: 32,
+            head: [['SIRA', 'PERSONEL', 'ÜNVAN', 'AKTİF GÜN', 'TOPLAM SAHA', 'GÜNLÜK ORT. SAHA', 'SAHA %', 'OFİS %']],
+            body: tableRows,
+            styles: { font: fontName, fontSize: 8.5, cellPadding: 3.5, valign: 'middle', textColor: [51, 65, 85] },
+            headStyles: { font: fontName, fontStyle: 'bold', fillColor: [245, 158, 11], textColor: [255, 255, 255] },
+            alternateRowStyles: { fillColor: [255, 251, 240] },
+            didDrawPage: function(data) {
+                doc.setFont(fontName, 'normal');
+                doc.setFontSize(7.5);
+                doc.setTextColor(148, 163, 184);
+                doc.text(`Sayfa: ${doc.internal.getNumberOfPages()} / ${doc.internal.getNumberOfPages()}`, 105, 287, { align: 'center' });
+            }
+        });
+        
+        doc.save(`saha_performans_siralama_${pDetails.periodName}.pdf`);
+        showToast('Sıralama raporu PDF olarak indirildi.');
+    } catch (err) {
+        console.error(err);
+        showToast('PDF raporu üretilirken hata oluştu.');
     }
 }
 
@@ -2907,7 +3810,10 @@ function exportFieldDataToExcel() {
  * -----------------------------------------------------------------------------
  */
 function generateFieldTrackingMockData() {
-    console.log('Generating Field Tracking Mock Data for July 2026...');
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    console.log(`Generating Field Tracking Mock Data for ${month}/${year}...`);
 
     // Saha görevi yapan personel bul
     let fieldUsers = (appData.users || []).filter(u => {
@@ -2924,10 +3830,7 @@ function generateFieldTrackingMockData() {
         ];
     }
 
-    // Temmuz ayı günleri
-    const daysInMonth = 31;
-    const year = 2026;
-    const month = 7;
+    const daysInMonth = new Date(year, month, 0).getDate();
 
     // Bazı istasyon isimleri (koordinatlı olanlardan seçelim)
     const stations = [
@@ -3030,3 +3933,338 @@ function generateFieldTrackingMockData() {
         });
     });
 }
+
+function getMonthWeekName(dayOfMonth) {
+    if (dayOfMonth <= 7) return "1. Hafta (1-7)";
+    if (dayOfMonth <= 14) return "2. Hafta (8-14)";
+    if (dayOfMonth <= 21) return "3. Hafta (15-21)";
+    if (dayOfMonth <= 28) return "4. Hafta (22-28)";
+    return "5. Hafta (29+)";
+}
+
+function renderFieldTimeDistribution(container) {
+    const sessions = fieldSessionsCache;
+    
+    // 1. Filtrelenmiş personel listesini çıkar
+    const lineSelect = document.getElementById('field-filter-line');
+    const userSelect = document.getElementById('field-filter-user');
+    const selectedLines = lineSelect ? getMultiSelectValues(lineSelect) : [];
+    const selectedUsers = userSelect ? getMultiSelectValues(userSelect) : [];
+    
+    let activeUsers = (appData.users || []).filter(u => {
+        const title = (u.title || u.jobTitle || '').toLowerCase();
+        return title.includes('vardiya') || title.includes('supervizor') || title.includes('süpervizör');
+    });
+    
+    if (selectedUsers.length > 0) {
+        activeUsers = activeUsers.filter(u => selectedUsers.includes(u.id));
+    }
+    if (selectedLines.length > 0) {
+        activeUsers = activeUsers.filter(u => {
+            const hasSessionOnLine = sessions.some(s => s.userId === u.id);
+            const hasLineAccess = Array.isArray(u.authorizedLines) && u.authorizedLines.some(l => selectedLines.includes(l));
+            return hasSessionOnLine || hasLineAccess;
+        });
+    }
+
+    const { year: activeYear, month: activeMonth } = getFieldActiveYearAndMonth();
+    const daysInMonth = new Date(activeYear, activeMonth, 0).getDate();
+    
+    // Haftalık, Kişi, Ünvan ve Hat bazında verileri gruplayacak yapı
+    const weeklyData = {}; // "1. Hafta (1-7)" -> { saha: 0, meeting: 0, office: 0, workDays: 0 }
+    const userData = {};   // userName -> { saha: 0, meeting: 0, office: 0, workDays: 0 }
+    const titleData = {};  // title -> { saha: 0, meeting: 0, office: 0, workDays: 0 }
+    const lineData = {};   // line -> { saha: 0, meeting: 0, office: 0, workDays: 0 }
+    
+    // Haftaları başlat
+    for (let d = 1; d <= daysInMonth; d++) {
+        const weekName = getMonthWeekName(d);
+        if (!weeklyData[weekName]) {
+            weeklyData[weekName] = { saha: 0, meeting: 0, office: 0, workDays: 0 };
+        }
+    }
+    
+    // Özet kartları için toplamlar
+    let totalSahaHours = 0;
+    let totalMeetingHours = 0;
+    let totalOfficeHours = 0;
+    let totalWorkDays = 0;
+
+    activeUsers.forEach(user => {
+        const rosterUser = fieldRosterCache[user.id] || {};
+        const days = rosterUser.days || {};
+        
+        const title = user.title || user.jobTitle || 'Saha Amiri';
+        if (!titleData[title]) {
+            titleData[title] = { saha: 0, meeting: 0, office: 0, workDays: 0 };
+        }
+        
+        const primaryLine = (Array.isArray(user.authorizedLines) && user.authorizedLines.length > 0) 
+            ? user.authorizedLines[0] 
+            : 'Tümü';
+            
+        if (!lineData[primaryLine]) {
+            lineData[primaryLine] = { saha: 0, meeting: 0, office: 0, workDays: 0 };
+        }
+        
+        if (!userData[user.name]) {
+            userData[user.name] = { saha: 0, meeting: 0, office: 0, workDays: 0 };
+        }
+        
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dayKey = String(day);
+            const dayData = days[dayKey];
+            
+            const daySessions = sessions.filter(s => {
+                const sDate = s.startTime ? (s.startTime instanceof Date ? s.startTime : new Date(s.startTime)) : (s.date instanceof Date ? s.date : new Date(s.date));
+                return s.userId === user.id && sDate && sDate.getDate() === day;
+            });
+            
+            let sahaMinutes = 0;
+            daySessions.forEach(s => {
+                sahaMinutes += (s.totalDuration || 0);
+            });
+            
+            let meetingMinutes = 0;
+            let shiftCode = '';
+            if (dayData) {
+                meetingMinutes = dayData.hasMeeting ? (dayData.meetingDuration || 120) : 0;
+                shiftCode = dayData.shift || '';
+            }
+            
+            const shiftCodeLower = (shiftCode || '').toLowerCase();
+            const isOffShift = ['i', 'yi', 'r', 'izin', 'rapor', 'tatil'].includes(shiftCodeLower) || shiftCodeLower.includes('izin');
+            const worked = sahaMinutes > 0 || meetingMinutes > 0;
+            const isWorkDay = worked || (shiftCode && !isOffShift);
+            
+            if (isWorkDay) {
+                const shiftDuration = 480; // 8 saat = 480 dakika
+                let officeMinutes = Math.max(0, shiftDuration - sahaMinutes - meetingMinutes);
+                
+                const sahaHours = sahaMinutes / 60;
+                const meetingHours = meetingMinutes / 60;
+                const officeHours = officeMinutes / 60;
+                
+                const weekName = getMonthWeekName(day);
+                
+                // Haftaya ekle
+                weeklyData[weekName].saha += sahaHours;
+                weeklyData[weekName].meeting += meetingHours;
+                weeklyData[weekName].office += officeHours;
+                weeklyData[weekName].workDays += 1;
+                
+                // Personele ekle
+                userData[user.name].saha += sahaHours;
+                userData[user.name].meeting += meetingHours;
+                userData[user.name].office += officeHours;
+                userData[user.name].workDays += 1;
+                
+                // Ünvana ekle
+                titleData[title].saha += sahaHours;
+                titleData[title].meeting += meetingHours;
+                titleData[title].office += officeHours;
+                titleData[title].workDays += 1;
+                
+                // Hatta ekle
+                lineData[primaryLine].saha += sahaHours;
+                lineData[primaryLine].meeting += meetingHours;
+                lineData[primaryLine].office += officeHours;
+                lineData[primaryLine].workDays += 1;
+
+                // Genel toplamlara ekle
+                totalSahaHours += sahaHours;
+                totalMeetingHours += meetingHours;
+                totalOfficeHours += officeHours;
+                totalWorkDays += 1;
+            }
+        }
+    });
+
+    const totalHours = totalSahaHours + totalMeetingHours + totalOfficeHours;
+    const totalShiftDays = totalWorkDays;
+    
+    // Sıfır olan boş ünvan veya hatları temizle
+    Object.keys(titleData).forEach(k => { if (titleData[k].workDays === 0) delete titleData[k]; });
+    Object.keys(lineData).forEach(k => { if (lineData[k].workDays === 0) delete lineData[k]; });
+    Object.keys(userData).forEach(k => { if (userData[k].workDays === 0) delete userData[k]; });
+
+    container.innerHTML = `
+        <div class="field-stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+            <div class="field-stat-card">
+                <div class="stat-label">
+                    <span>Toplam Takip Edilen Gün</span>
+                    <i class="fas fa-calendar-alt" style="color:var(--accent);"></i>
+                </div>
+                <h3 class="stat-value">${totalShiftDays} Gün/Kişi</h3>
+                <small class="stat-desc">Filtrelenmiş toplam çalışma günü</small>
+            </div>
+            
+            <div class="field-stat-card">
+                <div class="stat-label">
+                    <span>Ofis / İdari İşler</span>
+                    <i class="fas fa-building" style="color:#3b82f6;"></i>
+                </div>
+                <h3 class="stat-value">${Math.round(totalOfficeHours)} Saat</h3>
+                <small class="stat-desc">Toplam çalışma süresinin %${totalHours > 0 ? Math.round((totalOfficeHours / totalHours) * 100) : 0}'i</small>
+            </div>
+
+            <div class="field-stat-card">
+                <div class="stat-label">
+                    <span>Saha Faaliyeti</span>
+                    <i class="fas fa-person-walking" style="color:#8b5cf6;"></i>
+                </div>
+                <h3 class="stat-value">${Math.round(totalSahaHours)} Saat</h3>
+                <small class="stat-desc">Toplam çalışma süresinin %${totalHours > 0 ? Math.round((totalSahaHours / totalHours) * 100) : 0}'i</small>
+            </div>
+
+            <div class="field-stat-card">
+                <div class="stat-label">
+                    <span>Toplantı / Eğitim</span>
+                    <i class="fas fa-users" style="color:#f59e0b;"></i>
+                </div>
+                <h3 class="stat-value">${Math.round(totalMeetingHours)} Saat</h3>
+                <small class="stat-desc">Toplam çalışma süresinin %${totalHours > 0 ? Math.round((totalMeetingHours / totalHours) * 100) : 0}'i</small>
+            </div>
+        </div>
+
+        <div class="field-chart-grid">
+            <!-- Haftalık Zaman Dağılımı Dikey Grafik -->
+            <div class="field-chart-card">
+                <h4><i class="fas fa-chart-bar mr-2" style="color:#8b5cf6;"></i>Haftalık Zaman Dağılımı (Orta. Günlük 8 Saat)</h4>
+                <div style="position:relative; height:300px; width:100%;">
+                    <canvas id="chart-time-weekly"></canvas>
+                </div>
+            </div>
+
+            <!-- Ünvan Bazlı Zaman Dağılımı Dikey Grafik -->
+            <div class="field-chart-card">
+                <h4><i class="fas fa-users-gear mr-2" style="color:#3b82f6;"></i>Ünvan Bazlı Zaman Dağılımı (Orta. Günlük 8 Saat)</h4>
+                <div style="position:relative; height:300px; width:100%;">
+                    <canvas id="chart-time-title"></canvas>
+                </div>
+            </div>
+
+            <!-- Hat Bazlı Zaman Dağılımı Dikey Grafik -->
+            <div class="field-chart-card">
+                <h4><i class="fas fa-route mr-2" style="color:#10b981;"></i>Hat Bazlı Zaman Dağılımı (Orta. Günlük 8 Saat)</h4>
+                <div style="position:relative; height:300px; width:100%;">
+                    <canvas id="chart-time-line"></canvas>
+                </div>
+            </div>
+
+            <!-- Kişi Bazlı Zaman Dağılımı Dikey Grafik -->
+            <div class="field-chart-card full-width">
+                <h4><i class="fas fa-user-clock mr-2" style="color:#f59e0b;"></i>Kişi Bazlı Günlük Zaman Dağılımı (Orta. Günlük 8 Saat)</h4>
+                <div style="position:relative; height:340px; width:100%;">
+                    <canvas id="chart-time-user"></canvas>
+                </div>
+            </div>
+        </div>
+    `;
+
+    setTimeout(() => {
+        buildTimeDistributionCharts(weeklyData, userData, titleData, lineData);
+    }, 50);
+}
+
+function buildTimeDistributionCharts(weeklyData, userData, titleData, lineData) {
+    const isDark = !document.body.classList.contains('light-mode');
+    const labelColor = isDark ? '#94a3b8' : '#475569';
+    const gridColor = isDark ? 'rgba(148, 163, 184, 0.08)' : 'rgba(71, 85, 105, 0.08)';
+
+    const chartConfigs = [
+        { id: 'chart-time-weekly', data: weeklyData },
+        { id: 'chart-time-title', data: titleData },
+        { id: 'chart-time-line', data: lineData },
+        { id: 'chart-time-user', data: userData }
+    ];
+
+    chartConfigs.forEach(conf => {
+        const ctx = document.getElementById(conf.id);
+        if (!ctx) return;
+
+        const labels = Object.keys(conf.data);
+        const sahaHours = [];
+        const meetingHours = [];
+        const officeHours = [];
+
+        labels.forEach(lbl => {
+            const item = conf.data[lbl];
+            const workDays = item.workDays || 1;
+            
+            const avgSaha = Math.round((item.saha / workDays) * 10) / 10;
+            const avgMeeting = Math.round((item.meeting / workDays) * 10) / 10;
+            const avgOffice = Math.round((item.office / workDays) * 10) / 10;
+
+            sahaHours.push(avgSaha);
+            meetingHours.push(avgMeeting);
+            officeHours.push(avgOffice);
+        });
+
+        const chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Saha Süresi (Saat)',
+                        data: sahaHours,
+                        backgroundColor: '#8b5cf6', // Purple
+                        borderColor: '#7c3aed',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Toplantı / Eğitim (Saat)',
+                        data: meetingHours,
+                        backgroundColor: '#f59e0b', // Orange
+                        borderColor: '#d97706',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Ofis / İdari (Saat)',
+                        data: officeHours,
+                        backgroundColor: '#2563eb', // Blue
+                        borderColor: '#1d4ed8',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { color: labelColor, boxWidth: 10, font: { weight: 'bold', size: 9 } }
+                    },
+                    datalabels: {
+                        color: '#fff',
+                        font: { weight: 'bold', size: 9 },
+                        formatter: (val) => val > 0.4 ? `${val}s` : ''
+                    }
+                },
+                scales: {
+                    x: {
+                        stacked: true,
+                        grid: { display: false },
+                        ticks: { color: labelColor, font: { weight: 'bold', size: 10 } }
+                    },
+                    y: {
+                        stacked: true,
+                        grid: { color: gridColor },
+                        ticks: { 
+                            color: labelColor,
+                            callback: (val) => `${val}s`
+                        },
+                        max: 12
+                    }
+                }
+            }
+        });
+        fieldTrackingCharts.push(chart);
+    });
+}
+

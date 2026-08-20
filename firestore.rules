@@ -3,149 +3,148 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // ─── Yardımcı Fonksiyonlar ───────────────────────────────────────────
     function isSignedIn() {
       return request.auth != null;
-    }
-
-    function userDoc() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid));
-    }
-
-    function userExists() {
-      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
-    }
-
-    function userRole() {
-      return userExists() ? userDoc().data.role : '';
-    }
-
-    function userRoleId() {
-      return userExists() ? userDoc().data.roleId : '';
-    }
-
-    function isAdmin() {
-      return userExists()
-        && (
-          userRole() in ['admin', 'Super_Admin']
-          || userRoleId() == 'Super_Admin'
-        );
     }
 
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function userExists() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isAdmin() {
+      return userExists() && (
+        getUserData().get('role', '') in ['admin', 'Super_Admin', 'superAdmin', 'super_admin', 'Admin'] ||
+        getUserData().get('roleId', '') in ['admin', 'Super_Admin', 'superAdmin', 'super_admin', 'Admin']
+      );
+    }
+
+    // ─── Kullanıcılar (users) ─────────────────────────────────────────────
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow create: if isSignedIn() && (isOwner(userId) || isAdmin());
-      allow update: if isAdmin() || isOwner(userId);
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
       allow delete: if isAdmin();
     }
 
+    // ─── Denetim Kayıtları (audits) ───────────────────────────────────────
     match /audits/{auditId} {
-      allow read: if isSignedIn();
-      allow create, update: if isSignedIn();
+      allow read, create, update: if isSignedIn();
       allow delete: if isAdmin();
     }
 
+    // ─── Uygunsuzluklar (nonconformities) ─────────────────────────────────
     match /nonconformities/{ncId} {
-      allow read: if isSignedIn();
-      allow create, update: if isSignedIn();
+      allow read, create, update: if isSignedIn();
       allow delete: if isAdmin();
     }
 
+    // ─── Soru Grupları & Sorular ─────────────────────────────────────────
     match /question_groups/{groupId} {
       allow read: if isSignedIn();
-      allow create, update, delete: if isAdmin();
+      allow write: if isAdmin();
     }
 
     match /questions/{questionId} {
       allow read: if isSignedIn();
-      allow create, update, delete: if isAdmin();
-    }
-
-    match /plans/{planId} {
-      allow read: if isSignedIn();
-      allow create, update: if isSignedIn();
-      allow delete: if isAdmin();
-    }
-
-    match /announcements/{announcementId} {
-      allow read: if isSignedIn();
-      allow create, update: if isAdmin();
-      allow delete: if isAdmin();
-    }
-
-    match /system_config/{docId} {
-      allow read: if isSignedIn();
-      allow create, delete: if isAdmin();
-      allow update: if isSignedIn();
-    }
-
-    match /reports/{reportId} {
-      allow read: if isSignedIn();
-      allow create, update, delete: if isSignedIn();
-    }
-
-    match /auditReports/{reportId} {
-      allow read: if isSignedIn();
-      allow create, update, delete: if isSignedIn();
-    }
-
-    match /auditResponses/{responseId} {
-      allow read: if isSignedIn();
-      allow create, update, delete: if isSignedIn();
-    }
-
-    match /auditTypes/{typeId} {
-      allow read: if isSignedIn();
-      allow create, update, delete: if isSignedIn();
+      allow write: if isAdmin();
     }
 
     match /auditQuestionGroups/{groupId} {
       allow read: if isSignedIn();
-      allow create, update, delete: if isAdmin();
+      allow write: if isAdmin();
     }
 
     match /auditQuestions/{questionId} {
       allow read: if isSignedIn();
-      allow create, update, delete: if isAdmin();
+      allow write: if isAdmin();
     }
 
+    // ─── Denetim Türleri (auditTypes) ────────────────────────────────────
+    match /auditTypes/{typeId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // ─── Cevaplar & Raporlar ─────────────────────────────────────────────
+    match /auditResponses/{responseId} {
+      allow read, create, update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    match /auditReports/{reportId} {
+      allow read, create, update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    match /reports/{reportId} {
+      allow read, create, update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // ─── Planlar / Görevler (plans) ──────────────────────────────────────
+    match /plans/{planId} {
+      allow read, create, update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // ─── Duyurular (announcements) ────────────────────────────────────────
+    match /announcements/{announcementId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // ─── Sistem Yapılandırması (system_config) ───────────────────────────
+    match /system_config/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
+    // ─── Vardiyalar & Puantaj (shifts, user_rosters) ─────────────────────
     match /shifts/{shiftId} {
       allow read: if isSignedIn();
-      allow create, update, delete: if isAdmin();
+      allow write: if isAdmin();
     }
 
     match /user_rosters/{rosterId} {
-      allow read: if isSignedIn();
-      allow create, update: if isSignedIn();
+      allow read, create, update: if isSignedIn();
       allow delete: if isAdmin();
     }
 
+    // ─── Saha Takip Oturumları (field_sessions) ──────────────────────────
     match /field_sessions/{sessionId} {
-      allow read: if isSignedIn();
-      allow create, update: if isSignedIn();
+      allow read, create, update: if isSignedIn();
       allow delete: if isAdmin();
     }
 
+    // ─── Geri Bildirimler (feedbacks) ─────────────────────────────────────
     match /feedbacks/{feedbackId} {
       allow read, create: if isSignedIn();
       allow update, delete: if isAdmin();
     }
 
+    // ─── Sistem Logları (system_logs) ─────────────────────────────────────
     match /system_logs/{logId} {
       allow read, create: if isSignedIn();
       allow update, delete: if isAdmin();
     }
 
+    // ─── Çevrimiçi Kullanıcılar (online_users) ───────────────────────────
     match /online_users/{userId} {
       allow read, write: if isSignedIn();
     }
 
+    // ─── Varsayılan (Tanımsız Yollar) ────────────────────────────────────
     match /{document=**} {
       allow read, write: if false;
     }
   }
 }
-

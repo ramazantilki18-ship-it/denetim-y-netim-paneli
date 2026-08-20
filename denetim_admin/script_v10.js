@@ -400,6 +400,9 @@ appData._auditMap = null;
 appData._auditMapVersion = 0;
 
 let _cachedFilteredAudits = null;
+let _cachedFilteredAuditsVersion = 0;
+let _cachedFilteredNCs = null;
+let _cachedFilteredNCsVersion = 0;
 let _auditDisplayIdMap = null;
 let _ncDisplayIdMap = null;
 
@@ -527,6 +530,434 @@ function clearUnifiedDateFilters(pageName = 'dashboard', e) {
     updateUnifiedDateTriggerLabel(pageName);
 }
 
+// LocalStorage Caching & Delta (Incremental) Sync
+function getCompactAudits(audits) {
+    if (!Array.isArray(audits)) return [];
+    return audits.map(a => {
+        const copy = { ...a };
+        if (Array.isArray(copy.answers)) {
+            copy.answers = copy.answers.map(ans => ({
+                questionId: ans.questionId,
+                score: ans.score,
+                isNonconformity: ans.isNonconformity === true,
+                isOutOfScope: ans.isOutOfScope === true,
+                value: ans.value,
+                answerType: ans.answerType
+            }));
+        }
+        return copy;
+    });
+}
+
+function loadAuditsFromCache() {
+    try {
+        const cached = localStorage.getItem('cached_audits_v1');
+        if (cached) {
+            appData.audits = JSON.parse(cached);
+            // Ensure dates are parsed back to Date objects where applicable
+            appData.audits.forEach(a => {
+                if (a.date && typeof a.date === 'object' && a.date.seconds) {
+                    a.date = new Date(a.date.seconds * 1000);
+                }
+            });
+            appData.auditsLoaded = true;
+            console.log(`Loaded ${appData.audits.length} audits from cache.`);
+        } else {
+            appData.audits = [];
+        }
+    } catch (e) {
+        console.error('Failed to load audits from cache:', e);
+        appData.audits = [];
+    }
+}
+
+async function syncAudits() {
+    let lastDate = null;
+    let isDateString = true;
+
+    if (appData.audits && appData.audits.length > 0) {
+        let maxTime = 0;
+        appData.audits.forEach(a => {
+            const d = new Date(a.date);
+            if (!isNaN(d.getTime()) && d.getTime() > maxTime) {
+                maxTime = d.getTime();
+            }
+        });
+        if (maxTime > 0) {
+            lastDate = new Date(maxTime);
+            // Lookback 2 days to capture edits/deletions
+            lastDate.setDate(lastDate.getDate() - 2);
+            
+            // Detect type of date
+            const sample = appData.audits[0]?.date;
+            if (sample && (sample instanceof Date || (typeof sample === 'object' && sample.seconds))) {
+                isDateString = false;
+            }
+        }
+    }
+
+    try {
+        let query = db.collection('audits');
+        if (lastDate) {
+            const queryParam = isDateString ? lastDate.toISOString() : lastDate;
+            console.log(`Syncing audits delta since ${isDateString ? lastDate.toISOString() : lastDate}`);
+            query = query.where('date', '>=', queryParam);
+        } else {
+            console.log("Fetching all audits (initial load)...");
+            // No orderBy on first query to prevent index requirements
+        }
+        
+        const snapshot = await query.get();
+        console.log(`Loaded audits from Firestore: ${snapshot.size} records.`);
+        
+        const newAudits = snapshot.docs.map(doc => {
+            const data = doc.data();
+            if (data.date && typeof data.date.toDate === 'function') data.date = data.date.toDate();
+            return normalizeAuditScore({ id: doc.id, ...data });
+        });
+
+        if (newAudits.length > 0 || appData.audits.length === 0) {
+            const auditMap = new Map(appData.audits.map(a => [a.id, a]));
+            newAudits.forEach(a => auditMap.set(a.id, a));
+            appData.audits = Array.from(auditMap.values());
+            appData.audits.sort((a, b) => {
+                const dateA = a.date ? new Date(a.date) : new Date(0);
+                const dateB = b.date ? new Date(b.date) : new Date(0);
+                return dateB - dateA;
+            });
+            try {
+                const compact = getCompactAudits(appData.audits);
+                localStorage.setItem('cached_audits_v1', JSON.stringify(compact));
+                console.log(`Saved ${appData.audits.length} compact audits to local cache.`);
+            } catch (storageErr) {
+                console.warn('Failed to save audits to LocalStorage:', storageErr);
+            }
+        }
+
+        appData.auditsLoaded = true;
+        invalidateDataCaches();
+        renderAll();
+        autoMigrateMissingAuditAndNcNumbers();
+
+        // Start a light real-time listener for audits created from now onwards
+        const pageLoadTime = new Date();
+        db.collection('audits')
+            .where('date', '>=', pageLoadTime)
+            .onSnapshot(snap => {
+                if (!snap.empty) {
+                    snap.docs.forEach(doc => {
+                        const data = doc.data();
+                        if (data.date && typeof data.date.toDate === 'function') data.date = data.date.toDate();
+                        const audit = normalizeAuditScore({ id: doc.id, ...data });
+                        
+                        const idx = appData.audits.findIndex(a => a.id === audit.id);
+                        if (idx !== -1) appData.audits[idx] = audit;
+                        else appData.audits.unshift(audit);
+                    });
+                    try {
+                        const compact = getCompactAudits(appData.audits);
+                        localStorage.setItem('cached_audits_v1', JSON.stringify(compact));
+                    } catch (storageErr) {
+                        console.warn('Failed to save audits to LocalStorage in real-time listener:', storageErr);
+                    }
+                    invalidateDataCaches();
+                    renderAll();
+                }
+            }, err => console.error('Real-time Audits Sync Error:', err));
+
+    } catch (err) {
+        console.error('Failed to sync audits delta:', err);
+        appData.auditsLoaded = true;
+        renderAll();
+    }
+}
+
+function loadNCsFromCache() {
+    try {
+        const cached = localStorage.getItem('cached_ncs_v1');
+        if (cached) {
+            appData.nonconformities = JSON.parse(cached);
+            console.log(`Loaded ${appData.nonconformities.length} NCs from cache.`);
+        } else {
+            appData.nonconformities = [];
+        }
+    } catch (e) {
+        console.error('Failed to load NCs from cache:', e);
+        appData.nonconformities = [];
+    }
+}
+
+async function syncNCs() {
+    let lastDate = null;
+    let isDateString = true;
+
+    if (appData.nonconformities && appData.nonconformities.length > 0) {
+        let maxTime = 0;
+        appData.nonconformities.forEach(n => {
+            const dateStr = n.detectionDate || n.createdAt || n.date;
+            const d = new Date(dateStr);
+            if (!isNaN(d.getTime()) && d.getTime() > maxTime) {
+                maxTime = d.getTime();
+            }
+        });
+        if (maxTime > 0) {
+            lastDate = new Date(maxTime);
+            lastDate.setDate(lastDate.getDate() - 2);
+            
+            const sample = appData.nonconformities[0]?.detectionDate || appData.nonconformities[0]?.createdAt || appData.nonconformities[0]?.date;
+            if (sample && (sample instanceof Date || (typeof sample === 'object' && sample.seconds))) {
+                isDateString = false;
+            }
+        }
+    }
+
+    try {
+        let query = db.collection('nonconformities');
+        if (lastDate) {
+            const queryParam = isDateString ? lastDate.toISOString() : lastDate;
+            console.log(`Syncing NCs delta since ${isDateString ? lastDate.toISOString() : lastDate}`);
+            query = query.where('detectionDate', '>=', queryParam);
+        } else {
+            console.log("Fetching all NCs (initial load)...");
+        }
+        
+        const snapshot = await query.get();
+        console.log(`Loaded NCs from Firestore: ${snapshot.size} records.`);
+        
+        const newNCs = snapshot.docs.map(doc => {
+            const data = doc.data();
+            if (data.detectionDate && typeof data.detectionDate.toDate === 'function') data.detectionDate = data.detectionDate.toDate();
+            if (data.createdAt && typeof data.createdAt.toDate === 'function') data.createdAt = data.createdAt.toDate();
+            if (data.date && typeof data.date.toDate === 'function') data.date = data.date.toDate();
+            return { id: doc.id, ...data };
+        });
+
+        if (newNCs.length > 0 || appData.nonconformities.length === 0) {
+            const ncMap = new Map(appData.nonconformities.map(n => [n.id, n]));
+            newNCs.forEach(n => ncMap.set(n.id, n));
+            appData.nonconformities = Array.from(ncMap.values());
+            try {
+                localStorage.setItem('cached_ncs_v1', JSON.stringify(appData.nonconformities));
+                console.log(`Saved ${appData.nonconformities.length} NCs to local cache.`);
+            } catch (storageErr) {
+                console.warn('Failed to save NCs to LocalStorage:', storageErr);
+            }
+        }
+
+        appData._ncVersion = (appData._ncVersion || 0) + 1;
+        _cachedFilteredNCs = null;
+        
+        const activeView = getActiveViewId();
+        if (activeView === 'nc-management-view') {
+            renderNCs();
+        } else if (activeView === 'dashboard-view' || activeView === 'stats-view') {
+            updateStats();
+        }
+        autoMigrateMissingAuditAndNcNumbers();
+
+        // Start a light real-time listener for NCs from page load onwards
+        const pageLoadTime = new Date();
+        db.collection('nonconformities')
+            .where('detectionDate', '>=', pageLoadTime)
+            .onSnapshot(snap => {
+                if (!snap.empty) {
+                    snap.docs.forEach(doc => {
+                        const data = doc.data();
+                        if (data.detectionDate && typeof data.detectionDate.toDate === 'function') data.detectionDate = data.detectionDate.toDate();
+                        const nc = { id: doc.id, ...data };
+                        
+                        const idx = appData.nonconformities.findIndex(n => n.id === nc.id);
+                        if (idx !== -1) appData.nonconformities[idx] = nc;
+                        else appData.nonconformities.unshift(nc);
+                    });
+                    try {
+                        localStorage.setItem('cached_ncs_v1', JSON.stringify(appData.nonconformities));
+                    } catch (storageErr) {
+                        console.warn('Failed to save NCs to LocalStorage in real-time listener:', storageErr);
+                    }
+                    appData._ncVersion = (appData._ncVersion || 0) + 1;
+                    _cachedFilteredNCs = null;
+                    const activeView = getActiveViewId();
+                    if (activeView === 'nc-management-view') {
+                        renderNCs();
+                    } else if (activeView === 'dashboard-view' || activeView === 'stats-view') {
+                        updateStats();
+                    }
+                }
+            }, err => console.error('Real-time NC Sync Error:', err));
+
+    } catch (err) {
+        console.error('Failed to sync NCs delta:', err);
+    }
+}
+
+function loadSessionsFromCache() {
+    try {
+        const cached = localStorage.getItem('cached_sessions_v1');
+        if (cached) {
+            appData.fieldSessions = JSON.parse(cached);
+            appData.fieldSessions.forEach(s => {
+                if (s.date && typeof s.date === 'object' && s.date.seconds) s.date = new Date(s.date.seconds * 1000);
+                if (s.startTime && typeof s.startTime === 'object' && s.startTime.seconds) s.startTime = new Date(s.startTime.seconds * 1000);
+                if (s.endTime && typeof s.endTime === 'object' && s.endTime.seconds) s.endTime = new Date(s.endTime.seconds * 1000);
+                if (Array.isArray(s.visits)) {
+                    s.visits.forEach(v => {
+                        if (v.entryTime && typeof v.entryTime === 'object' && v.entryTime.seconds) v.entryTime = new Date(v.entryTime.seconds * 1000);
+                        if (v.exitTime && typeof v.exitTime === 'object' && v.exitTime.seconds) v.exitTime = new Date(v.exitTime.seconds * 1000);
+                    });
+                }
+                if (Array.isArray(s.travels)) {
+                    s.travels.forEach(t => {
+                        if (t.startTime && typeof t.startTime === 'object' && t.startTime.seconds) t.startTime = new Date(t.startTime.seconds * 1000);
+                        if (t.endTime && typeof t.endTime === 'object' && t.endTime.seconds) t.endTime = new Date(t.endTime.seconds * 1000);
+                    });
+                }
+            });
+            appData.fieldSessionsLoaded = true;
+            console.log(`Loaded ${appData.fieldSessions.length} sessions from cache.`);
+        } else {
+            appData.fieldSessions = [];
+        }
+    } catch (e) {
+        console.error('Failed to load sessions from cache:', e);
+        appData.fieldSessions = [];
+    }
+}
+
+async function syncSessions() {
+    let lastDate = null;
+    let isDateString = true;
+
+    if (appData.fieldSessions && appData.fieldSessions.length > 0) {
+        let maxTime = 0;
+        appData.fieldSessions.forEach(s => {
+            const dateVal = s.startTime || s.date;
+            const d = new Date(dateVal);
+            if (!isNaN(d.getTime()) && d.getTime() > maxTime) {
+                maxTime = d.getTime();
+            }
+        });
+        if (maxTime > 0) {
+            lastDate = new Date(maxTime);
+            lastDate.setDate(lastDate.getDate() - 2);
+            
+            const sample = appData.fieldSessions[0]?.date || appData.fieldSessions[0]?.startTime;
+            if (sample && (sample instanceof Date || (typeof sample === 'object' && sample.seconds))) {
+                isDateString = false;
+            }
+        }
+    }
+
+    try {
+        let query = db.collection('field_sessions');
+        if (lastDate) {
+            const queryParam = isDateString ? lastDate.toISOString() : lastDate;
+            console.log(`Syncing sessions delta since ${isDateString ? lastDate.toISOString() : lastDate}`);
+            query = query.where('date', '>=', queryParam);
+        } else {
+            console.log("Fetching all sessions (initial load)...");
+        }
+        
+        const snapshot = await query.get();
+        console.log(`Loaded sessions from Firestore: ${snapshot.size} records.`);
+
+        const newSessions = snapshot.docs.map(doc => {
+            const data = doc.data();
+            if (data.date && typeof data.date.toDate === 'function') data.date = data.date.toDate();
+            if (data.startTime && typeof data.startTime.toDate === 'function') data.startTime = data.startTime.toDate();
+            if (data.endTime && typeof data.endTime.toDate === 'function') data.endTime = data.endTime.toDate();
+            if (Array.isArray(data.visits)) {
+                data.visits.forEach(v => {
+                    if (v.entryTime && typeof v.entryTime.toDate === 'function') v.entryTime = v.entryTime.toDate();
+                    if (v.exitTime && typeof v.exitTime.toDate === 'function') v.exitTime = v.exitTime.toDate();
+                });
+            }
+            if (Array.isArray(data.travels)) {
+                data.travels.forEach(t => {
+                    if (t.startTime && typeof t.startTime.toDate === 'function') t.startTime = t.startTime.toDate();
+                    if (t.endTime && typeof t.endTime.toDate === 'function') t.endTime = t.endTime.toDate();
+                });
+            }
+            return { id: doc.id, ...data };
+        });
+
+        if (newSessions.length > 0 || appData.fieldSessions.length === 0) {
+            const sessionMap = new Map(appData.fieldSessions.map(s => [s.id, s]));
+            newSessions.forEach(s => sessionMap.set(s.id, s));
+            appData.fieldSessions = Array.from(sessionMap.values());
+            appData.fieldSessions.sort((a, b) => {
+                const dateA = a.startTime || a.date || new Date(0);
+                const dateB = b.startTime || b.date || new Date(0);
+                return dateB - dateA;
+            });
+            try {
+                localStorage.setItem('cached_sessions_v1', JSON.stringify(appData.fieldSessions));
+                console.log(`Saved ${appData.fieldSessions.length} sessions to local cache.`);
+            } catch (storageErr) {
+                console.warn('Failed to save sessions to LocalStorage:', storageErr);
+            }
+        }
+
+        appData.fieldSessionsLoaded = true;
+
+        if (typeof loadFieldTrackingData === 'function') {
+            const activeView = getActiveViewId();
+            if (activeView === 'field-tracking-view') {
+                loadFieldTrackingData(false);
+            }
+        }
+
+        // Start a light real-time listener for sessions from page load onwards
+        const pageLoadTime = new Date();
+        db.collection('field_sessions')
+            .where('date', '>=', pageLoadTime)
+            .onSnapshot(snap => {
+                if (!snap.empty) {
+                    snap.docs.forEach(doc => {
+                        const data = doc.data();
+                        if (data.date && typeof data.date.toDate === 'function') data.date = data.date.toDate();
+                        if (data.startTime && typeof data.startTime.toDate === 'function') data.startTime = data.startTime.toDate();
+                        if (data.endTime && typeof data.endTime.toDate === 'function') data.endTime = data.endTime.toDate();
+                        if (Array.isArray(data.visits)) {
+                            data.visits.forEach(v => {
+                                if (v.entryTime && typeof v.entryTime.toDate === 'function') v.entryTime = v.entryTime.toDate();
+                                if (v.exitTime && typeof v.exitTime.toDate === 'function') v.exitTime = v.exitTime.toDate();
+                            });
+                        }
+                        if (Array.isArray(data.travels)) {
+                            data.travels.forEach(t => {
+                                if (t.startTime && typeof t.startTime.toDate === 'function') t.startTime = t.startTime.toDate();
+                                if (t.endTime && typeof t.endTime.toDate === 'function') t.endTime = t.endTime.toDate();
+                            });
+                        }
+                        const session = { id: doc.id, ...data };
+                        const idx = appData.fieldSessions.findIndex(s => s.id === session.id);
+                        if (idx !== -1) appData.fieldSessions[idx] = session;
+                        else appData.fieldSessions.unshift(session);
+                    });
+                    try {
+                        localStorage.setItem('cached_sessions_v1', JSON.stringify(appData.fieldSessions));
+                    } catch (storageErr) {
+                        console.warn('Failed to save sessions to LocalStorage in real-time listener:', storageErr);
+                    }
+                    if (typeof loadFieldTrackingData === 'function') {
+                        const activeView = getActiveViewId();
+                        if (activeView === 'field-tracking-view') {
+                            loadFieldTrackingData(false);
+                        }
+                    }
+                }
+            }, err => console.error('Real-time Sessions Sync Error:', err));
+
+    } catch (err) {
+        console.error('Failed to sync sessions delta:', err);
+        appData.fieldSessionsLoaded = true;
+        if (typeof loadFieldTrackingData === 'function') {
+            loadFieldTrackingData(false);
+        }
+    }
+}
+
 function applyUnifiedDateFilters(pageName = 'dashboard', e) {
     if (e) e.stopPropagation();
     updateUnifiedDateTriggerLabel(pageName);
@@ -567,6 +998,10 @@ function renderUnifiedDateOptions(pageName = 'dashboard') {
     }
 
     const yearsSet = new Set();
+    const curYear = new Date().getFullYear();
+    yearsSet.add(String(curYear));
+    yearsSet.add(String(curYear - 1));
+    yearsSet.add(String(curYear - 2));
     const months = [
         { value: '1', text: 'Ocak' },
         { value: '2', text: 'Şubat' },
@@ -1245,104 +1680,15 @@ function initRealtimeSync() {
         .then(() => console.log('Successfully deleted old duplicate audit-type-5s document'))
         .catch(err => console.warn('Failed to delete old duplicate audit-type-5s document:', err));
 
-    // Audits Listener
-    db.collection('audits').orderBy('date', 'desc').onSnapshot(snapshot => {
-        invalidateDataCaches();
-        appData.audits = snapshot.docs.map(doc => normalizeAuditScore({ id: doc.id, ...doc.data() }));
-        appData.auditsLoaded = true;
-        renderAll();
-        autoMigrateMissingAuditAndNcNumbers();
-    }, err => console.error('Audits Sync Error:', err));
+    // Load from cache first
+    loadAuditsFromCache();
+    loadNCsFromCache();
+    loadSessionsFromCache();
 
-    // Nonconformities Listener
-    db.collection('nonconformities').onSnapshot(snapshot => {
-        appData._ncVersion = (appData._ncVersion || 0) + 1;
-        _cachedFilteredNCs = null;
-        appData.nonconformities = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        const activeView = getActiveViewId();
-        if (activeView === 'nc-management-view') {
-            renderNCs();
-        } else if (activeView === 'dashboard-view' || activeView === 'stats-view') {
-            updateStats();
-        }
-        autoMigrateMissingAuditAndNcNumbers();
-    }, err => console.error('NC Sync Error:', err));
-
-    // Field Sessions Listener
-    db.collection('field_sessions').onSnapshot(snapshot => {
-        appData.fieldSessions = snapshot.docs.map(doc => {
-            const data = doc.data();
-            
-            // date conversion
-            if (data.date) {
-                if (typeof data.date.toDate === 'function') data.date = data.date.toDate();
-                else data.date = new Date(data.date);
-            }
-            if (data.startTime) {
-                if (typeof data.startTime.toDate === 'function') data.startTime = data.startTime.toDate();
-                else data.startTime = new Date(data.startTime);
-            }
-            if (data.endTime) {
-                if (typeof data.endTime.toDate === 'function') data.endTime = data.endTime.toDate();
-                else data.endTime = new Date(data.endTime);
-            }
-            if (Array.isArray(data.visits)) {
-                data.visits.forEach(v => {
-                    if (v.entryTime) {
-                        if (typeof v.entryTime.toDate === 'function') v.entryTime = v.entryTime.toDate();
-                        else v.entryTime = new Date(v.entryTime);
-                    }
-                    if (v.exitTime) {
-                        if (typeof v.exitTime.toDate === 'function') v.exitTime = v.exitTime.toDate();
-                        else v.exitTime = new Date(v.exitTime);
-                    }
-                });
-            }
-            if (Array.isArray(data.travels)) {
-                data.travels.forEach(t => {
-                    if (t.startTime) {
-                        if (typeof t.startTime.toDate === 'function') t.startTime = t.startTime.toDate();
-                        else t.startTime = new Date(t.startTime);
-                    }
-                    if (t.endTime) {
-                        if (typeof t.endTime.toDate === 'function') t.endTime = t.endTime.toDate();
-                        else t.endTime = new Date(t.endTime);
-                    }
-                });
-            }
-            return { id: doc.id, ...data };
-        });
-        
-        // Sırala
-        appData.fieldSessions.sort((a, b) => {
-            const dateA = a.startTime || a.date || new Date(0);
-            const dateB = b.startTime || b.date || new Date(0);
-            return dateB - dateA;
-        });
-
-        appData.fieldSessionsLoaded = true;
-
-        // Eğer şu an aktif görünüm saha takipse verileri yenile
-        if (typeof loadFieldTrackingData === 'function') {
-            const activeView = getActiveViewId();
-            if (activeView === 'field-tracking-view') {
-                loadFieldTrackingData(false);
-            }
-        }
-    }, err => {
-        console.warn('Field Sessions Sync Error, falling back to mock:', err);
-        appData.fieldSessions = [];
-        appData.fieldSessionsLoaded = true;
-        
-        // Yenile
-        if (typeof loadFieldTrackingData === 'function') {
-            const activeView = getActiveViewId();
-            if (activeView === 'field-tracking-view') {
-                loadFieldTrackingData(false);
-            }
-        }
-    });
+    // Fetch deltas and start real-time listeners in background
+    syncAudits();
+    syncNCs();
+    syncSessions();
 
     // Users Listener
     db.collection('users').onSnapshot(snapshot => {
@@ -9720,16 +10066,37 @@ async function deleteAudit(id) {
     }
 }
 
-function openAuditModal(id) {
+async function openAuditModal(id) {
     console.log('Opening audit modal for ID:', id);
     currentAuditId = id;
-    const audit = getAccessibleAuditById(id);
+    let audit = getAccessibleAuditById(id);
     if (!audit) {
         console.error('Audit not found for ID:', id);
         showToast('Bu denetime erisim yetkiniz bulunmuyor.');
         return;
-        showToast('Kayıt bulunamadı!');
-        return;
+    }
+
+    // Load full audit from Firestore on-demand if it lacks full answers detail (photos/comments)
+    const hasFullAnswers = Array.isArray(audit.answers) && audit.answers.some(ans => ans.comment || (Array.isArray(ans.photos) && ans.photos.length > 0));
+    if (!hasFullAnswers) {
+        try {
+            console.log('Fetching full audit details from Firestore for ID:', id);
+            const doc = await db.collection('audits').doc(id).get();
+            if (doc.exists) {
+                const fullData = doc.data();
+                if (fullData.date && typeof fullData.date.toDate === 'function') fullData.date = fullData.date.toDate();
+                const normalized = normalizeAuditScore({ id: doc.id, ...fullData });
+                
+                // Merge into local audit object
+                Object.assign(audit, normalized);
+                
+                // Update in appData
+                const idx = appData.audits.findIndex(a => a.id === id);
+                if (idx !== -1) appData.audits[idx] = audit;
+            }
+        } catch (err) {
+            console.warn('Failed to fetch full audit details, using cached data:', err);
+        }
     }
 
     try {
