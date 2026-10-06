@@ -1483,10 +1483,23 @@ window.showAuditTimesDetail = function(userName, dateText, infosStr) {
 
         const map = L.map('modal-audit-map', { attributionControl: false }).setView(mapCenter, zoomLevel);
         
-        // Add OpenStreetMap tile layer
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
+        const googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            maxZoom: 20
+        });
+        const googleStreets = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+            maxZoom: 20
+        });
+        const osmHot = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+            maxZoom: 19
+        });
+
+        googleHybrid.addTo(map);
+
+        L.control.layers({
+            "🛰️ Gerçek Uydu": googleHybrid,
+            "🗺️ Google Harita": googleStreets,
+            "📍 Klasik": osmHot
+        }, null, { position: 'topright' }).addTo(map);
 
         // Invalidate size to ensure proper rendering on responsive/mobile container layouts
         setTimeout(() => {
@@ -2242,11 +2255,11 @@ window.showAuditorDetailedStats = async function(userId) {
         const pct = Math.round((count / maxWeekdayCount) * 100);
         return `
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-                <span style="font-size:0.7rem; color:var(--text-secondary); width:65px; font-weight:600; text-align:right;">${weekdays[dayIdx]}</span>
-                <div style="flex:1; background:rgba(255,255,255,0.03); height:8px; border-radius:4px; overflow:hidden;">
+                <span class="detailed-bar-label" style="font-size:0.7rem; width:65px; font-weight:600; text-align:right;">${weekdays[dayIdx]}</span>
+                <div class="detailed-bar-track" style="flex:1; height:8px; border-radius:4px; overflow:hidden;">
                     <div style="background:#8b5cf6; width:${pct}%; height:100%; border-radius:4px;"></div>
                 </div>
-                <span style="font-size:0.7rem; color:#fff; font-weight:700; width:30px; text-align:left; margin-left:4px;">${count}</span>
+                <span class="detailed-bar-count" style="font-size:0.7rem; font-weight:700; width:30px; text-align:left; margin-left:4px;">${count}</span>
             </div>
         `;
     }).join('');
@@ -2265,11 +2278,11 @@ window.showAuditorDetailedStats = async function(userId) {
         const pct = Math.round((count / maxHourIntervalCount) * 100);
         return `
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-                <span style="font-size:0.7rem; color:var(--text-secondary); width:85px; font-weight:600; text-align:right;">${interval}</span>
-                <div style="flex:1; background:rgba(255,255,255,0.03); height:8px; border-radius:4px; overflow:hidden;">
+                <span class="detailed-bar-label" style="font-size:0.7rem; width:85px; font-weight:600; text-align:right;">${interval}</span>
+                <div class="detailed-bar-track" style="flex:1; height:8px; border-radius:4px; overflow:hidden;">
                     <div style="background:#f43f5e; width:${pct}%; height:100%; border-radius:4px;"></div>
                 </div>
-                <span style="font-size:0.7rem; color:#fff; font-weight:700; width:30px; text-align:left; margin-left:4px;">${count}</span>
+                <span class="detailed-bar-count" style="font-size:0.7rem; font-weight:700; width:30px; text-align:left; margin-left:4px;">${count}</span>
             </div>
         `;
     }).join('');
@@ -2303,16 +2316,16 @@ window.showAuditorDetailedStats = async function(userId) {
         const pct = totalAudits > 0 ? Math.round((count / totalAudits) * 100) : 0;
         return `
             <div style="margin-bottom:8px;">
-                <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:#fff; font-weight:600; margin-bottom:3px;">
-                    <span>${escapeAttr(title)}</span>
-                    <span>${count} adet (${pct}%)</span>
+                <div style="display:flex; justify-content:space-between; font-size:0.75rem; font-weight:600; margin-bottom:3px;">
+                    <span class="detailed-bar-label">${escapeAttr(title)}</span>
+                    <span class="detailed-bar-count">${count} adet (${pct}%)</span>
                 </div>
-                <div style="background:rgba(255,255,255,0.05); height:6px; border-radius:3px; overflow:hidden;">
+                <div class="detailed-bar-track" style="height:6px; border-radius:3px; overflow:hidden;">
                     <div style="background:#007AFF; width:${pct}%; height:100%; border-radius:3px;"></div>
                 </div>
             </div>
         `;
-    }).join('') || '<div style="color:var(--text-dim); text-align:center; font-size:0.75rem; padding:15px 0;">Kayıt bulunmuyor.</div>';
+    }).join('') || '<div class="detailed-empty-text" style="text-align:center; font-size:0.75rem; padding:15px 0;">Kayıt bulunmuyor.</div>';
 
     // Roster Shift and Excuse Statistics for Selected Month
     const rosterMonthData = await loadMonthlyRoster(statsSelectedYear, statsSelectedMonth);
@@ -2349,82 +2362,319 @@ window.showAuditorDetailedStats = async function(userId) {
     const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
     const monthName = months[statsSelectedMonth - 1];
 
-    const maxStationCount = allStations.length > 0 ? allStations[0][1] : 1;
-    const stationBarChartHtml = allStations.length > 0 ? allStations.map(([station, count]) => {
-        const barHeight = Math.max(Math.round((count / maxStationCount) * 130), 6);
-        const barColor = count === maxStationCount ? '#10b981' : (count >= maxStationCount * 0.6 ? '#38bdf8' : (count >= maxStationCount * 0.3 ? '#f59e0b' : '#ef4444'));
-        return `
-            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; min-width:32px; flex-shrink:0;">
-                <span style="font-size:0.62rem; font-weight:800; color:#fff;">${count}</span>
-                <div style="width:22px; height:${barHeight}px; background:${barColor}; border-radius:4px 4px 0 0; transition:height 0.3s ease; box-shadow:0 -2px 6px ${barColor}33;"></div>
-                <span style="font-size:0.55rem; color:var(--text-dim); font-weight:600; writing-mode:vertical-rl; text-orientation:mixed; transform:rotate(180deg); max-height:70px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeAttr(station)}">${escapeAttr(station)}</span>
-            </div>
-        `;
-    }).join('') : '<div style="color:var(--text-dim); text-align:center; font-size:0.75rem; padding:15px 0; width:100%;">Kayıt bulunmuyor.</div>';
-
-    const lineBreakdownHtml = sortedLines.map(([line, count]) => {
-        const pct = totalAudits > 0 ? Math.round((count / totalAudits) * 100) : 0;
-        const color = (appData.lineColors && appData.lineColors[line]) || '#2563eb';
-        return `
-            <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 8px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.03); border-radius:6px; font-size:0.72rem; font-weight:700;">
-                <div style="display:flex; align-items:center; gap:6px;">
-                    <span style="display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:50%; background:${color}; color:#fff; font-size:0.6rem; font-weight:900;">${line}</span>
-                    <span style="color:#cbd5e1;">Hat Denetimi</span>
-                </div>
-                <span style="color:#fff;">${count} Adet (${pct}%)</span>
-            </div>
-        `;
-    }).join('') || '<div style="color:var(--text-dim); text-align:center; font-size:0.75rem; padding:15px 0;">Kayıt bulunmuyor.</div>';
-
     const excuseListHtml = excuseList.map(exc => `
-        <div style="padding:6px 10px; background:rgba(217,119,6,0.06); border:1px solid rgba(217,119,6,0.15); border-radius:6px; margin-bottom:5px; font-size:0.7rem; color:#f59e0b; display:flex; align-items:flex-start; gap:6px;">
+        <div class="detailed-excuse-item" style="padding:6px 10px; border-radius:6px; margin-bottom:5px; font-size:0.7rem; display:flex; align-items:flex-start; gap:6px;">
             <i class="fas fa-exclamation-triangle" style="margin-top:2px; flex-shrink:0;"></i>
             <div>
                 <strong>${exc.day} ${monthName}:</strong> ${escapeAttr(exc.excuse)}
             </div>
         </div>
-    `).join('') || '<div style="color:var(--text-dim); text-align:center; font-size:0.72rem; font-style:italic; padding:10px 0;">Bu ay mazeret beyan edilmemiş.</div>';
+    `).join('') || '<div class="detailed-empty-text" style="text-align:center; font-size:0.72rem; font-style:italic; padding:10px 0;">Bu ay mazeret beyan edilmemiş.</div>';
 
     // Total Working Scheduled vs Excuse ratios
     const excuseRate = shiftWorkCount > 0 ? Math.round((excuseCount / shiftWorkCount) * 100) : 0;
 
     const modalHtml = `
-        <div id="auditor-detailed-stats-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.7); backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; z-index:99999; opacity:0; transition:opacity 0.2s ease;">
-            <div style="background:#0b1e36; border:1px solid rgba(255,255,255,0.1); border-radius:16px; width:780px; max-width:95%; max-height:90vh; box-shadow:0 15px 35px rgba(0,0,0,0.6); transform:scale(0.95); transition:transform 0.2s ease; overflow-y:auto; font-family:inherit; display:flex; flex-direction:column;">
+        <div id="auditor-detailed-stats-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; z-index:99999; opacity:0; transition:opacity 0.2s ease;">
+            <div class="detailed-stats-dialog" style="border-radius:16px; width:780px; max-width:95%; max-height:90vh; transform:scale(0.95); transition:transform 0.2s ease; overflow-y:auto; font-family:inherit; display:flex; flex-direction:column;">
                 <style>
-                    /* Custom Modern dark popups for Leaflet in detailed stats */
-                    #auditor-detailed-stats-modal .leaflet-popup-content-wrapper {
-                        background: #0b1e36 !important;
-                        color: #fff !important;
-                        border: 1px solid rgba(255,255,255,0.1) !important;
+                    /* ================= LIGHT MODE ================= */
+                    body.light-mode #auditor-detailed-stats-modal {
+                        background: rgba(15, 23, 42, 0.45) !important;
+                        backdrop-filter: blur(8px) !important;
+                    }
+                    body.light-mode #auditor-detailed-stats-modal .detailed-stats-dialog {
+                        background: #ffffff !important;
+                        border: 1px solid #d5dee9 !important;
+                        box-shadow: 0 25px 50px rgba(15, 23, 42, 0.18) !important;
+                        color: #0f172a !important;
+                    }
+                    body.light-mode #auditor-detailed-stats-modal .detailed-stats-header {
+                        background: #f8fafc !important;
+                        border-bottom: 1px solid #e2e8f0 !important;
+                    }
+                    body.light-mode #auditor-detailed-stats-modal .detailed-stats-title {
+                        color: #0f172a !important;
+                    }
+                    body.light-mode #auditor-detailed-stats-modal .detailed-stats-close {
+                        color: #64748b !important;
+                    }
+                    body.light-mode #auditor-detailed-stats-modal .detailed-stats-close:hover {
+                        color: #0f172a !important;
+                    }
+
+                    /* KPI Cards Light Mode */
+                    body.light-mode #auditor-detailed-stats-modal .detailed-kpi-card {
+                        background: #f8fafc !important;
+                        border: 1px solid #e2e8f0 !important;
+                        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04) !important;
+                    }
+                    body.light-mode #auditor-detailed-stats-modal .detailed-kpi-label {
+                        color: #475569 !important;
+                        font-weight: 700 !important;
+                    }
+                    body.light-mode #auditor-detailed-stats-modal .detailed-kpi-val-default {
+                        color: #0f172a !important;
+                    }
+                    body.light-mode #auditor-detailed-stats-modal .detailed-kpi-val-score {
+                        color: #059669 !important;
+                    }
+                    body.light-mode #auditor-detailed-stats-modal .detailed-kpi-val-fail {
+                        color: #dc2626 !important;
+                    }
+                    body.light-mode #auditor-detailed-stats-modal .detailed-kpi-val-duration {
+                        color: #0284c7 !important;
+                    }
+                    body.light-mode #auditor-detailed-stats-modal .detailed-kpi-val-shift {
+                        color: #d97706 !important;
+                    }
+                    body.light-mode #auditor-detailed-stats-modal .detailed-kpi-sub {
+                        color: #64748b !important;
+                        font-weight: 600 !important;
+                    }
+
+                    /* Section Panels Light Mode */
+                    body.light-mode #auditor-detailed-stats-modal .detailed-section-card {
+                        background: #f8fafc !important;
+                        border: 1px solid #e2e8f0 !important;
+                        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03) !important;
+                    }
+                    body.light-mode #auditor-detailed-stats-modal .detailed-section-header {
+                        color: #0f172a !important;
+                        border-bottom: 1px solid #e2e8f0 !important;
+                    }
+                    body.light-mode #auditor-detailed-stats-modal .detailed-section-count {
+                        color: #64748b !important;
+                    }
+
+                    /* Map & Legend Light Mode */
+                    body.light-mode #auditor-detailed-stats-modal #auditor-monthly-map {
+                        background: #e2e8f0 !important;
+                        border: 1px solid #cbd5e1 !important;
+                    }
+                    body.light-mode #auditor-detailed-stats-modal #auditor-map-legend {
+                        background: #ffffff !important;
+                        border: 1px solid #e2e8f0 !important;
+                    }
+                    body.light-mode #auditor-detailed-stats-modal .legend-station-item {
+                        background: #f8fafc !important;
+                        border: 1px solid #e2e8f0 !important;
+                    }
+                    body.light-mode #auditor-detailed-stats-modal .legend-station-item:hover {
+                        background: #eef2f6 !important;
+                        border-color: #cbd5e1 !important;
+                    }
+                    body.light-mode #auditor-detailed-stats-modal .legend-station-name {
+                        color: #1e293b !important;
+                    }
+
+                    /* Progress & Distributions Light Mode */
+                    body.light-mode #auditor-detailed-stats-modal .detailed-bar-label {
+                        color: #334155 !important;
+                    }
+                    body.light-mode #auditor-detailed-stats-modal .detailed-bar-track {
+                        background: #e2e8f0 !important;
+                    }
+                    body.light-mode #auditor-detailed-stats-modal .detailed-bar-count {
+                        color: #0f172a !important;
+                    }
+
+                    /* Excuse Light Mode */
+                    body.light-mode #auditor-detailed-stats-modal .detailed-excuse-item {
+                        background: #fffbeb !important;
+                        border: 1px solid #fde68a !important;
+                        color: #b45309 !important;
+                    }
+                    body.light-mode #auditor-detailed-stats-modal .detailed-excuse-item strong {
+                        color: #92400e !important;
+                    }
+                    body.light-mode #auditor-detailed-stats-modal .detailed-empty-text {
+                        color: #64748b !important;
+                    }
+
+                    /* Footer Light Mode */
+                    body.light-mode #auditor-detailed-stats-modal .detailed-stats-footer {
+                        background: #f8fafc !important;
+                        border-top: 1px solid #e2e8f0 !important;
+                    }
+
+                    /* Leaflet Popups Light Mode */
+                    body.light-mode #auditor-detailed-stats-modal .leaflet-popup-content-wrapper {
+                        background: #ffffff !important;
+                        color: #0f172a !important;
+                        border: 1px solid #d5dee9 !important;
                         border-radius: 8px !important;
-                        font-family: inherit !important;
-                        box-shadow: 0 8px 20px rgba(0,0,0,0.4) !important;
+                        box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15) !important;
                     }
-                    #auditor-detailed-stats-modal .leaflet-popup-tip {
+                    body.light-mode #auditor-detailed-stats-modal .leaflet-popup-tip {
+                        background: #ffffff !important;
+                        border-right: 1px solid #d5dee9 !important;
+                        border-bottom: 1px solid #d5dee9 !important;
+                    }
+                    body.light-mode #auditor-detailed-stats-modal .detailed-popup-title {
+                        color: #0f172a !important;
+                        border-bottom: 1px solid #e2e8f0 !important;
+                    }
+                    body.light-mode #auditor-detailed-stats-modal .detailed-popup-meta {
+                        color: #475569 !important;
+                    }
+                    body.light-mode #auditor-detailed-stats-modal .leaflet-popup-close-button {
+                        color: #64748b !important;
+                    }
+
+
+                    /* ================= DARK MODE ================= */
+                    body:not(.light-mode) #auditor-detailed-stats-modal {
+                        background: rgba(11, 20, 36, 0.75) !important;
+                        backdrop-filter: blur(8px) !important;
+                    }
+                    body:not(.light-mode) #auditor-detailed-stats-modal .detailed-stats-dialog {
                         background: #0b1e36 !important;
-                        border-right: 1px solid rgba(255,255,255,0.1) !important;
-                        border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+                        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+                        box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6) !important;
+                        color: #ffffff !important;
                     }
-                    #auditor-detailed-stats-modal .leaflet-popup-content {
-                        margin: 10px 12px !important;
-                        font-size: 0.72rem !important;
-                        line-height: 1.4 !important;
+                    body:not(.light-mode) #auditor-detailed-stats-modal .detailed-stats-header {
+                        background: rgba(255, 255, 255, 0.02) !important;
+                        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
                     }
-                    #auditor-detailed-stats-modal .leaflet-popup-close-button {
+                    body:not(.light-mode) #auditor-detailed-stats-modal .detailed-stats-title {
+                        color: #ffffff !important;
+                    }
+                    body:not(.light-mode) #auditor-detailed-stats-modal .detailed-stats-close {
+                        color: #94a3b8 !important;
+                    }
+                    body:not(.light-mode) #auditor-detailed-stats-modal .detailed-stats-close:hover {
+                        color: #ffffff !important;
+                    }
+
+                    /* Dark KPI Cards */
+                    body:not(.light-mode) #auditor-detailed-stats-modal .detailed-kpi-card {
+                        background: rgba(255, 255, 255, 0.03) !important;
+                        border: 1px solid rgba(255, 255, 255, 0.06) !important;
+                    }
+                    body:not(.light-mode) #auditor-detailed-stats-modal .detailed-kpi-label {
+                        color: #cbd5e1 !important;
+                        font-weight: 700 !important;
+                    }
+                    body:not(.light-mode) #auditor-detailed-stats-modal .detailed-kpi-val-default {
+                        color: #ffffff !important;
+                    }
+                    body:not(.light-mode) #auditor-detailed-stats-modal .detailed-kpi-val-score {
+                        color: #10b981 !important;
+                    }
+                    body:not(.light-mode) #auditor-detailed-stats-modal .detailed-kpi-val-fail {
+                        color: #ef4444 !important;
+                    }
+                    body:not(.light-mode) #auditor-detailed-stats-modal .detailed-kpi-val-duration {
+                        color: #38bdf8 !important;
+                    }
+                    body:not(.light-mode) #auditor-detailed-stats-modal .detailed-kpi-val-shift {
+                        color: #f59e0b !important;
+                    }
+                    body:not(.light-mode) #auditor-detailed-stats-modal .detailed-kpi-sub {
+                        color: #94a3b8 !important;
+                        font-weight: 500 !important;
+                    }
+
+                    /* Dark Section Panels */
+                    body:not(.light-mode) #auditor-detailed-stats-modal .detailed-section-card {
+                        background: rgba(255, 255, 255, 0.02) !important;
+                        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+                    }
+                    body:not(.light-mode) #auditor-detailed-stats-modal .detailed-section-header {
+                        color: #ffffff !important;
+                        border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+                    }
+                    body:not(.light-mode) #auditor-detailed-stats-modal .detailed-section-count {
+                        color: #94a3b8 !important;
+                    }
+
+                    /* Dark Map & Legend */
+                    body:not(.light-mode) #auditor-detailed-stats-modal #auditor-monthly-map {
+                        background: #071426 !important;
+                        border: 1px solid rgba(255, 255, 255, 0.04) !important;
+                    }
+                    body:not(.light-mode) #auditor-detailed-stats-modal #auditor-map-legend {
+                        background: rgba(255, 255, 255, 0.02) !important;
+                        border: 1px solid rgba(255, 255, 255, 0.04) !important;
+                    }
+                    body:not(.light-mode) #auditor-detailed-stats-modal .legend-station-item {
+                        background: rgba(255, 255, 255, 0.02) !important;
+                        border: 1px solid rgba(255, 255, 255, 0.04) !important;
+                    }
+                    body:not(.light-mode) #auditor-detailed-stats-modal .legend-station-item:hover {
+                        background: rgba(255, 255, 255, 0.08) !important;
+                        border-color: rgba(255, 255, 255, 0.1) !important;
+                    }
+                    body:not(.light-mode) #auditor-detailed-stats-modal .legend-station-name {
+                        color: #cbd5e1 !important;
+                    }
+
+                    /* Dark Progress & Distributions */
+                    body:not(.light-mode) #auditor-detailed-stats-modal .detailed-bar-label {
+                        color: #cbd5e1 !important;
+                    }
+                    body:not(.light-mode) #auditor-detailed-stats-modal .detailed-bar-track {
+                        background: rgba(255, 255, 255, 0.04) !important;
+                    }
+                    body:not(.light-mode) #auditor-detailed-stats-modal .detailed-bar-count {
+                        color: #ffffff !important;
+                    }
+
+                    /* Dark Excuse */
+                    body:not(.light-mode) #auditor-detailed-stats-modal .detailed-excuse-item {
+                        background: rgba(217, 119, 6, 0.08) !important;
+                        border: 1px solid rgba(217, 119, 6, 0.2) !important;
+                        color: #f59e0b !important;
+                    }
+                    body:not(.light-mode) #auditor-detailed-stats-modal .detailed-excuse-item strong {
+                        color: #fbbf24 !important;
+                    }
+                    body:not(.light-mode) #auditor-detailed-stats-modal .detailed-empty-text {
+                        color: #94a3b8 !important;
+                    }
+
+                    /* Dark Footer */
+                    body:not(.light-mode) #auditor-detailed-stats-modal .detailed-stats-footer {
+                        background: rgba(0, 0, 0, 0.25) !important;
+                        border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+                    }
+
+                    /* Dark Leaflet Popups */
+                    body:not(.light-mode) #auditor-detailed-stats-modal .leaflet-popup-content-wrapper {
+                        background: #0b1e36 !important;
+                        color: #ffffff !important;
+                        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+                        border-radius: 8px !important;
+                        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5) !important;
+                    }
+                    body:not(.light-mode) #auditor-detailed-stats-modal .leaflet-popup-tip {
+                        background: #0b1e36 !important;
+                        border-right: 1px solid rgba(255, 255, 255, 0.12) !important;
+                        border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+                    }
+                    body:not(.light-mode) #auditor-detailed-stats-modal .detailed-popup-title {
+                        color: #ffffff !important;
+                        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+                    }
+                    body:not(.light-mode) #auditor-detailed-stats-modal .detailed-popup-meta {
+                        color: #94a3b8 !important;
+                    }
+                    body:not(.light-mode) #auditor-detailed-stats-modal .leaflet-popup-close-button {
                         color: #94a3b8 !important;
                     }
                 </style>
                 
                 <!-- Header -->
-                <div style="background:rgba(255,255,255,0.02); padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+                <div class="detailed-stats-header" style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
                     <div style="display:flex; align-items:center; gap:12px;">
                         <div style="text-align: left;">
-                            <h3 style="margin:0; font-size:1.05rem; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:0.3px;">${user.name || user.displayName || user.username}</h3>
-                            <span style="font-size:0.75rem; color:#ea580c; font-weight:700; background:rgba(234,88,12,0.08); padding:2px 8px; border-radius:4px; margin-top:4px; display:inline-block;">${user.title || user.roleName || user.jobTitle || user.role || 'Saha Denetçisi'}</span>
+                            <h3 class="detailed-stats-title" style="margin:0; font-size:1.05rem; font-weight:800; text-transform:uppercase; letter-spacing:0.3px;">${user.name || user.displayName || user.username}</h3>
+                            <span style="font-size:0.75rem; color:#ea580c; font-weight:700; background:rgba(234,88,12,0.1); padding:2px 8px; border-radius:4px; margin-top:4px; display:inline-block;">${user.title || user.roleName || user.jobTitle || user.role || 'Saha Denetçisi'}</span>
                         </div>
                     </div>
-                    <i class="fas fa-times" style="font-size:1.1rem; color:var(--text-dim); cursor:pointer; padding:6px; transition:color 0.2s;" onclick="document.getElementById('auditor-detailed-stats-modal').closeModal()" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--text-dim)'"></i>
+                    <i class="fas fa-times detailed-stats-close" style="font-size:1.1rem; cursor:pointer; padding:6px; transition:color 0.2s;" onclick="document.getElementById('auditor-detailed-stats-modal').closeModal()"></i>
                 </div>
                 
                 <!-- Body -->
@@ -2433,48 +2683,48 @@ window.showAuditorDetailedStats = async function(userId) {
                     <!-- KPI Cards Grid -->
                     <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px;">
                         <!-- Total -->
-                        <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:10px; border-radius:10px; text-align:center;">
-                            <div style="font-size:0.65rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Toplam Denetim</div>
-                            <div style="font-size:1.3rem; font-weight:900; color:#fff;">${totalAudits}</div>
-                            <div style="font-size:0.58rem; color:var(--text-dim); margin-top:2px;">${completedAudits} tamam | ${activeDrafts} taslak</div>
+                        <div class="detailed-kpi-card" style="padding:12px 10px; border-radius:10px; text-align:center;">
+                            <div class="detailed-kpi-label" style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Toplam Denetim</div>
+                            <div class="detailed-kpi-val-default" style="font-size:1.35rem; font-weight:900;">${totalAudits}</div>
+                            <div class="detailed-kpi-sub" style="font-size:0.62rem; margin-top:4px;">${completedAudits} tamam | ${activeDrafts} taslak</div>
                         </div>
                         <!-- Average Compliance Score -->
-                        <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:10px; border-radius:10px; text-align:center;">
-                            <div style="font-size:0.65rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Uyum Başarı Skoru</div>
-                            <div style="font-size:1.3rem; font-weight:900; color:#10b981;">%${avgScore}</div>
-                            <div style="font-size:0.58rem; color:var(--text-dim); margin-top:2px;">Uyum Ortalaması</div>
+                        <div class="detailed-kpi-card" style="padding:12px 10px; border-radius:10px; text-align:center;">
+                            <div class="detailed-kpi-label" style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Uyum Başarı Skoru</div>
+                            <div class="detailed-kpi-val-score" style="font-size:1.35rem; font-weight:900;">%${avgScore}</div>
+                            <div class="detailed-kpi-sub" style="font-size:0.62rem; margin-top:4px;">Uyum Ortalaması</div>
                         </div>
                         <!-- Defect Detection / failure rate -->
-                        <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:10px; border-radius:10px; text-align:center;">
-                            <div style="font-size:0.65rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Uygunsuzluk Oranı</div>
-                            <div style="font-size:1.3rem; font-weight:900; color:#ef4444;">%${failureRate}</div>
-                            <div style="font-size:0.58rem; color:var(--text-dim); margin-top:2px;">${auditsWithFailures} Uygunsuzluk / ${totalAudits} Denetim</div>
+                        <div class="detailed-kpi-card" style="padding:12px 10px; border-radius:10px; text-align:center;">
+                            <div class="detailed-kpi-label" style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Uygunsuzluk Oranı</div>
+                            <div class="detailed-kpi-val-fail" style="font-size:1.35rem; font-weight:900;">%${failureRate}</div>
+                            <div class="detailed-kpi-sub" style="font-size:0.62rem; margin-top:4px;">${auditsWithFailures} Uygunsuzluk / ${totalAudits} Denetim</div>
                         </div>
                         <!-- Average Duration -->
-                        <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:10px; border-radius:10px; text-align:center;">
-                            <div style="font-size:0.65rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Ortalama Süre</div>
-                            <div style="font-size:1.3rem; font-weight:900; color:#38bdf8;">${avgDurationMin} <span style="font-size:0.75rem; font-weight:700;">dk</span></div>
-                            <div style="font-size:0.58rem; color:var(--text-dim); margin-top:2px;">Saha Denetim Hızı</div>
+                        <div class="detailed-kpi-card" style="padding:12px 10px; border-radius:10px; text-align:center;">
+                            <div class="detailed-kpi-label" style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Ortalama Süre</div>
+                            <div class="detailed-kpi-val-duration" style="font-size:1.35rem; font-weight:900;">${avgDurationMin} <span style="font-size:0.75rem; font-weight:700;">dk</span></div>
+                            <div class="detailed-kpi-sub" style="font-size:0.62rem; margin-top:4px;">Saha Denetim Hızı</div>
                         </div>
                         <!-- Roster & excuse info -->
-                        <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:10px; border-radius:10px; text-align:center;">
-                            <div style="font-size:0.65rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Aylık Vardiya</div>
-                            <div style="font-size:1.3rem; font-weight:900; color:#f59e0b;">${shiftWorkCount} <span style="font-size:0.75rem; font-weight:700;">Gün</span></div>
-                            <div style="font-size:0.58rem; color:var(--text-dim); margin-top:2px;">${excuseCount} mazeret (%${excuseRate})</div>
+                        <div class="detailed-kpi-card" style="padding:12px 10px; border-radius:10px; text-align:center;">
+                            <div class="detailed-kpi-label" style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Aylık Vardiya</div>
+                            <div class="detailed-kpi-val-shift" style="font-size:1.35rem; font-weight:900;">${shiftWorkCount} <span style="font-size:0.75rem; font-weight:700;">Gün</span></div>
+                            <div class="detailed-kpi-sub" style="font-size:0.62rem; margin-top:4px;">${excuseCount} mazeret (%${excuseRate})</div>
                         </div>
                     </div>
 
                     <!-- Auditor Visited Stations Map (Full Width with Legend) -->
-                    <div style="background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03); border-radius:10px; padding:14px;">
-                        <div style="font-size:0.75rem; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid rgba(255,255,255,0.04); padding-bottom:6px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between;">
+                    <div class="detailed-section-card" style="border-radius:10px; padding:14px;">
+                        <div class="detailed-section-header" style="font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; padding-bottom:6px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between;">
                             <div style="display:flex; align-items:center; gap:6px;">
                                 <i class="fas fa-map-marked-alt" style="color:#10b981;"></i> Denetlenen İstasyonlar Haritası
                             </div>
-                            <span id="auditor-map-count" style="font-size:0.62rem; color:var(--text-dim); font-weight:600;">Yükleniyor...</span>
+                            <span id="auditor-map-count" class="detailed-section-count" style="font-size:0.65rem; font-weight:600;">Yükleniyor...</span>
                         </div>
                         <div style="display:flex; gap:12px; height:260px; align-items:stretch;">
-                            <div id="auditor-monthly-map" style="flex:1.7; min-width:200px; height:100%; border-radius:8px; background:#071426; border:1px solid rgba(255,255,255,0.04);"></div>
-                            <div id="auditor-map-legend" style="flex:1; height:100%; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.04); border-radius:8px; padding:10px; overflow-y:auto; box-sizing:border-box; display:flex; flex-direction:column; gap:4px;"></div>
+                            <div id="auditor-monthly-map" style="flex:1.7; min-width:200px; height:100%; border-radius:8px;"></div>
+                            <div id="auditor-map-legend" style="flex:1; height:100%; border-radius:8px; padding:10px; overflow-y:auto; box-sizing:border-box; display:flex; flex-direction:column; gap:4px;"></div>
                         </div>
                     </div>
 
@@ -2483,8 +2733,8 @@ window.showAuditorDetailedStats = async function(userId) {
                         <!-- Left Panel (Weekly activity) -->
                         <div style="display:flex; flex-direction:column; gap:14px;">
                             <!-- Weekly Activity Distribution -->
-                            <div style="background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03); border-radius:10px; padding:14px;">
-                                <div style="font-size:0.75rem; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid rgba(255,255,255,0.04); padding-bottom:6px; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+                            <div class="detailed-section-card" style="border-radius:10px; padding:14px;">
+                                <div class="detailed-section-header" style="font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; padding-bottom:6px; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
                                     <i class="fas fa-calendar-week" style="color:#8b5cf6;"></i> Haftalık Aktivite Yoğunluğu
                                 </div>
                                 <div style="display:flex; flex-direction:column; gap:2px;">
@@ -2496,8 +2746,8 @@ window.showAuditorDetailedStats = async function(userId) {
                         <!-- Right Panel (Excuses & Hourly Activity) -->
                         <div style="display:flex; flex-direction:column; gap:14px;">
                             <!-- Hourly Activity Distribution -->
-                            <div style="background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03); border-radius:10px; padding:14px;">
-                                <div style="font-size:0.75rem; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid rgba(255,255,255,0.04); padding-bottom:6px; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+                            <div class="detailed-section-card" style="border-radius:10px; padding:14px;">
+                                <div class="detailed-section-header" style="font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; padding-bottom:6px; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
                                     <i class="fas fa-clock" style="color:#f43f5e;"></i> Günlük Saat Kırılımı
                                 </div>
                                 <div style="display:flex; flex-direction:column; gap:2px;">
@@ -2506,8 +2756,8 @@ window.showAuditorDetailedStats = async function(userId) {
                             </div>
                             
                             <!-- Excuses Detail -->
-                            <div style="background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03); border-radius:10px; padding:14px;">
-                                <div style="font-size:0.75rem; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid rgba(255,255,255,0.04); padding-bottom:6px; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+                            <div class="detailed-section-card" style="border-radius:10px; padding:14px;">
+                                <div class="detailed-section-header" style="font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; padding-bottom:6px; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
                                     <i class="fas fa-file-invoice" style="color:#f59e0b;"></i> ${monthName} Ayı Mazeret Kayıtları
                                 </div>
                                 <div style="max-height:130px; overflow-y:auto; padding-right:4px;">
@@ -2519,8 +2769,8 @@ window.showAuditorDetailedStats = async function(userId) {
                 </div>
 
                 <!-- Footer -->
-                <div style="padding:14px 20px; background:rgba(0,0,0,0.2); display:flex; justify-content:flex-end; border-top:1px solid rgba(255,255,255,0.05); flex-shrink:0;">
-                    <button style="background:#007AFF; color:#fff; border:none; padding:8px 18px; border-radius:6px; font-size:0.8rem; font-weight:700; cursor:pointer; transition:background 0.2s;" onmouseover="this.style.background='#0062cc'" onmouseout="this.style.background='#007AFF'" onclick="document.getElementById('auditor-detailed-stats-modal').closeModal()">Kapat</button>
+                <div class="detailed-stats-footer" style="padding:14px 20px; display:flex; justify-content:flex-end; flex-shrink:0;">
+                    <button style="background:#0284c7; color:#fff; border:none; padding:8px 20px; border-radius:6px; font-size:0.8rem; font-weight:700; cursor:pointer; transition:background 0.2s;" onmouseover="this.style.background='#0369a1'" onmouseout="this.style.background='#0284c7'" onclick="document.getElementById('auditor-detailed-stats-modal').closeModal()">Kapat</button>
                 </div>
             </div>
         </div>
@@ -2551,9 +2801,29 @@ window.showAuditorDetailedStats = async function(userId) {
     setTimeout(() => {
         try {
             const map = L.map('auditor-monthly-map', { attributionControl: false }).setView([41.0082, 28.9784], 10);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            
+            const googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
                 maxZoom: 20
-            }).addTo(map);
+            });
+            const googleStreets = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+                maxZoom: 20
+            });
+            const osmHot = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+                maxZoom: 19
+            });
+
+            // Varsayılan olarak gerçek uydu görüntüsü (Google Hybrid) açılır
+            googleHybrid.addTo(map);
+
+            L.control.layers({
+                "🛰️ Gerçek Uydu": googleHybrid,
+                "🗺️ Google Harita": googleStreets,
+                "📍 Klasik Harita": osmHot
+            }, null, { position: 'topright' }).addTo(map);
+
+            setTimeout(() => {
+                try { map.invalidateSize(); } catch (e) {}
+            }, 250);
 
             const points = [];
             const uniqueStations = {};
@@ -2609,11 +2879,11 @@ window.showAuditorDetailedStats = async function(userId) {
                 });
                 const lastAuditText = st.lastAudit ? formatDate(st.lastAudit) : '-';
                 const popupHtml = `
-                    <div style="font-family:inherit; color:#fff; padding:2px; min-width:140px;">
-                        <div style="font-weight:800; font-size:0.75rem; margin-bottom:4px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:3px; color:#fff;">${st.station}</div>
-                        <div style="font-size:0.68rem; margin-bottom:2px; color:#94a3b8;"><strong>Hat:</strong> ${st.line || '-'}</div>
-                        <div style="font-size:0.68rem; margin-bottom:2px; color:#94a3b8;"><strong>Denetim Sayısı:</strong> <span style="color:#1d4ed8; font-weight:700;">${st.count} kez</span></div>
-                        <div style="font-size:0.68rem; color:#94a3b8;"><strong>Son Denetim:</strong> ${lastAuditText}</div>
+                    <div style="font-family:inherit; padding:2px; min-width:140px;">
+                        <div class="detailed-popup-title" style="font-weight:800; font-size:0.75rem; margin-bottom:4px; padding-bottom:3px;">${st.station}</div>
+                        <div class="detailed-popup-meta" style="font-size:0.68rem; margin-bottom:2px;"><strong>Hat:</strong> ${st.line || '-'}</div>
+                        <div class="detailed-popup-meta" style="font-size:0.68rem; margin-bottom:2px;"><strong>Denetim Sayısı:</strong> <span style="color:#0284c7; font-weight:700;">${st.count} kez</span></div>
+                        <div class="detailed-popup-meta" style="font-size:0.68rem;"><strong>Son Denetim:</strong> ${lastAuditText}</div>
                     </div>
                 `;
                 const marker = L.marker([st.lat, st.lng], { icon: customIcon }).addTo(map);
@@ -2629,15 +2899,15 @@ window.showAuditorDetailedStats = async function(userId) {
 
                 // Build sidebar item HTML
                 legendHtml += `
-                    <div class="legend-station-item" data-key="${st.key}" style="display:flex; align-items:center; justify-content:space-between; padding:5px 8px; border-radius:6px; background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03); cursor:pointer; transition:all 0.2s; box-sizing:border-box;">
-                        <span style="font-size:0.7rem; color:#cbd5e1; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:80%;" title="${escapeAttr(st.station)}">${escapeAttr(st.station)}</span>
+                    <div class="legend-station-item" data-key="${st.key}" style="display:flex; align-items:center; justify-content:space-between; padding:5px 8px; border-radius:6px; cursor:pointer; transition:all 0.2s; box-sizing:border-box;">
+                        <span class="legend-station-name" style="font-size:0.7rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:80%;" title="${escapeAttr(st.station)}">${escapeAttr(st.station)}</span>
                         <span style="font-size:0.68rem; font-weight:800; color:#fff; background:${markerColor}; padding:1px 5px; border-radius:4px; min-width:14px; text-align:center;">${st.count}</span>
                     </div>
                 `;
             });
 
             if (legendContainer) {
-                legendContainer.innerHTML = legendHtml || '<div style="color:var(--text-dim); text-align:center; font-size:0.72rem; font-style:italic; padding:20px 0;">Ziyaret geçmişi bulunmuyor.</div>';
+                legendContainer.innerHTML = legendHtml || '<div class="detailed-empty-text" style="text-align:center; font-size:0.72rem; font-style:italic; padding:20px 0;">Ziyaret geçmişi bulunmuyor.</div>';
 
                 // Bind dynamic hover and click events
                 legendContainer.querySelectorAll('.legend-station-item').forEach(item => {
@@ -2646,14 +2916,10 @@ window.showAuditorDetailedStats = async function(userId) {
                     if (!marker) return;
 
                     item.addEventListener('mouseenter', () => {
-                        item.style.background = 'rgba(255,255,255,0.06)';
-                        item.style.borderColor = 'rgba(255,255,255,0.1)';
                         marker.openTooltip();
                     });
 
                     item.addEventListener('mouseleave', () => {
-                        item.style.background = 'rgba(255,255,255,0.01)';
-                        item.style.borderColor = 'rgba(255,255,255,0.03)';
                         marker.closeTooltip();
                     });
 

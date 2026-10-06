@@ -2426,10 +2426,23 @@ function initializeDetailMap(session) {
     const defaultCenter = [41.0082, 28.9784]; 
     detailMapInstance = L.map('field-detail-map').setView(defaultCenter, 12);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors',
+    const googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+        maxZoom: 20
+    });
+    const googleStreets = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        maxZoom: 20
+    });
+    const osmHot = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
         maxZoom: 19
-    }).addTo(detailMapInstance);
+    });
+
+    googleHybrid.addTo(detailMapInstance);
+
+    L.control.layers({
+        "🛰️ Gerçek Uydu": googleHybrid,
+        "🗺️ Google Harita": googleStreets,
+        "📍 Klasik": osmHot
+    }, null, { position: 'topright' }).addTo(detailMapInstance);
 
     const latlngs = [];
     const bounds = [];

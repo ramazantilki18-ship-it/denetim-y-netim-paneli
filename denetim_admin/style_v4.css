@@ -13645,4 +13645,39 @@ body.light-mode #permissions-view .permissions-matrix-table tr:hover td:first-ch
     background-color: rgba(37, 99, 235, 0.04) !important;
 }
 
+/* Leaflet Layer Switcher Styling */
+.leaflet-control-layers {
+    background: rgba(15, 23, 42, 0.88) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    border-radius: 12px !important;
+    color: #f8fafc !important;
+    font-size: 0.75rem !important;
+    font-weight: 700 !important;
+    padding: 8px 12px !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+}
+.leaflet-control-layers-expanded {
+    padding: 8px 12px !important;
+}
+.leaflet-control-layers label {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-bottom: 6px !important;
+    cursor: pointer !important;
+}
+.leaflet-control-layers label:last-child {
+    margin-bottom: 0 !important;
+}
+.leaflet-control-layers-toggle {
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 8px !important;
+    background-color: rgba(15, 23, 42, 0.85) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
 

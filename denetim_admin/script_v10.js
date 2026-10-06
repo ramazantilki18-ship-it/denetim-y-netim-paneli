@@ -712,16 +712,24 @@ async function syncNCs() {
     }
 
     try {
-        let query = db.collection('nonconformities');
+        let snapshot;
         if (lastDate) {
             const queryParam = isDateString ? lastDate.toISOString() : lastDate;
             console.log(`Syncing NCs delta since ${isDateString ? lastDate.toISOString() : lastDate}`);
-            query = query.where('detectionDate', '>=', queryParam);
+            const [recentSnap, activeSnap, closedRecentSnap] = await Promise.all([
+                db.collection('nonconformities').where('detectionDate', '>=', queryParam).get().catch(() => ({ docs: [] })),
+                db.collection('nonconformities').where('status', 'in', ['open', 'waitingControl', 'overdue', 'inProgress']).get().catch(() => ({ docs: [] })),
+                db.collection('nonconformities').where('closureDate', '>=', queryParam).get().catch(() => ({ docs: [] }))
+            ]);
+            const docsMap = new Map();
+            (recentSnap.docs || []).forEach(d => docsMap.set(d.id, d));
+            (activeSnap.docs || []).forEach(d => docsMap.set(d.id, d));
+            (closedRecentSnap.docs || []).forEach(d => docsMap.set(d.id, d));
+            snapshot = { docs: Array.from(docsMap.values()), size: docsMap.size };
         } else {
             console.log("Fetching all NCs (initial load)...");
+            snapshot = await db.collection('nonconformities').get();
         }
-        
-        const snapshot = await query.get();
         console.log(`Loaded NCs from Firestore: ${snapshot.size} records.`);
         
         const newNCs = snapshot.docs.map(doc => {
@@ -1685,7 +1693,16 @@ function initRealtimeSync() {
     loadNCsFromCache();
     loadSessionsFromCache();
 
-    // Fetch deltas and start real-time listeners in background
+    // Yerel önbellekte veri varsa Firestore beklemeden anında (0ms) ekranları çiz
+    if ((appData.audits && appData.audits.length > 0) || (appData.nonconformities && appData.nonconformities.length > 0)) {
+        invalidateDataCaches();
+        if (typeof renderAll === 'function') {
+            renderAll();
+            console.log('⚡ Önbellekteki verilerle arayüz anında (0ms) yüklendi.');
+        }
+    }
+
+    // Fetch deltas and start real-time listeners in background (paralel)
     syncAudits();
     syncNCs();
     syncSessions();
@@ -1864,42 +1881,59 @@ function getAuditTypeValues(audit = {}) {
     }
 
     const explicitTypeId = String(audit.auditTypeId || '').trim();
-    if (explicitTypeId) {
-        audit._cachedTypeValues = [explicitTypeId];
+    const explicitTypeName = String(audit.auditType || audit.type || '').trim();
+
+    // Denetim adı açıkça 'GÜVENLİK' veya 'TEMİZLİK' gibi 5S olmayan bir denetim belirtiyorsa
+    // ve auditTypeId hatalı şekilde 5S olarak kaydedilmişse, 5S ID'sini geçersiz say:
+    const isExplicitNon5S = explicitTypeName && !explicitTypeName.toLocaleUpperCase('tr-TR').includes('5S');
+    const isTypeId5S = explicitTypeId && (explicitTypeId.includes('5s') || (appData.auditTypes || []).some(t => String(t.id) === explicitTypeId && String(t.title || t.name || '').toLocaleUpperCase('tr-TR').includes('5S')));
+
+    let resolvedTypeId = explicitTypeId;
+    if (isExplicitNon5S && isTypeId5S) {
+        resolvedTypeId = '';
+        const matchingType = (appData.auditTypes || []).find(t => {
+            const tName = normalizeAuditTypeValue(t.title || t.name);
+            const aName = normalizeAuditTypeValue(explicitTypeName);
+            return tName === aName || (aName.includes('güvenlik') && tName.includes('güvenlik')) || (aName.includes('temizlik') && tName.includes('temizlik'));
+        });
+        if (matchingType) {
+            resolvedTypeId = matchingType.id;
+        } else {
+            const stationType = (appData.auditTypes || []).find(t => String(t.id).includes('istasyon') || normalizeAuditTypeValue(t.title || t.name).includes('istasyon'));
+            if (stationType) resolvedTypeId = stationType.id;
+        }
+    }
+
+    const values = [];
+    if (resolvedTypeId) values.push(resolvedTypeId);
+    if (explicitTypeName) values.push(explicitTypeName);
+
+    if (values.length) {
+        audit._cachedTypeValues = [...new Set(values)];
         audit._cachedTypeVersion = appData._metricsVersion;
         return audit._cachedTypeValues;
     }
 
-    const explicitTypeNames = [
-        audit.auditType,
-        audit.type
-    ].filter(value => String(value || '').trim()).map(String);
-    if (explicitTypeNames.length) {
-        audit._cachedTypeValues = [...new Set(explicitTypeNames)];
-        audit._cachedTypeVersion = appData._metricsVersion;
-        return audit._cachedTypeValues;
-    }
-
-    const values = [
+    const searchValues = [
         audit.questionGroupId,
         audit.groupId
     ].filter(Boolean).map(String);
 
-    const group = (appData.questionGroups || []).find(g => values.some(v =>
+    const group = (appData.questionGroups || []).find(g => searchValues.some(v =>
         String(g.id) === v || String(g.name) === v || String(g.title) === v
     ));
-    if (group?.auditTypeId) values.push(String(group.auditTypeId));
+    if (group?.auditTypeId) searchValues.push(String(group.auditTypeId));
 
     (audit.answers || []).slice(0, 8).forEach(answer => {
         const q = (appData.questions || []).find(item => String(item.id) === String(answer.questionId));
-        if (q?.auditTypeId) values.push(String(q.auditTypeId));
+        if (q?.auditTypeId) searchValues.push(String(q.auditTypeId));
         if (q?.groupId) {
             const qGroup = (appData.questionGroups || []).find(item => String(item.id) === String(q.groupId));
-            if (qGroup?.auditTypeId) values.push(String(qGroup.auditTypeId));
+            if (qGroup?.auditTypeId) searchValues.push(String(qGroup.auditTypeId));
         }
     });
 
-    const res = [...new Set(values.filter(Boolean))];
+    const res = [...new Set(searchValues.filter(Boolean))];
     audit._cachedTypeValues = res;
     audit._cachedTypeVersion = appData._metricsVersion;
     return res;
@@ -1917,33 +1951,32 @@ function getNonconformityTypeValues(nc = {}) {
 
     const audit = getAuditForNonconformity(nc);
     const parentTypeId = String(audit.auditTypeId || '').trim();
-    if (parentTypeId) {
-        nc._cachedTypeValues = [parentTypeId];
-        nc._cachedTypeVersion = appData._metricsVersion;
-        return nc._cachedTypeValues;
+    const parentTypeName = String(audit.auditType || audit.type || '').trim();
+    const ncTypeId = String(nc.auditTypeId || '').trim();
+    const ncTypeName = String(nc.auditType || nc.type || '').trim();
+
+    const explicitName = ncTypeName || parentTypeName;
+    const isExplicitNon5S = explicitName && !explicitName.toLocaleUpperCase('tr-TR').includes('5S');
+    const explicitId = ncTypeId || parentTypeId;
+    const isTypeId5S = explicitId && (explicitId.includes('5s') || (appData.auditTypes || []).some(t => String(t.id) === explicitId && String(t.title || t.name || '').toLocaleUpperCase('tr-TR').includes('5S')));
+
+    let resolvedId = explicitId;
+    if (isExplicitNon5S && isTypeId5S) {
+        resolvedId = '';
+        const matchingType = (appData.auditTypes || []).find(t => {
+            const tName = normalizeAuditTypeValue(t.title || t.name);
+            const aName = normalizeAuditTypeValue(explicitName);
+            return tName === aName || (aName.includes('güvenlik') && tName.includes('güvenlik')) || (aName.includes('temizlik') && tName.includes('temizlik'));
+        });
+        if (matchingType) resolvedId = matchingType.id;
     }
 
-    const nonconformityTypeId = String(nc.auditTypeId || '').trim();
-    if (nonconformityTypeId) {
-        nc._cachedTypeValues = [nonconformityTypeId];
-        nc._cachedTypeVersion = appData._metricsVersion;
-        return nc._cachedTypeValues;
-    }
+    const values = [];
+    if (resolvedId) values.push(resolvedId);
+    if (explicitName) values.push(explicitName);
 
-    const parentTypeNames = [audit.auditType, audit.type]
-        .filter(value => String(value || '').trim())
-        .map(String);
-    if (parentTypeNames.length) {
-        nc._cachedTypeValues = [...new Set(parentTypeNames)];
-        nc._cachedTypeVersion = appData._metricsVersion;
-        return nc._cachedTypeValues;
-    }
-
-    const nonconformityTypeNames = [nc.auditType, nc.type]
-        .filter(value => String(value || '').trim())
-        .map(String);
-    if (nonconformityTypeNames.length) {
-        nc._cachedTypeValues = [...new Set(nonconformityTypeNames)];
+    if (values.length) {
+        nc._cachedTypeValues = [...new Set(values)];
         nc._cachedTypeVersion = appData._metricsVersion;
         return nc._cachedTypeValues;
     }
@@ -1963,6 +1996,23 @@ function auditTypeValuesMatch(values, selectedTypeId, source = {}) {
     const selectedType = getActiveAuditTypesForFilters().find(t => String(t.id) === String(selectedTypeId))
         || { id: selectedTypeId, title: selectedTypeId };
     const aliases = getAuditTypeAliasSet(selectedType);
+
+    // KORUMA KURALI: 5S filtresi seçilmişse, ancak denetim açıkça Güvenlik veya Temizlik denetimi ise (ve 5S içermiyorsa) asla eşleşme!
+    const isFilter5S = aliases.has('5s') || aliases.has('audit-type-5s-denetimi') || aliases.has('5s denetimi');
+    if (isFilter5S) {
+        const sourceTypeName = String(source.auditType || source.type || '').toLocaleLowerCase('tr-TR');
+        if (sourceTypeName && !sourceTypeName.includes('5s') && (sourceTypeName.includes('güvenlik') || sourceTypeName.includes('temizlik') || sourceTypeName.includes('istasyon'))) {
+            return false;
+        }
+        const hasExplicitNon5SValue = values.some(v => {
+            const vNorm = normalizeAuditTypeValue(v);
+            return !vNorm.includes('5s') && (vNorm.includes('güvenlik') || vNorm.includes('temizlik'));
+        });
+        if (hasExplicitNon5SValue) {
+            return false;
+        }
+    }
+
     const normalizedValues = values.map(normalizeAuditTypeValue);
     return normalizedValues.some(v => aliases.has(v));
 }
@@ -4920,9 +4970,15 @@ function inspectNC(id, parentAuditId = null) {
 
                 <!-- 3. Denetim Kanıtları (Görseller) -->
                 <div style="padding-top: 0.25rem;">
-                    <span style="display: block; font-size: 0.58rem; font-weight: 850; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.35rem;">
-                        <i class="fas fa-images" style="margin-right: 4px; color: var(--nc-status-color);"></i> Denetim Kanıtları
-                    </span>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                        <span style="font-size: 0.58rem; font-weight: 850; color: var(--text-dim); text-transform: uppercase;">
+                            <i class="fas fa-images" style="margin-right: 4px; color: var(--nc-status-color);"></i> Denetim Kanıtları
+                        </span>
+                        <button type="button" class="btn-outline" style="font-size: 0.65rem; padding: 2px 8px; border-radius: 6px; cursor: pointer;" onclick="document.getElementById('nc-auditor-photo-upload-input').click()">
+                            <i class="fas fa-camera"></i> Kanıt Fotoğrafı Ekle
+                        </button>
+                        <input type="file" id="nc-auditor-photo-upload-input" accept="image/*" style="display:none;" onchange="uploadAuditorPhotoForNC('${nc.id}', event)">
+                    </div>
                     ${renderImageGallery(nc.auditorPhotoPaths || [])}
                 </div>
             </section>
@@ -5122,6 +5178,24 @@ function compressImage(file, maxWidth = 1200, quality = 0.75) {
     });
 }
 
+function safeCloudinaryFolder(folder) {
+    if (!folder) return 'nonconformities';
+    const clean = folder.replace(/[^a-zA-Z0-9_\/-]/g, '_');
+    if (clean.length <= 60) return clean;
+
+    const parts = clean.split('/');
+    const prefix = parts.slice(0, -1).join('/');
+    const lastPart = parts[parts.length - 1];
+    let hash = 0;
+    for (let i = 0; i < lastPart.length; i++) {
+        hash = ((hash << 5) - hash) + lastPart.charCodeAt(i);
+        hash |= 0;
+    }
+    const safeHash = Math.abs(hash).toString(36);
+    const shortLast = lastPart.substring(0, 30) + '_' + safeHash;
+    return prefix ? `${prefix}/${shortLast}` : shortLast;
+}
+
 async function uploadToCloudinary(file, folder = 'nonconformities') {
     const cloudName = 'dpk2rnnfn';
     const uploadPreset = 'denetimuygulaması';
@@ -5130,7 +5204,7 @@ async function uploadToCloudinary(file, folder = 'nonconformities') {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', uploadPreset);
-    formData.append('folder', folder);
+    formData.append('folder', safeCloudinaryFolder(folder));
 
     const response = await fetch(url, {
         method: 'POST',
@@ -5144,6 +5218,38 @@ async function uploadToCloudinary(file, folder = 'nonconformities') {
 
     const data = await response.json();
     return data.secure_url;
+}
+
+async function uploadAuditorPhotoForNC(ncId, event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    try {
+        showToast('Fotoğraf yükleniyor...');
+        let uploadFile = file;
+        try {
+            uploadFile = await compressImage(file, 1200, 0.75);
+        } catch (e) {
+            console.warn('Compress error:', e);
+        }
+        const downloadUrl = await uploadToCloudinary(uploadFile, `nonconformities/${ncId}`);
+        if (!downloadUrl) throw new Error('Yükleme adresi alınamadı');
+
+        await db.collection('nonconformities').doc(ncId).update({
+            auditorPhotoPaths: firebase.firestore.FieldValue.arrayUnion(downloadUrl)
+        });
+
+        const nc = appData.nonconformities.find(n => n.id === ncId);
+        if (nc) {
+            if (!Array.isArray(nc.auditorPhotoPaths)) nc.auditorPhotoPaths = [];
+            nc.auditorPhotoPaths.push(downloadUrl);
+        }
+        showToast('Kanıt fotoğrafı başarıyla eklendi!');
+        inspectNC(ncId);
+        if (typeof renderNCs === 'function') renderNCs();
+    } catch (err) {
+        console.error('Auditor photo upload error:', err);
+        showToast('Fotoğraf yüklenemedi: ' + err.message);
+    }
 }
 
 async function processNCClose() {
@@ -5195,7 +5301,20 @@ async function processNCClose() {
             closurePhotoPaths: closurePhotoPaths
         });
 
-        showToast(`${id} kontrol için gönderildi.`);
+        const nc = appData.nonconformities.find(n => n.id === id);
+        if (nc) {
+            nc.status = 'waitingControl';
+            nc.closureComment = comment;
+            nc.closureDate = new Date().toISOString();
+            nc.closedByName = closureName;
+            nc.closurePhotoPaths = closurePhotoPaths;
+            try {
+                localStorage.setItem('cached_ncs_v1', JSON.stringify(appData.nonconformities));
+            } catch (_) {}
+        }
+        _cachedFilteredNCs = null;
+
+        showToast('Uygunsuzluk kontrol için gönderildi.');
         closeNCModal();
         if (typeof renderNCs === 'function') renderNCs();
     } catch (err) {
@@ -5212,29 +5331,134 @@ async function processNCClose() {
 
 function approveNC(id) {
     const approverName = currentUser ? (currentUser.name || currentUser.username || (currentUser.email ? currentUser.email.split('@')[0] : '')) : 'Admin';
-    db.collection('nonconformities').doc(id).update({
+    const targetIdStr = String(id || '').trim();
+    if (!targetIdStr) return;
+
+    // 1. Olası hata durumunda geri almak için durum yedeği
+    let matchedNC = null;
+    let prevStatus = 'waitingControl';
+    let prevApprovedBy = null;
+    let prevApprovedAt = null;
+
+    // 2. Bellekteki nesneleri anında (optimistic) 'completed' yap
+    if (Array.isArray(appData.nonconformities)) {
+        appData.nonconformities.forEach(n => {
+            if (String(n.id || '').trim() === targetIdStr || (n.ncNo && String(n.ncNo).trim() === targetIdStr)) {
+                if (!matchedNC) {
+                    matchedNC = n;
+                    prevStatus = n.status;
+                    prevApprovedBy = n.approvedByName;
+                    prevApprovedAt = n.approvedAt;
+                }
+                n.status = 'completed';
+                n.approvedByName = approverName;
+                n.approvedAt = new Date().toISOString();
+            }
+        });
+    }
+
+    // 3. Önbellekleri geçersiz kıl ve LocalStorage'ı hemen güncelle
+    invalidateDataCaches();
+    try {
+        localStorage.setItem('cached_ncs_v1', JSON.stringify(appData.nonconformities));
+    } catch (_) {}
+
+    // 4. Arayüzü ANINDA YENİDEN ÇİZ (sayfa yenilemeye gerek kalmadan satır anında kaybolur)
+    if (typeof renderNCs === 'function') {
+        renderNCs(ncCurrentFilter || 'Kontrol');
+    }
+    if (typeof updateStats === 'function') {
+        updateStats();
+    }
+
+    // Açık olan uygunsuzluk detay modalı varsa kapat
+    const auditModal = document.getElementById('audit-modal');
+    if (auditModal && auditModal.style.display !== 'none' && auditModal.classList.contains('nc-detail-modal')) {
+        closeAuditModal();
+    }
+
+    showToast('Uygunsuzluk onaylandı ve kapatıldı.');
+
+    // 5. Arka planda Firestore güncellemesini tamamla
+    db.collection('nonconformities').doc(targetIdStr).update({
         status: 'completed',
         approvedByName: approverName,
         approvedAt: new Date().toISOString()
     }).then(() => {
-        showToast(`${id} onaylandı ve kapatıldı.`);
-        const nc = appData.nonconformities.find(n => n.id === id);
-        logActivity('Uygunsuzluk Onaylandı', `${nc ? nc.line : ''} hattı, ${nc ? nc.station : ''} istasyonundaki uygunsuzluk çözümü web panelinden onaylandı ve kapatıldı. (ID: ${id})`);
-    }).catch(err => console.error('Approve Error:', err));
+        logActivity('Uygunsuzluk Onaylandı', `${matchedNC ? (matchedNC.line || '') : ''} hattı, ${matchedNC ? (matchedNC.station || '') : ''} istasyonundaki uygunsuzluk çözümü web panelinden onaylandı ve kapatıldı. (ID: ${targetIdStr})`);
+    }).catch(err => {
+        console.error('Approve Error:', err);
+        // Hata durumunda yerel durumu eski haline geri al
+        if (matchedNC) {
+            matchedNC.status = prevStatus;
+            matchedNC.approvedByName = prevApprovedBy;
+            matchedNC.approvedAt = prevApprovedAt;
+            invalidateDataCaches();
+            if (typeof renderNCs === 'function') renderNCs(ncCurrentFilter || 'Kontrol');
+        }
+        showToast('Uygunsuzluk onaylanırken bir hata oluştu: ' + (err.message || err));
+    });
 }
 
 function rejectNC(id) {
-    db.collection('nonconformities').doc(id).update({
+    const targetIdStr = String(id || '').trim();
+    if (!targetIdStr) return;
+
+    let matchedNC = null;
+    let prevNCData = null;
+
+    if (Array.isArray(appData.nonconformities)) {
+        appData.nonconformities.forEach(n => {
+            if (String(n.id || '').trim() === targetIdStr || (n.ncNo && String(n.ncNo).trim() === targetIdStr)) {
+                if (!matchedNC) {
+                    matchedNC = n;
+                    prevNCData = { ...n };
+                }
+                n.status = 'open';
+                delete n.closureComment;
+                delete n.closurePhotoPaths;
+                delete n.closedByName;
+                delete n.closureDate;
+            }
+        });
+    }
+
+    invalidateDataCaches();
+    try {
+        localStorage.setItem('cached_ncs_v1', JSON.stringify(appData.nonconformities));
+    } catch (_) {}
+
+    if (typeof renderNCs === 'function') {
+        renderNCs(ncCurrentFilter || 'Kontrol');
+    }
+    if (typeof updateStats === 'function') {
+        updateStats();
+    }
+
+    const auditModal = document.getElementById('audit-modal');
+    if (auditModal && auditModal.style.display !== 'none' && auditModal.classList.contains('nc-detail-modal')) {
+        closeAuditModal();
+    }
+
+    showToast('Uygunsuzluk reddedildi, tekrar açıldı.');
+
+    db.collection('nonconformities').doc(targetIdStr).update({
         status: 'open',
         closureComment: firebase.firestore.FieldValue.delete(),
         closurePhotoPaths: firebase.firestore.FieldValue.delete(),
         closedByName: firebase.firestore.FieldValue.delete(),
         closureDate: firebase.firestore.FieldValue.delete()
     }).then(() => {
-        showToast(`${id} reddedildi, tekrar açıldı.`);
-        const nc = appData.nonconformities.find(n => n.id === id);
-        logActivity('Uygunsuzluk Reddedildi', `${nc ? nc.line : ''} hattı, ${nc ? nc.station : ''} istasyonundaki uygunsuzluk çözümü web panelinden reddedildi. (ID: ${id})`);
-    }).catch(err => console.error('Reject Error:', err));
+        logActivity('Uygunsuzluk Reddedildi', `${matchedNC ? (matchedNC.line || '') : ''} hattı, ${matchedNC ? (matchedNC.station || '') : ''} istasyonundaki uygunsuzluk çözümü web panelinden reddedildi. (ID: ${targetIdStr})`);
+    }).catch(err => {
+        console.error('Reject Error:', err);
+        if (matchedNC && prevNCData) {
+            Object.assign(matchedNC, prevNCData);
+            invalidateDataCaches();
+            if (typeof renderNCs === 'function') renderNCs(ncCurrentFilter || 'Kontrol');
+        }
+        showToast('Uygunsuzluk reddedilirken bir hata oluştu: ' + (err.message || err));
+    });
 }
 
 function logActivity(action, details) {
@@ -6858,9 +7082,12 @@ function export5SAuditsToExcel() {
 
         // 1. Filter 5S audits and apply Line filter
         let filtered = allAudits.filter(audit => {
-            // Check if it is a 5S audit
+            const explicitTypeName = String(audit.auditType || audit.type || '').trim();
+            if (explicitTypeName && !explicitTypeName.toLocaleUpperCase('tr-TR').includes('5S') && (explicitTypeName.toLocaleUpperCase('tr-TR').includes('GÜVENLİK') || explicitTypeName.toLocaleUpperCase('tr-TR').includes('TEMİZLİK') || explicitTypeName.toLocaleUpperCase('tr-TR').includes('İSTASYON'))) {
+                return false;
+            }
             const type = (appData.auditTypes || []).find(t => String(t.id) === String(audit.auditTypeId));
-            const typeName = type ? (type.name || type.title || '') : (audit.auditType || audit.type || '');
+            const typeName = type ? (type.name || type.title || '') : explicitTypeName;
             const is5S = typeName.toUpperCase().includes('5S') || String(audit.auditTypeId || '').toLowerCase().includes('5s');
             if (!is5S) return false;
 
@@ -6896,9 +7123,9 @@ function export5SAuditsToExcel() {
             return;
         }
 
-        // 3. Group by Period + Week + Auditor + Line + Station
-        const groups = {};
-        filtered.forEach(audit => {
+        const pad = (num) => String(num).padStart(2, '0');
+
+        const reportRows = filtered.map(audit => {
             const d = new Date(audit.date);
             const rawAuditor = audit.auditorName || 'Bilinmeyen';
             const auditorName = getAuditorDisplayName(rawAuditor);
@@ -6906,100 +7133,177 @@ function export5SAuditsToExcel() {
             const title = userObj.title || userObj.jobTitle || 'Saha Denetçisi';
             const line = audit.line || 'Bilinmeyen';
             const station = audit.station || 'Bilinmeyen';
-            const weekNum = getISOWeekNumber(d);
-            const weekText = `${weekNum}. Hafta`;
+            const weekNum = !isNaN(d.getTime()) ? getISOWeekNumber(d) : '-';
+            const weekText = weekNum !== '-' ? `${weekNum}. Hafta` : '-';
 
-            const auditYear = d.getFullYear();
-            const monthVal = String(d.getMonth() + 1).padStart(2, '0');
-            const periodText = `${monthNames[monthVal]} ${auditYear}`;
-            const sortVal = auditYear * 100 + weekNum;
+            const auditYear = !isNaN(d.getTime()) ? d.getFullYear() : '';
+            const monthVal = !isNaN(d.getTime()) ? pad(d.getMonth() + 1) : '';
+            const periodText = (!isNaN(d.getTime()) && monthNames[monthVal]) ? `${monthNames[monthVal]} ${auditYear}` : '-';
+            const auditDateStr = !isNaN(d.getTime()) ? `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}` : '-';
 
-            // Group by Period, Week, Auditor, Line and Station
-            const groupKey = `${periodText} | ${weekText} | ${auditorName} | ${line} | ${station}`;
-
-            if (!groups[groupKey]) {
-                groups[groupKey] = {
-                    periodText,
-                    weekText,
-                    auditorName,
-                    title,
-                    line,
-                    station,
-                    sortVal,
-                    audits: []
-                };
+            // Saat
+            let timeStr = '-';
+            const sD = audit.startedAt ? new Date(audit.startedAt) : (!isNaN(d.getTime()) ? d : null);
+            const eD = audit.completedAt ? new Date(audit.completedAt) : null;
+            if (sD && !isNaN(sD.getTime())) {
+                const sTime = `${pad(sD.getHours())}:${pad(sD.getMinutes())}`;
+                if (eD && !isNaN(eD.getTime())) {
+                    const eTime = `${pad(eD.getHours())}:${pad(eD.getMinutes())}`;
+                    timeStr = (eTime !== sTime) ? `${sTime} - ${eTime}` : sTime;
+                } else {
+                    timeStr = sTime;
+                }
             }
-            groups[groupKey].audits.push(audit);
-        });
 
-        const reportRows = Object.values(groups).map(g => {
-            let totalOlumlu = 0;
-            let totalOlumsuz = 0;
-            let scoreSum = 0;
+            // Denetim Süresi
+            let durationMin = 0;
+            let durationStr = '-';
+            if (audit.startedAt && audit.completedAt) {
+                const startMs = new Date(audit.startedAt).getTime();
+                const endMs = new Date(audit.completedAt).getTime();
+                if (!isNaN(startMs) && !isNaN(endMs) && endMs >= startMs) {
+                    durationMin = Math.round((endMs - startMs) / 60000);
+                    if (durationMin >= 60) {
+                        const hrs = Math.floor(durationMin / 60);
+                        const mins = durationMin % 60;
+                        durationStr = mins > 0 ? `${hrs} sa ${mins} dk` : `${hrs} sa`;
+                    } else {
+                        durationStr = `${durationMin} dk`;
+                    }
+                }
+            } else if (audit.durationMinutes || audit.duration) {
+                const mins = Number(audit.durationMinutes || audit.duration);
+                if (!isNaN(mins) && mins > 0) {
+                    durationMin = Math.round(mins);
+                    durationStr = `${durationMin} dk`;
+                }
+            }
 
-            g.audits.forEach(audit => {
-                const metrics = buildAuditDetailMetrics(audit);
-                const answers = metrics.rows || [];
-                totalOlumlu += answers.filter(r => !r.isOutOfScope && !r.isNonconformity).length;
-                totalOlumsuz += answers.filter(r => !r.isOutOfScope && r.isNonconformity).length;
-                scoreSum += getAuditDisplayScore(audit);
-            });
+            // İstasyon No
+            let stationNo = '-';
+            const lineName = (audit.line || '').trim();
+            const stName = (audit.station || '').trim();
+            if (appData && appData.stationNumbers) {
+                if (appData.stationNumbers[lineName] && appData.stationNumbers[lineName][stName] !== undefined) {
+                    stationNo = appData.stationNumbers[lineName][stName];
+                } else {
+                    const shortLine = lineName.replace(/[^a-zA-Z0-9]/g, '');
+                    for (const l in appData.stationNumbers) {
+                        if (l.replace(/[^a-zA-Z0-9]/g, '') === shortLine && appData.stationNumbers[l][stName] !== undefined) {
+                            stationNo = appData.stationNumbers[l][stName];
+                            break;
+                        }
+                    }
+                }
+            }
+            if (stationNo === '-' && typeof DEFAULT_STATION_NUMBERS !== 'undefined') {
+                if (DEFAULT_STATION_NUMBERS[lineName] && DEFAULT_STATION_NUMBERS[lineName][stName] !== undefined) {
+                    stationNo = DEFAULT_STATION_NUMBERS[lineName][stName];
+                }
+            }
+            if (stationNo === '-' && (audit.stationNo || audit.stationNumber)) {
+                stationNo = audit.stationNo || audit.stationNumber;
+            }
 
-            const avgScore = scoreSum / g.audits.length;
+            // Metrikler
+            const metrics = buildAuditDetailMetrics(audit);
+            const answers = metrics.rows || [];
+            const totalOlumlu = answers.filter(r => !r.isOutOfScope && !r.isNonconformity).length;
+            const totalOlumsuz = answers.filter(r => !r.isOutOfScope && r.isNonconformity).length;
+            const scoreVal = Number(getAuditDisplayScore(audit).toFixed(1));
+
+            const sortTime = !isNaN(d.getTime()) ? d.getTime() : 0;
 
             return {
-                sortVal: g.sortVal,
-                auditorName: g.auditorName,
-                line: g.line,
-                station: g.station,
+                sortTime,
+                auditDateStr,
+                timeStr,
+                durationStr,
+                durationMin,
+                auditorName,
+                title,
+                periodText,
+                weekNum,
+                weekText,
+                line,
+                stationNo,
+                station,
+                totalOlumlu,
+                totalOlumsuz,
+                scoreVal,
                 data: [
-                    g.auditorName,
-                    g.title,
-                    g.periodText,
-                    g.weekText,
-                    g.line,
-                    g.station,
-                    g.audits.length,
+                    line,
+                    weekText,
+                    auditDateStr,
+                    timeStr,
+                    durationStr,
+                    stationNo,
+                    station,
+                    auditorName,
+                    title,
+                    1,
                     totalOlumlu,
                     totalOlumsuz,
-                    Number(avgScore.toFixed(1))
+                    scoreVal
                 ]
             };
         });
 
-        // Sort by Date (newest first), then Line, then Station
+        // Tarihe göre yeniden eskiye, ardından Hat ve İstasyon Numarasına göre sırala
         reportRows.sort((a, b) => {
-            if (b.sortVal !== a.sortVal) return b.sortVal - a.sortVal;
+            if (b.sortTime !== a.sortTime) return b.sortTime - a.sortTime;
             if (a.line !== b.line) return a.line.localeCompare(b.line, 'tr');
-            if (a.station !== b.station) return a.station.localeCompare(b.station, 'tr');
-            return a.auditorName.localeCompare(b.auditorName, 'tr');
+            if (!isNaN(a.stationNo) && !isNaN(b.stationNo) && a.stationNo !== b.stationNo) {
+                return Number(a.stationNo) - Number(b.stationNo);
+            }
+            return a.station.localeCompare(b.station, 'tr');
         });
 
-        // Build Excel worksheet array
+        // ==================== 1. SAYFA: HAM DENETİM LİSTESİ ====================
         const wsData = [
-            ["Personel Adı", "Ünvan", "Rapor Dönemi", "Yapılan Hafta", "Hat", "İstasyon", "Denetim Sayısı", "Olumlu Madde Adeti", "Olumsuz Madde Adeti", "Yüzde Puanı (%)"]
+            [
+                "HAT",
+                "Yapılan Hafta",
+                "Tarih",
+                "Saat",
+                "Denetim Süresi",
+                "İstasyon No",
+                "İstasyon",
+                "Personel Adı",
+                "Ünvan",
+                "Denetim Sayısı",
+                "Olumlu Madde Adeti",
+                "Olumsuz Madde Adeti",
+                "Yüzde Puanı (%)"
+            ]
         ];
 
         reportRows.forEach(r => wsData.push(r.data));
 
         const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        const wsRaw = XLSX.utils.aoa_to_sheet(wsData);
 
-        // Column widths
-        ws['!cols'] = [
-            { wch: 22 }, // Personel Adı
-            { wch: 20 }, // Ünvan
-            { wch: 18 }, // Rapor Dönemi
-            { wch: 15 }, // Yapılan Hafta
-            { wch: 10 }, // Hat
-            { wch: 20 }, // İstasyon
-            { wch: 16 }, // Denetim Sayısı
-            { wch: 18 }, // Olumlu Madde Adeti
-            { wch: 18 }, // Olumsuz Madde Adeti
-            { wch: 16 }  // Yüzde Puanı (%)
+        // Ham Liste Sütun Genişlikleri
+        wsRaw['!cols'] = [
+            { wch: 10 }, // A: HAT
+            { wch: 15 }, // B: Yapılan Hafta
+            { wch: 14 }, // C: Tarih
+            { wch: 16 }, // D: Saat
+            { wch: 16 }, // E: Denetim Süresi
+            { wch: 14 }, // F: İstasyon No
+            { wch: 22 }, // G: İstasyon
+            { wch: 22 }, // H: Personel Adı
+            { wch: 20 }, // I: Ünvan
+            { wch: 15 }, // J: Denetim Sayısı
+            { wch: 18 }, // K: Olumlu Madde Adeti
+            { wch: 18 }, // L: Olumsuz Madde Adeti
+            { wch: 16 }  // M: Yüzde Puanı (%)
         ];
 
-        // Styling definitions
+        // Otomatik filtre (Görseldeki gibi başlık satırına filtre okları)
+        wsRaw['!autofilter'] = { ref: `A1:M${wsData.length}` };
+
+        // Stil Tanımları
         const styleHeader = {
             fill: { fgColor: { rgb: "071A33" } },
             font: { bold: true, color: { rgb: "FFFFFF" }, sz: 10, name: "Segoe UI" },
@@ -7034,18 +7338,18 @@ function export5SAuditsToExcel() {
             }
         };
 
-        // Apply styles
-        for (let cellRef in ws) {
+        // Ham liste hücre stillerini uygula
+        for (let cellRef in wsRaw) {
             if (cellRef[0] === '!') continue;
             const col = cellRef.replace(/[0-9]/g, '');
             const rowIdx = parseInt(cellRef.replace(/[^0-9]/g, '')) - 1;
-            const cell = ws[cellRef];
+            const cell = wsRaw[cellRef];
             if (!cell) continue;
 
             if (rowIdx === 0) {
                 cell.s = styleHeader;
             } else {
-                if (col === 'A' || col === 'B' || col === 'F') {
+                if (col === 'G' || col === 'H' || col === 'I') {
                     cell.s = styleLeft;
                 } else {
                     cell.s = styleRegular;
@@ -7053,7 +7357,330 @@ function export5SAuditsToExcel() {
             }
         }
 
-        XLSX.utils.book_append_sheet(wb, ws, "5S Denetim Raporu");
+        // ==================== 2. SAYFA: YÖNETİCİ ÖZETİ & PİVOT ANALİZLER ====================
+        const makeMiniBar = (score) => {
+            const s = Math.max(0, Math.min(100, Number(score) || 0));
+            const filled = Math.round(s / 10);
+            return '█'.repeat(filled) + '░'.repeat(10 - filled) + `  %${s.toFixed(1)}`;
+        };
+
+        // 1. Genel KPI Metrikleri
+        const totalAudits = reportRows.length;
+        const avgGeneralScore = totalAudits > 0 ? Number((reportRows.reduce((acc, r) => acc + r.scoreVal, 0) / totalAudits).toFixed(1)) : 0;
+        const totalGeneralOlumlu = reportRows.reduce((acc, r) => acc + r.totalOlumlu, 0);
+        const totalGeneralOlumsuz = reportRows.reduce((acc, r) => acc + r.totalOlumsuz, 0);
+        const uniqueLines = new Set(reportRows.map(r => r.line)).size;
+        const uniqueStations = new Set(reportRows.map(r => `${r.line}|${r.station}`)).size;
+        const uniqueAuditors = new Set(reportRows.map(r => r.auditorName)).size;
+
+        // 2. Pivot 1: Hat Bazında Performans
+        const lineMap = {};
+        reportRows.forEach(r => {
+            if (!lineMap[r.line]) {
+                lineMap[r.line] = { line: r.line, count: 0, sumScore: 0, olumlu: 0, olumsuz: 0 };
+            }
+            lineMap[r.line].count++;
+            lineMap[r.line].sumScore += r.scoreVal;
+            lineMap[r.line].olumlu += r.totalOlumlu;
+            lineMap[r.line].olumsuz += r.totalOlumsuz;
+        });
+        const lineRows = Object.values(lineMap).map(l => {
+            const avgScore = Number((l.sumScore / l.count).toFixed(1));
+            return {
+                line: l.line,
+                count: l.count,
+                avgScore,
+                bar: makeMiniBar(avgScore),
+                olumlu: l.olumlu,
+                olumsuz: l.olumsuz
+            };
+        }).sort((a, b) => b.count - a.count || b.avgScore - a.avgScore);
+
+        // 3. Pivot 2: Haftalık İlerleme ve Trend
+        const weekMap = {};
+        reportRows.forEach(r => {
+            const key = r.weekText !== '-' ? r.weekText : (r.periodText !== '-' ? r.periodText : 'Diğer');
+            if (!weekMap[key]) {
+                weekMap[key] = { name: key, count: 0, sumScore: 0, olumlu: 0, olumsuz: 0, minTime: r.sortTime };
+            }
+            weekMap[key].count++;
+            weekMap[key].sumScore += r.scoreVal;
+            weekMap[key].olumlu += r.totalOlumlu;
+            weekMap[key].olumsuz += r.totalOlumsuz;
+            if (r.sortTime && r.sortTime < weekMap[key].minTime) weekMap[key].minTime = r.sortTime;
+        });
+        const weekRows = Object.values(weekMap).map(w => {
+            const avgScore = Number((w.sumScore / w.count).toFixed(1));
+            return {
+                name: w.name,
+                count: w.count,
+                avgScore,
+                bar: makeMiniBar(avgScore),
+                olumlu: w.olumlu,
+                olumsuz: w.olumsuz,
+                minTime: w.minTime
+            };
+        }).sort((a, b) => a.minTime - b.minTime);
+
+        // 4. Pivot 3: Denetçi / Personel Performansı
+        const auditorMap = {};
+        reportRows.forEach(r => {
+            if (!auditorMap[r.auditorName]) {
+                auditorMap[r.auditorName] = { name: r.auditorName, title: r.title, count: 0, sumScore: 0, totalDuration: 0, olumsuz: 0 };
+            }
+            auditorMap[r.auditorName].count++;
+            auditorMap[r.auditorName].sumScore += r.scoreVal;
+            auditorMap[r.auditorName].totalDuration += r.durationMin;
+            auditorMap[r.auditorName].olumsuz += r.totalOlumsuz;
+        });
+        const auditorRows = Object.values(auditorMap).map(a => {
+            const avgScore = Number((a.sumScore / a.count).toFixed(1));
+            const avgDur = a.count > 0 && a.totalDuration > 0 ? `${Math.round(a.totalDuration / a.count)} dk` : '-';
+            return {
+                name: a.name,
+                title: a.title,
+                count: a.count,
+                avgDur,
+                avgScore,
+                olumsuz: a.olumsuz
+            };
+        }).sort((a, b) => b.count - a.count);
+
+        // 5. Pivot 4: En Çok Uygunsuzluk Görülen İstasyonlar (Kritik İstasyonlar - Top 15)
+        const stationMap = {};
+        reportRows.forEach(r => {
+            const stKey = `${r.line} | ${r.station}`;
+            if (!stationMap[stKey]) {
+                stationMap[stKey] = { line: r.line, stationNo: r.stationNo, station: r.station, count: 0, sumScore: 0, olumsuz: 0 };
+            }
+            stationMap[stKey].count++;
+            stationMap[stKey].sumScore += r.scoreVal;
+            stationMap[stKey].olumsuz += r.totalOlumsuz;
+        });
+        const stationRows = Object.values(stationMap).map(s => {
+            const avgScore = Number((s.sumScore / s.count).toFixed(1));
+            return {
+                line: s.line,
+                stationNo: s.stationNo,
+                station: s.station,
+                count: s.count,
+                avgScore,
+                bar: makeMiniBar(avgScore),
+                olumsuz: s.olumsuz
+            };
+        }).sort((a, b) => b.olumsuz - a.olumsuz || a.avgScore - b.avgScore).slice(0, 15);
+
+        // Sayfa 2 Satır Dizisi, Satır Tipi ve Hücre Birleştirme Haritası
+        const pivotData = [];
+        const rowTypes = {}; // 'title', 'section', 'header', 'total', 'kpi', 'data', 'empty'
+        const merges = [];
+
+        const addRow = (row, type) => {
+            const idx = pivotData.length;
+            pivotData.push(row);
+            rowTypes[idx] = type;
+            if (type === 'title' || type === 'section') {
+                merges.push({ s: { r: idx, c: 0 }, e: { r: idx, c: 5 } });
+            }
+            return idx;
+        };
+
+        // Başlık
+        addRow(["METRO İSTANBUL - 5S DENETİMİ YÖNETİCİ ÖZETİ VE PİVOT ANALİZLERİ", "", "", "", "", ""], 'title');
+        addRow(["", "", "", "", "", ""], 'empty');
+
+        // KPI Bloğu
+        addRow(["GENEL PERFORMANS GÖSTERGELERİ (KPI)", "", "", "", "", ""], 'section');
+        addRow(["Metrik", "Değer", "Performans Göstergesi / Açıklama", "", "", ""], 'header');
+        addRow(["Toplam 5S Denetim Sayısı", totalAudits, "Tamamlanan saha denetimleri", "", "", ""], 'kpi');
+        addRow(["Genel 5S Başarı Puanı Ortalaması", `%${avgGeneralScore.toFixed(1)}`, makeMiniBar(avgGeneralScore), "", "", ""], 'kpi');
+        addRow(["Toplam Olumlu Madde Adeti", totalGeneralOlumlu, "Standartlara uygun kontroller", "", "", ""], 'kpi');
+        addRow(["Toplam Tespit Edilen Uygunsuzluk", totalGeneralOlumsuz, "Aksiyon/Düzeltme bekleyen maddeler", "", "", ""], 'kpi');
+        addRow(["Denetlenen Hat Sayısı", uniqueLines, "Kapsamdaki aktif metro/tramvay hatları", "", "", ""], 'kpi');
+        addRow(["Denetlenen İstasyon Sayısı", uniqueStations, "Ziyaret edilen farklı istasyon adedi", "", "", ""], 'kpi');
+        addRow(["Aktif Saha Denetçisi Sayısı", uniqueAuditors, "Denetim gerçekleştiren personel adedi", "", "", ""], 'kpi');
+        addRow(["", "", "", "", "", ""], 'empty');
+
+        // Pivot 1: Hat Dağılımı
+        addRow(["1. HAT BAZINDA 5S PERFORMANS DAĞILIMI (PİVOT)", "", "", "", "", ""], 'section');
+        addRow(["Hat", "Denetim Sayısı", "Ort. Skor (%)", "Performans Grafiği", "Toplam Olumlu", "Toplam Uygunsuzluk"], 'header');
+        lineRows.forEach(l => {
+            addRow([l.line, l.count, `%${l.avgScore.toFixed(1)}`, l.bar, l.olumlu, l.olumsuz], 'data');
+        });
+        addRow(["GENEL TOPLAM / ORTALAMA", totalAudits, `%${avgGeneralScore.toFixed(1)}`, makeMiniBar(avgGeneralScore), totalGeneralOlumlu, totalGeneralOlumsuz], 'total');
+        addRow(["", "", "", "", "", ""], 'empty');
+
+        // Pivot 2: Haftalık Trend
+        addRow(["2. HAFTALIK İLERLEME VE TREND ANALİZİ (PİVOT)", "", "", "", "", ""], 'section');
+        addRow(["Dönem / Hafta", "Denetim Sayısı", "Ort. Skor (%)", "Performans Grafiği", "Olumlu Madde", "Uygunsuzluk"], 'header');
+        weekRows.forEach(w => {
+            addRow([w.name, w.count, `%${w.avgScore.toFixed(1)}`, w.bar, w.olumlu, w.olumsuz], 'data');
+        });
+        addRow(["GENEL TOPLAM / ORTALAMA", totalAudits, `%${avgGeneralScore.toFixed(1)}`, makeMiniBar(avgGeneralScore), totalGeneralOlumlu, totalGeneralOlumsuz], 'total');
+        addRow(["", "", "", "", "", ""], 'empty');
+
+        // Pivot 3: Denetçi Performansı
+        addRow(["3. DENETÇİ / PERSONEL PERFORMANS ANALİZİ (PİVOT)", "", "", "", "", ""], 'section');
+        addRow(["Personel Adı", "Ünvan", "Denetim Sayısı", "Ort. Süre", "Ort. Skor (%)", "Tespit Edilen Uygunsuzluk"], 'header');
+        auditorRows.forEach(a => {
+            addRow([a.name, a.title, a.count, a.avgDur, `%${a.avgScore.toFixed(1)}`, a.olumsuz], 'data');
+        });
+        addRow(["GENEL TOPLAM / ORTALAMA", "-", totalAudits, "-", `%${avgGeneralScore.toFixed(1)}`, totalGeneralOlumsuz], 'total');
+        addRow(["", "", "", "", "", ""], 'empty');
+
+        // Pivot 4: Kritik İstasyonlar
+        addRow(["4. EN ÇOK UYGUNSUZLUK GÖRÜLEN İSTASYONLAR (ÖNCELİKLİ İSTASYONLAR - TOP 15)", "", "", "", "", ""], 'section');
+        addRow(["İstasyon", "Hat", "İstasyon No", "Denetim Sayısı", "Ort. Skor (%)", "Toplam Uygunsuzluk"], 'header');
+        stationRows.forEach(s => {
+            addRow([s.station, s.line, s.stationNo, s.count, `%${s.avgScore.toFixed(1)}`, s.olumsuz], 'data');
+        });
+
+        const wsPivot = XLSX.utils.aoa_to_sheet(pivotData);
+
+        // Birleştirilmiş hücreleri tanımla (A-F arası)
+        wsPivot['!merges'] = merges;
+
+        // Satır Yükseklikleri (Point cinsinden ferah görünüm)
+        wsPivot['!rows'] = pivotData.map((_, idx) => {
+            const type = rowTypes[idx];
+            if (type === 'title') return { hpt: 34 };
+            if (type === 'section') return { hpt: 26 };
+            if (type === 'header') return { hpt: 24 };
+            if (type === 'empty') return { hpt: 12 };
+            return { hpt: 20 };
+        });
+
+        // Sayfa 2 Sütun Genişlikleri (6 Sütun)
+        wsPivot['!cols'] = [
+            { wch: 34 }, // Col A: Metrik / Hat / Hafta / Personel / İstasyon
+            { wch: 20 }, // Col B: Değer / Denetim Sayısı / Ünvan / Hat
+            { wch: 22 }, // Col C: Açıklama / Ort. Skor / İstasyon No
+            { wch: 26 }, // Col D: Grafik / Ort. Süre / Denetim Sayısı
+            { wch: 18 }, // Col E: Toplam Olumlu / Ort. Skor
+            { wch: 24 }  // Col F: Toplam Uygunsuzluk / Tespit Edilen Uygunsuzluk
+        ];
+
+        // Sayfa 2 Stilleri
+        const styleMainTitle = {
+            fill: { fgColor: { rgb: "071A33" } },
+            font: { bold: true, color: { rgb: "FFFFFF" }, sz: 13, name: "Segoe UI" },
+            alignment: { horizontal: "center", vertical: "center" },
+            border: {
+                top: { style: "thin", color: { rgb: "CBD5E1" } },
+                bottom: { style: "thin", color: { rgb: "CBD5E1" } },
+                left: { style: "thin", color: { rgb: "CBD5E1" } },
+                right: { style: "thin", color: { rgb: "CBD5E1" } }
+            }
+        };
+
+        const styleSectionBanner = {
+            fill: { fgColor: { rgb: "0F2942" } },
+            font: { bold: true, color: { rgb: "FFFFFF" }, sz: 11, name: "Segoe UI" },
+            alignment: { horizontal: "left", vertical: "center" },
+            border: {
+                top: { style: "thin", color: { rgb: "CBD5E1" } },
+                bottom: { style: "thin", color: { rgb: "CBD5E1" } },
+                left: { style: "thin", color: { rgb: "CBD5E1" } },
+                right: { style: "thin", color: { rgb: "CBD5E1" } }
+            }
+        };
+
+        const styleTableHeader = {
+            fill: { fgColor: { rgb: "1E293B" } },
+            font: { bold: true, color: { rgb: "FFFFFF" }, sz: 10, name: "Segoe UI" },
+            alignment: { horizontal: "center", vertical: "center", wrapText: true },
+            border: {
+                top: { style: "thin", color: { rgb: "CBD5E1" } },
+                bottom: { style: "thin", color: { rgb: "CBD5E1" } },
+                left: { style: "thin", color: { rgb: "CBD5E1" } },
+                right: { style: "thin", color: { rgb: "CBD5E1" } }
+            }
+        };
+
+        const styleTotalRow = {
+            fill: { fgColor: { rgb: "E2E8F0" } },
+            font: { bold: true, color: { rgb: "0F172A" }, sz: 10, name: "Segoe UI" },
+            alignment: { horizontal: "center", vertical: "center" },
+            border: {
+                top: { style: "medium", color: { rgb: "94A3B8" } },
+                bottom: { style: "medium", color: { rgb: "94A3B8" } },
+                left: { style: "thin", color: { rgb: "CBD5E1" } },
+                right: { style: "thin", color: { rgb: "CBD5E1" } }
+            }
+        };
+
+        const styleKPILabel = {
+            fill: { fgColor: { rgb: "F8FAFC" } },
+            font: { bold: true, color: { rgb: "334155" }, sz: 10, name: "Segoe UI" },
+            alignment: { horizontal: "left", vertical: "center" },
+            border: {
+                top: { style: "thin", color: { rgb: "E2E8F0" } },
+                bottom: { style: "thin", color: { rgb: "E2E8F0" } },
+                left: { style: "thin", color: { rgb: "E2E8F0" } },
+                right: { style: "thin", color: { rgb: "E2E8F0" } }
+            }
+        };
+
+        const styleKPIVal = {
+            fill: { fgColor: { rgb: "F1F5F9" } },
+            font: { bold: true, color: { rgb: "0284C7" }, sz: 11, name: "Segoe UI" },
+            alignment: { horizontal: "center", vertical: "center" },
+            border: {
+                top: { style: "thin", color: { rgb: "E2E8F0" } },
+                bottom: { style: "thin", color: { rgb: "E2E8F0" } },
+                left: { style: "thin", color: { rgb: "E2E8F0" } },
+                right: { style: "thin", color: { rgb: "E2E8F0" } }
+            }
+        };
+
+        const styleBarCell = {
+            font: { sz: 9, name: "Consolas", color: { rgb: "0284C7" }, bold: true },
+            alignment: { horizontal: "left", vertical: "center" },
+            border: {
+                top: { style: "thin", color: { rgb: "CBD5E1" } },
+                bottom: { style: "thin", color: { rgb: "CBD5E1" } },
+                left: { style: "thin", color: { rgb: "CBD5E1" } },
+                right: { style: "thin", color: { rgb: "CBD5E1" } }
+            }
+        };
+
+        // Sayfa 2 hücre stillerini uygula
+        for (let cellRef in wsPivot) {
+            if (cellRef[0] === '!') continue;
+            const col = cellRef.replace(/[0-9]/g, '');
+            const rowIdx = parseInt(cellRef.replace(/[^0-9]/g, '')) - 1;
+            const cell = wsPivot[cellRef];
+            if (!cell) continue;
+
+            const type = rowTypes[rowIdx] || 'data';
+            if (type === 'title') {
+                cell.s = styleMainTitle;
+            } else if (type === 'section') {
+                cell.s = styleSectionBanner;
+            } else if (type === 'header') {
+                cell.s = styleTableHeader;
+            } else if (type === 'total') {
+                cell.s = styleTotalRow;
+            } else if (type === 'kpi') {
+                if (col === 'A') cell.s = styleKPILabel;
+                else if (col === 'B') cell.s = styleKPIVal;
+                else if (col === 'C' && cell.v && String(cell.v).includes('█')) cell.s = styleBarCell;
+                else cell.s = styleLeft;
+            } else if (type === 'data') {
+                if (col === 'D' && cell.v && String(cell.v).includes('█')) {
+                    cell.s = styleBarCell;
+                } else if (col === 'A' || (col === 'B' && isNaN(cell.v) && String(cell.v).length > 4)) {
+                    cell.s = styleLeft;
+                } else {
+                    cell.s = styleRegular;
+                }
+            }
+        }
+
+        // 1. Sayfa: Ham Denetim Listesi, 2. Sayfa: Yönetici Özeti ve Pivotlar
+        XLSX.utils.book_append_sheet(wb, wsRaw, "5S Denetim Listesi");
+        XLSX.utils.book_append_sheet(wb, wsPivot, "5S Özet & Pivot Analiz");
+
         XLSX.writeFile(wb, `Metro_Istanbul_5S_Denetim_Raporu.xlsx`);
         showToast('5S raporu başarıyla indirildi!');
     } catch (err) {
@@ -7715,6 +8342,7 @@ function statsCreateChart(id, config) {
 }
 
 function statsBaseOptions({ indexAxis, stacked = false, percentage = false } = {}) {
+    const isLightMode = document.body.classList.contains('light-mode');
     const theme = statsChartTheme();
     return {
         responsive: true,
@@ -7727,7 +8355,7 @@ function statsBaseOptions({ indexAxis, stacked = false, percentage = false } = {
                 position: 'bottom',
                 align: 'center',
                 labels: {
-                    color: theme.text,
+                    color: isLightMode ? '#0f172a' : theme.text,
                     usePointStyle: true,
                     boxWidth: 9,
                     padding: 16,
@@ -7759,12 +8387,12 @@ function statsBaseOptions({ indexAxis, stacked = false, percentage = false } = {
                     return context.dataIndex % every === 0 || context.dataIndex === context.dataset.data.length - 1;
                 },
                 formatter: (value, context) => `${statsFormatChartValue(value, context.dataset.statsValueType)}${context.dataset.statsLabelSuffix || ''}`,
-                color: context => context.dataset.statsLabelColor || '#ffffff',
-                backgroundColor: context => context.dataset.statsLabelBackground || theme.labelBg,
-                borderColor: context => context.dataset.statsLabelBorder || theme.labelBorder,
+                color: context => context.dataset.statsLabelColor || (isLightMode ? '#0f172a' : '#ffffff'),
+                backgroundColor: context => context.dataset.statsLabelBackground || (isLightMode ? '#ffffff' : theme.labelBg),
+                borderColor: context => context.dataset.statsLabelBorder || (isLightMode ? '#94a3b8' : theme.labelBorder),
                 borderWidth: 1,
                 borderRadius: 6,
-                padding: { top: 4, right: 6, bottom: 4, left: 6 },
+                padding: { top: 3, right: 6, bottom: 3, left: 6 },
                 font: { size: 10, weight: '900' },
                 anchor: context => context.dataset.statsLabelAnchor || (context.dataset.statsLabelInside ? 'center' : 'end'),
                 align: context => {
@@ -7783,10 +8411,10 @@ function statsBaseOptions({ indexAxis, stacked = false, percentage = false } = {
                 beginAtZero: indexAxis === 'y',
                 suggestedMax: percentage && indexAxis === 'y' ? 100 : undefined,
                 max: percentage && indexAxis === 'y' ? 100 : undefined,
-                grid: { display: indexAxis === 'y', color: theme.grid },
+                grid: { display: indexAxis === 'y', color: isLightMode ? 'rgba(15, 23, 42, 0.08)' : theme.grid },
                 ticks: {
-                    color: theme.dim,
-                    font: { size: 10, weight: '750' },
+                    color: isLightMode ? '#0f172a' : theme.dim,
+                    font: { size: 10, weight: isLightMode ? '800' : '750' },
                     callback: percentage && indexAxis === 'y' ? value => statsFormatChartValue(value, 'percentage') : undefined
                 }
             },
@@ -7795,10 +8423,10 @@ function statsBaseOptions({ indexAxis, stacked = false, percentage = false } = {
                 beginAtZero: true,
                 suggestedMax: percentage && indexAxis !== 'y' ? 100 : undefined,
                 max: percentage && indexAxis !== 'y' ? 100 : undefined,
-                grid: { display: indexAxis !== 'y', color: theme.grid },
+                grid: { display: indexAxis !== 'y', color: isLightMode ? 'rgba(15, 23, 42, 0.08)' : theme.grid },
                 ticks: {
-                    color: theme.dim,
-                    font: { size: 10, weight: '750' },
+                    color: isLightMode ? '#334155' : theme.dim,
+                    font: { size: 10, weight: isLightMode ? '800' : '750' },
                     callback: percentage && indexAxis !== 'y' ? value => statsFormatChartValue(value, 'percentage') : undefined
                 }
             }
@@ -7905,9 +8533,13 @@ function renderProfessionalTrendChart(audits) {
     const averages = keys.map(key => statsMean(grouped.get(key)));
     const moving = averages.map((_, index) => statsMean(averages.slice(Math.max(0, index - 2), index + 1)));
     const counts = keys.map(key => grouped.get(key).length);
+    const monthNames = [
+        'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+        'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+    ];
     const labels = keys.map(key => {
-        const [year, month] = key.split('-');
-        return new Date(Number(year), Number(month) - 1, 1).toLocaleDateString('tr-TR', { month: 'short', year: '2-digit' });
+        const [, month] = key.split('-');
+        return monthNames[Number(month) - 1] || month;
     });
     const scrollContainer = document.getElementById('stats-trend-scroll');
     const canvasWrap = document.getElementById('stats-trend-canvas-wrap');
@@ -7918,32 +8550,148 @@ function renderProfessionalTrendChart(audits) {
         canvasWrap.style.width = `${chartWidth}px`;
     }
 
+    const isLightMode = document.body.classList.contains('light-mode');
     const options = statsBaseOptions();
-    options.layout.padding = { top: 26, right: 12, bottom: 0, left: 2 };
+    options.layout.padding = { top: 32, right: 28, bottom: 12, left: 24 };
     options.plugins.legend.position = 'top';
     options.plugins.legend.align = 'center';
-    options.scales.x.grid.display = false;
-    options.scales.x.ticks.autoSkip = false;
-    options.scales.x.ticks.maxRotation = 0;
-    options.scales.y.max = 100;
-    options.scales.y.title = { display: true, text: 'Performans (%)', color: statsChartTheme().dim, font: { size: 10, weight: '800' } };
-    options.scales.y.ticks.callback = value => statsFormatChartValue(value, 'percentage');
+    options.plugins.legend.labels = {
+        color: isLightMode ? '#0f172a' : '#ffffff',
+        usePointStyle: true,
+        boxWidth: 10,
+        padding: 18,
+        font: { size: 11.5, weight: '900', family: "'Inter', sans-serif" }
+    };
+    options.plugins.tooltip.callbacks = {
+        ...(options.plugins.tooltip.callbacks || {}),
+        title: items => {
+            const index = items[0]?.dataIndex;
+            const key = keys[index];
+            if (key) {
+                const [year, month] = key.split('-');
+                return `${monthNames[Number(month) - 1] || month} ${year}`;
+            }
+            return labels[index] || '';
+        }
+    };
+    options.scales.x = {
+        type: 'category',
+        labels: labels,
+        grid: { display: false },
+        ticks: {
+            autoSkip: false,
+            maxRotation: 0,
+            minRotation: 0,
+            color: isLightMode ? '#0f172a' : '#ffffff',
+            font: { size: 12, weight: '900', family: "'Inter', sans-serif" },
+            callback: function(val, index) {
+                return labels[index] !== undefined ? labels[index] : (labels[val] !== undefined ? labels[val] : (this.getLabelForValue ? this.getLabelForValue(val) : val));
+            }
+        }
+    };
+    options.scales.y.beginAtZero = true;
+    options.scales.y.max = 110;
+    options.scales.y.suggestedMax = 110;
+    options.scales.y.grid = {
+        color: isLightMode ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.12)',
+        drawBorder: false
+    };
+    options.scales.y.title = {
+        display: true,
+        text: 'Performans (%)',
+        color: isLightMode ? '#0f172a' : '#ffffff',
+        font: { size: 11.5, weight: '900', family: "'Inter', sans-serif" }
+    };
+    options.scales.y.ticks.color = isLightMode ? '#0f172a' : '#ffffff';
+    options.scales.y.ticks.font = { size: 11, weight: '900', family: "'Inter', sans-serif" };
+    options.scales.y.ticks.callback = value => value <= 100 ? statsFormatChartValue(value, 'percentage') : '';
     options.scales.y1 = {
         position: 'right',
         beginAtZero: true,
-        max: Math.max(1, ...counts) * 1.2,
+        max: Math.max(1, ...counts) * 2.8,
         grid: { display: false },
-        title: { display: true, text: 'Denetim Hacmi (adet)', color: statsChartTheme().blue, font: { size: 10, weight: '800' } },
-        ticks: { color: statsChartTheme().blue, precision: 0, stepSize: 1, font: { size: 10, weight: '800' } }
+        title: {
+            display: true,
+            text: 'Denetim Hacmi (adet)',
+            color: isLightMode ? '#1e40af' : '#60a5fa',
+            font: { size: 11.5, weight: '900', family: "'Inter', sans-serif" }
+        },
+        ticks: {
+            color: isLightMode ? '#1e40af' : '#60a5fa',
+            precision: 0,
+            stepSize: 1,
+            font: { size: 11, weight: '900', family: "'Inter', sans-serif" },
+            callback: value => value <= Math.max(...counts, 1) ? value : ''
+        }
     };
     statsCreateChart('stats-trend-chart', {
         type: 'bar',
         data: {
             labels,
             datasets: [
-                { type: 'bar', label: 'Denetim Hacmi (adet)', data: counts, yAxisID: 'y1', statsValueType: 'count', statsLabelInside: true, statsLabelAnchor: 'center', statsLabelAlign: 'center', statsLabelOffset: 0, order: 3, backgroundColor: 'rgba(37,99,235,0.68)', borderColor: '#60a5fa', borderWidth: 1.5, borderRadius: 7, barPercentage: 0.72, categoryPercentage: 0.82 },
-                { type: 'line', label: 'Aylık Ortalama', data: averages, yAxisID: 'y', statsValueType: 'percentage', order: 1, borderColor: '#8b5cf6', backgroundColor: 'rgba(139,92,246,0.08)', pointBackgroundColor: '#8b5cf6', pointBorderColor: '#ffffff', pointBorderWidth: 1.5, pointRadius: 3.5, pointHoverRadius: 5, borderWidth: 2.5, tension: 0.34, fill: false },
-                { type: 'line', label: 'Son 3 Ayın Ortalaması', data: moving, yAxisID: 'y', statsValueType: 'percentage', statsLabelLastOnly: true, statsLabelAlign: 'bottom', statsLabelOffset: 5, order: 0, borderColor: statsChartTheme().cyan, backgroundColor: statsChartTheme().cyan, borderDash: [6, 5], pointRadius: 0, pointHoverRadius: 4, borderWidth: 2, tension: 0.3 }
+                {
+                    type: 'bar',
+                    label: 'Denetim Hacmi (adet)',
+                    data: counts,
+                    yAxisID: 'y1',
+                    statsValueType: 'count',
+                    statsLabelInside: false,
+                    statsLabelAnchor: 'end',
+                    statsLabelAlign: 'top',
+                    statsLabelOffset: 4,
+                    statsLabelColor: '#ffffff',
+                    statsLabelBackground: isLightMode ? '#1d4ed8' : '#2563eb',
+                    statsLabelBorder: isLightMode ? '#1e40af' : '#60a5fa',
+                    order: 3,
+                    backgroundColor: isLightMode ? '#2563eb' : '#3b82f6',
+                    borderColor: isLightMode ? '#1d4ed8' : '#93c5fd',
+                    borderWidth: 2,
+                    borderRadius: 6,
+                    barPercentage: 0.65,
+                    categoryPercentage: 0.8
+                },
+                {
+                    type: 'line',
+                    label: 'Aylık Ortalama',
+                    data: averages,
+                    yAxisID: 'y',
+                    statsValueType: 'percentage',
+                    statsLabelColor: '#ffffff',
+                    statsLabelBackground: isLightMode ? '#7c3aed' : '#6d28d9',
+                    statsLabelBorder: isLightMode ? '#5b21b6' : '#a78bfa',
+                    order: 1,
+                    borderColor: isLightMode ? '#7c3aed' : '#c084fc',
+                    backgroundColor: isLightMode ? 'rgba(124, 58, 237, 0.12)' : 'rgba(124, 58, 237, 0.22)',
+                    pointBackgroundColor: isLightMode ? '#7c3aed' : '#a855f7',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2.5,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    borderWidth: 3.5,
+                    tension: 0.3,
+                    fill: false
+                },
+                {
+                    type: 'line',
+                    label: 'Son 3 Ayın Ortalaması',
+                    data: moving,
+                    yAxisID: 'y',
+                    statsValueType: 'percentage',
+                    statsLabelLastOnly: true,
+                    statsLabelAlign: 'bottom',
+                    statsLabelOffset: 6,
+                    statsLabelColor: '#ffffff',
+                    statsLabelBackground: isLightMode ? '#0284c7' : '#0369a1',
+                    statsLabelBorder: isLightMode ? '#0369a1' : '#38bdf8',
+                    order: 0,
+                    borderColor: isLightMode ? '#0284c7' : '#38bdf8',
+                    backgroundColor: isLightMode ? '#0284c7' : '#38bdf8',
+                    borderDash: [6, 4],
+                    pointRadius: 4.5,
+                    pointHoverRadius: 6.5,
+                    borderWidth: 3,
+                    tension: 0.3
+                }
             ]
         },
         options
@@ -8027,9 +8775,12 @@ function statsLineLogoPlugin(id, rows, metaFormatter) {
             const chartArea = chart.chartArea;
             if (!yScale || !chartArea || !rows.length) return;
 
+            const isLightMode = document.body.classList.contains('light-mode');
             const theme = statsChartTheme();
             const ctx = chart.ctx;
-            const logoX = Math.max(18, chartArea.left - 76);
+            const logoX = Math.max(20, Math.round(chartArea.left - 105));
+            const textX = logoX + 22;
+            const textMaxWidth = Math.max(40, chartArea.left - textX - 10);
             ctx.save();
 
             rows.forEach((row, index) => {
@@ -8039,25 +8790,25 @@ function statsLineLogoPlugin(id, rows, metaFormatter) {
                 if (!Number.isFinite(y)) return;
 
                 ctx.beginPath();
-                ctx.arc(logoX, y, 14, 0, Math.PI * 2);
+                ctx.arc(logoX, y, 13, 0, Math.PI * 2);
                 ctx.fillStyle = color;
                 ctx.fill();
                 ctx.lineWidth = 2;
-                ctx.strokeStyle = document.body.classList.contains('light-mode') ? '#ffffff' : '#cbd5e1';
+                ctx.strokeStyle = isLightMode ? '#ffffff' : '#cbd5e1';
                 ctx.stroke();
 
                 ctx.fillStyle = statsContrastTextColor(color);
                 ctx.font = `900 ${lineName.length > 3 ? 8 : 10}px Inter`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText(lineName, logoX, y + 0.5, 24);
+                ctx.fillText(lineName, logoX, y + 0.5, 22);
 
                 const meta = typeof metaFormatter === 'function' ? metaFormatter(row) : '';
                 if (meta) {
-                    ctx.fillStyle = theme.text;
-                    ctx.font = '800 10px Inter';
+                    ctx.fillStyle = isLightMode ? '#0f172a' : theme.text;
+                    ctx.font = '800 10.5px Inter';
                     ctx.textAlign = 'left';
-                    ctx.fillText(meta, logoX + 22, y, 58);
+                    ctx.fillText(meta, textX, y, textMaxWidth);
                 }
             });
 
@@ -8067,6 +8818,7 @@ function statsLineLogoPlugin(id, rows, metaFormatter) {
 }
 
 function renderProfessionalLinePerformance(audits, ncs, auditLookup) {
+    const isLightMode = document.body.classList.contains('light-mode');
     const groups = new Map();
     audits.forEach(audit => {
         const line = audit.line || 'Diğer';
@@ -8088,30 +8840,81 @@ function renderProfessionalLinePerformance(audits, ncs, auditLookup) {
     })).sort((a, b) => b.count - a.count).slice(0, 12);
     statsSetScrollableChartHeight('stats-line-performance-scroll', 'stats-line-performance-canvas-wrap', rows.length, 48);
     const options = statsBaseOptions({ indexAxis: 'y', percentage: true });
-    options.scales.x.max = 100;
-    options.scales.x.ticks.callback = value => statsFormatChartValue(value, 'percentage');
-    options.scales.x.title = { display: true, text: 'Ortalama Puan (%)', color: statsChartTheme().dim, font: { size: 10, weight: '800' } };
+    options.scales.x.max = 118;
+    options.scales.x.ticks.callback = value => value <= 100 ? statsFormatChartValue(value, 'percentage') : '';
+    options.scales.x.title = { display: true, text: 'Ortalama Puan (%)', color: isLightMode ? '#0f172a' : statsChartTheme().dim, font: { size: 10, weight: '800' } };
     options.scales.x1 = {
         position: 'top',
         beginAtZero: true,
+        suggestedMax: Math.max(1, ...rows.map(row => row.density)) * 2.5,
         grid: { display: false },
         title: { display: true, text: 'Uygunsuzluk / Denetim', color: statsChartTheme().red, font: { size: 10, weight: '800' } },
         ticks: { color: statsChartTheme().red, font: { size: 10, weight: '800' } }
     };
     options.scales.y.grid.display = false;
     options.scales.y.ticks = { display: false };
-    options.scales.y.afterFit = scale => { scale.width = 112; };
-    options.layout.padding = { top: 10, right: 48, bottom: 0, left: 0 };
+    options.scales.y.afterFit = scale => { scale.width = 142; };
+    options.layout.padding = { top: 28, right: 65, bottom: 4, left: 0 };
     options.plugins.legend.align = 'center';
     options.plugins.tooltip.callbacks.title = items => rows[items[0]?.dataIndex]?.line || '';
+
+    // Non-overlapping dedicated datalabels
+    options.plugins.datalabels = {
+        display: context => {
+            const val = context.dataset.data?.[context.dataIndex];
+            return val !== undefined && val !== null;
+        },
+        formatter: (value, context) => {
+            if (context.datasetIndex === 0) {
+                return `%${Math.round(value * 10) / 10}`;
+            }
+            return Number(value).toFixed(2);
+        },
+        color: context => context.datasetIndex === 0 ? (isLightMode ? '#0f172a' : '#f8fafc') : '#dc2626',
+        backgroundColor: context => context.datasetIndex === 0 ? 'transparent' : (isLightMode ? '#ffffff' : 'rgba(15,23,42,0.95)'),
+        borderColor: context => context.datasetIndex === 0 ? 'transparent' : '#ef4444',
+        borderWidth: context => context.datasetIndex === 0 ? 0 : 1,
+        borderRadius: 4,
+        padding: context => context.datasetIndex === 0 ? 0 : { top: 1, right: 4, bottom: 1, left: 4 },
+        font: context => ({
+            size: context.datasetIndex === 0 ? 11 : 10,
+            weight: '800',
+            family: "'Inter', sans-serif"
+        }),
+        anchor: context => context.datasetIndex === 0 ? 'end' : 'center',
+        align: context => context.datasetIndex === 0 ? 'right' : 'top',
+        offset: context => context.datasetIndex === 0 ? 6 : 5,
+        clamp: false
+    };
+
     statsCreateChart('stats-line-performance-chart', {
         type: 'bar',
         plugins: [statsLineLogoPlugin('performance', rows, row => `${row.count} denetim`)],
         data: {
             labels: rows.map(row => row.line),
             datasets: [
-                { label: 'Ortalama Puan', data: rows.map(row => row.average), xAxisID: 'x', statsValueType: 'percentage', statsLabelInside: true, statsLabelAnchor: 'end', statsLabelAlign: 'start', backgroundColor: rows.map(row => appData.lineColors[row.line] || '#64748b'), borderRadius: 7, barThickness: 15 },
-                { type: 'line', label: 'Uygunsuzluk / Denetim', data: rows.map(row => row.density), xAxisID: 'x1', statsValueType: 'decimal', statsShowZero: true, statsLabelAlign: 'top', statsLabelOffset: 5, borderColor: statsChartTheme().red, backgroundColor: statsChartTheme().red, pointRadius: 4, pointHoverRadius: 5, borderWidth: 2, tension: 0.25 }
+                {
+                    label: 'Ortalama Puan',
+                    data: rows.map(row => row.average),
+                    xAxisID: 'x',
+                    backgroundColor: rows.map(row => appData.lineColors[row.line] || '#64748b'),
+                    borderRadius: 7,
+                    barThickness: 15
+                },
+                {
+                    type: 'line',
+                    label: 'Uygunsuzluk / Denetim',
+                    data: rows.map(row => row.density),
+                    xAxisID: 'x1',
+                    borderColor: statsChartTheme().red,
+                    backgroundColor: statsChartTheme().red,
+                    pointRadius: 4.5,
+                    pointHoverRadius: 6,
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 1.5,
+                    borderWidth: 2,
+                    tension: 0.25
+                }
             ]
         },
         options
@@ -8155,6 +8958,7 @@ function renderProfessionalNcStatus(ncs) {
     options.scales.x.ticks = { color: theme.text, font: { weight: '800', size: 10 } };
 
     options.scales.y.beginAtZero = true;
+    options.scales.y.suggestedMax = Math.ceil(Math.max(...values, 1) * 1.25);
     options.scales.y.ticks = { color: theme.dim, precision: 0, font: { weight: '800', size: 10 } };
     options.scales.y.grid = { color: theme.grid };
 
@@ -8376,11 +9180,14 @@ function renderProfessionalScoreDistribution(audits) {
         { label: '90-100', min: 90, max: 100, color: '#10b981' }
     ];
     const scores = audits.map(getAuditDisplayScore);
+    const binCounts = bins.map(bin => scores.filter(score => score >= bin.min && score <= bin.max).length);
     const options = statsBaseOptions();
     options.layout.padding = { top: 34, right: 12, bottom: 0, left: 4 };
     options.plugins.legend.display = false;
     options.scales.x.grid.display = false;
     options.scales.x.title = { display: true, text: 'Puan Aralığı', color: statsChartTheme().dim, font: { size: 10, weight: '800' } };
+    options.scales.y.beginAtZero = true;
+    options.scales.y.suggestedMax = Math.ceil(Math.max(...binCounts, 1) * 1.25);
     options.scales.y.ticks.precision = 0;
     options.scales.y.title = { display: true, text: 'Denetim Adedi', color: statsChartTheme().dim, font: { size: 10, weight: '800' } };
 
@@ -8504,6 +9311,7 @@ function renderProfessionalAuditorChart(audits) {
 }
 
 function renderProfessionalLineNcChart(ncs, auditLookup) {
+    const isLightMode = document.body.classList.contains('light-mode');
     const groups = new Map();
     ncs.forEach(nc => {
         const line = statsNcLine(nc, auditLookup);
@@ -8520,24 +9328,57 @@ function renderProfessionalLineNcChart(ncs, auditLookup) {
     const options = statsBaseOptions({ indexAxis: 'y', stacked: true });
     options.scales.x.stacked = true;
     options.scales.x.ticks.precision = 0;
-    options.scales.x.title = { display: true, text: 'Aksiyon Adedi', color: statsChartTheme().dim, font: { size: 10, weight: '800' } };
+    const maxTotal = Math.max(1, ...rows.map(row => row.total));
+    options.scales.x.suggestedMax = Math.ceil(maxTotal * 1.15);
+    options.scales.x.title = { display: true, text: 'Aksiyon Adedi', color: isLightMode ? '#0f172a' : statsChartTheme().dim, font: { size: 10, weight: '800' } };
     options.scales.y.stacked = true;
     options.scales.y.grid.display = false;
     options.scales.y.ticks = { display: false };
-    options.scales.y.afterFit = scale => { scale.width = 112; };
-    options.layout.padding = { top: 8, right: 16, bottom: 0, left: 0 };
+    options.scales.y.afterFit = scale => { scale.width = 142; };
+    options.layout.padding = { top: 8, right: 32, bottom: 4, left: 0 };
     options.plugins.legend.align = 'center';
     options.plugins.tooltip.callbacks.title = items => rows[items[0]?.dataIndex]?.line || '';
+
+    // Non-overlapping clean datalabels for stacked horizontal bars
+    options.plugins.datalabels = {
+        display: context => {
+            const val = Number(context.dataset.data?.[context.dataIndex]);
+            if (!val || val <= 0) return false;
+            // Hide datalabel if the segment is narrower than 20px to prevent box overlap
+            const meta = context.chart.getDatasetMeta(context.datasetIndex);
+            const barElement = meta?.data?.[context.dataIndex];
+            if (barElement) {
+                const width = Math.abs(barElement.width ?? (barElement.x - barElement.base));
+                if (width < 20) return false;
+            }
+            return true;
+        },
+        formatter: value => value,
+        color: context => context.datasetIndex === 2 ? '#78350f' : '#ffffff',
+        backgroundColor: 'transparent',
+        borderColor: 'transparent',
+        borderWidth: 0,
+        padding: 0,
+        font: {
+            size: 11,
+            weight: '900',
+            family: "'Inter', sans-serif"
+        },
+        anchor: 'center',
+        align: 'center',
+        clamp: true
+    };
+
     statsCreateChart('stats-line-nc-chart', {
         type: 'bar',
         plugins: [statsLineLogoPlugin('nc-status', rows, row => `${row.total} aksiyon`)],
         data: {
             labels: rows.map(row => row.line),
             datasets: [
-                { label: 'Açık', data: rows.map(row => row.open), statsValueType: 'count', statsLabelInside: true, backgroundColor: '#3b82f6', borderRadius: 4 },
-                { label: 'Geciken', data: rows.map(row => row.overdue), statsValueType: 'count', statsLabelInside: true, backgroundColor: '#e11d48', borderRadius: 4 },
-                { label: 'Kontrol', data: rows.map(row => row.control), statsValueType: 'count', statsLabelInside: true, backgroundColor: '#f59e0b', borderRadius: 4 },
-                { label: 'Kapalı', data: rows.map(row => row.closed), statsValueType: 'count', statsLabelInside: true, backgroundColor: '#10b981', borderRadius: 4 }
+                { label: 'Açık', data: rows.map(row => row.open), statsValueType: 'count', backgroundColor: '#3b82f6', borderRadius: 4 },
+                { label: 'Geciken', data: rows.map(row => row.overdue), statsValueType: 'count', backgroundColor: '#e11d48', borderRadius: 4 },
+                { label: 'Kontrol', data: rows.map(row => row.control), statsValueType: 'count', backgroundColor: '#f59e0b', borderRadius: 4 },
+                { label: 'Kapalı', data: rows.map(row => row.closed), statsValueType: 'count', backgroundColor: '#10b981', borderRadius: 4 }
             ]
         },
         options
@@ -9261,6 +10102,11 @@ function renderCompactStationAudits(audits) {
     }
 
     // Render tabs
+    const isLightMode = document.body.classList.contains('light-mode');
+    const labelColor = isLightMode ? '#0f172a' : '#f1f5f9';
+    const dimColor = isLightMode ? '#334155' : '#cbd5e1';
+    const gridColor = isLightMode ? 'rgba(15, 23, 42, 0.08)' : 'rgba(255, 255, 255, 0.08)';
+
     lines.forEach(line => {
         const color = (appData && appData.lineColors && appData.lineColors[line]) || '#3b82f6';
         const isActive = line === window.activeStationChartLine;
@@ -9279,18 +10125,20 @@ function renderCompactStationAudits(audits) {
             tab.style.background = color;
             tab.style.color = '#ffffff';
         } else {
-            tab.style.background = 'transparent';
-            tab.style.color = color;
+            tab.style.background = isLightMode ? '#f1f5f9' : 'transparent';
+            tab.style.color = isLightMode ? '#0f172a' : color;
         }
 
         tab.onmouseover = () => {
             if (!isActive) {
-                tab.style.background = color + '22';
+                tab.style.background = isLightMode ? '#e2e8f0' : (color + '22');
+                if (isLightMode) tab.style.color = '#0f172a';
             }
         };
         tab.onmouseout = () => {
             if (!isActive) {
-                tab.style.background = 'transparent';
+                tab.style.background = isLightMode ? '#f1f5f9' : 'transparent';
+                tab.style.color = isLightMode ? '#0f172a' : color;
             }
         };
 
@@ -9343,8 +10191,7 @@ function renderCompactStationAudits(audits) {
     }
 
     const maxVal = Math.max(...data, 1);
-    const suggestedMax = Math.ceil(maxVal * 1.2);
-    const theme = statsChartTheme();
+    const suggestedMax = Math.ceil(maxVal * 1.3);
 
     window.statsStationsChart = new Chart(ctx, {
         type: 'bar',
@@ -9361,7 +10208,7 @@ function renderCompactStationAudits(audits) {
             responsive: true,
             maintainAspectRatio: false,
             layout: {
-                padding: { top: 20, bottom: 5, left: 5, right: 5 }
+                padding: { top: 26, bottom: 5, left: 5, right: 5 }
             },
             plugins: {
                 legend: { display: false },
@@ -9375,10 +10222,12 @@ function renderCompactStationAudits(audits) {
                 datalabels: {
                     anchor: 'end',
                     align: 'top',
-                    color: theme.text,
+                    offset: 3,
+                    color: labelColor,
                     font: {
-                        weight: 'bold',
-                        size: 9
+                        weight: '800',
+                        size: 10,
+                        family: "'Inter', sans-serif"
                     },
                     formatter: (val) => val
                 }
@@ -9388,20 +10237,28 @@ function renderCompactStationAudits(audits) {
                     beginAtZero: true,
                     suggestedMax: suggestedMax,
                     grid: {
-                        color: theme.grid,
+                        color: gridColor,
                         borderColor: 'transparent'
                     },
                     ticks: {
                         stepSize: 1,
-                        color: theme.dim,
-                        font: { size: 9 }
+                        color: dimColor,
+                        font: {
+                            size: 9,
+                            weight: isLightMode ? '700' : '500',
+                            family: "'Inter', sans-serif"
+                        }
                     }
                 },
                 x: {
                     grid: { display: false },
                     ticks: {
-                        color: theme.text,
-                        font: { size: 9 },
+                        color: labelColor,
+                        font: {
+                            size: 10,
+                            weight: isLightMode ? '700' : '600',
+                            family: "'Inter', sans-serif"
+                        },
                         maxRotation: 45,
                         minRotation: 30,
                         autoSkip: false
@@ -9441,6 +10298,11 @@ function renderDashboardStationAudits(audits) {
     }
 
     // Render tabs
+    const isLightMode = document.body.classList.contains('light-mode');
+    const labelColor = isLightMode ? '#0f172a' : '#f1f5f9';
+    const dimColor = isLightMode ? '#334155' : '#cbd5e1';
+    const gridColor = isLightMode ? 'rgba(15, 23, 42, 0.08)' : 'rgba(255, 255, 255, 0.08)';
+
     lines.forEach(line => {
         const color = (appData && appData.lineColors && appData.lineColors[line]) || '#3b82f6';
         const isActive = line === window.activeDashboardStationChartLine;
@@ -9459,18 +10321,20 @@ function renderDashboardStationAudits(audits) {
             tab.style.background = color;
             tab.style.color = '#ffffff';
         } else {
-            tab.style.background = 'transparent';
-            tab.style.color = color;
+            tab.style.background = isLightMode ? '#f1f5f9' : 'transparent';
+            tab.style.color = isLightMode ? '#0f172a' : color;
         }
 
         tab.onmouseover = () => {
             if (!isActive) {
-                tab.style.background = color + '22';
+                tab.style.background = isLightMode ? '#e2e8f0' : (color + '22');
+                if (isLightMode) tab.style.color = '#0f172a';
             }
         };
         tab.onmouseout = () => {
             if (!isActive) {
-                tab.style.background = 'transparent';
+                tab.style.background = isLightMode ? '#f1f5f9' : 'transparent';
+                tab.style.color = isLightMode ? '#0f172a' : color;
             }
         };
 
@@ -9520,13 +10384,42 @@ function renderDashboardStationAudits(audits) {
 
     const maxVal = Math.max(...data, 1);
     const suggestedMax = Math.ceil(maxVal * 1.2);
-    const theme = statsChartTheme();
 
     if (window.dashboardStationsChart instanceof Chart && window.dashboardStationsChart.ctx) {
         window.dashboardStationsChart.data.labels = labels;
         window.dashboardStationsChart.data.datasets[0].data = data;
         window.dashboardStationsChart.data.datasets[0].backgroundColor = color;
+        window.dashboardStationsChart.data.datasets[0].barThickness = sortedStations.length > 15 ? 12 : 20;
         window.dashboardStationsChart.options.scales.y.suggestedMax = suggestedMax;
+
+        if (window.dashboardStationsChart.options.scales) {
+            if (window.dashboardStationsChart.options.scales.x) {
+                window.dashboardStationsChart.options.scales.x.ticks.color = labelColor;
+                window.dashboardStationsChart.options.scales.x.ticks.font = {
+                    size: 10,
+                    weight: isLightMode ? '700' : '600',
+                    family: "'Inter', sans-serif"
+                };
+                window.dashboardStationsChart.options.scales.x.ticks.autoSkip = false;
+            }
+            if (window.dashboardStationsChart.options.scales.y) {
+                window.dashboardStationsChart.options.scales.y.ticks.color = dimColor;
+                window.dashboardStationsChart.options.scales.y.ticks.font = {
+                    size: 9,
+                    weight: isLightMode ? '700' : '500',
+                    family: "'Inter', sans-serif"
+                };
+                window.dashboardStationsChart.options.scales.y.grid.color = gridColor;
+            }
+        }
+        if (window.dashboardStationsChart.options.plugins && window.dashboardStationsChart.options.plugins.datalabels) {
+            window.dashboardStationsChart.options.plugins.datalabels.color = labelColor;
+            window.dashboardStationsChart.options.plugins.datalabels.font = {
+                weight: '800',
+                size: 10,
+                family: "'Inter', sans-serif"
+            };
+        }
         window.dashboardStationsChart.update('none');
     } else {
         if (window.dashboardStationsChart instanceof Chart) {
@@ -9548,7 +10441,7 @@ function renderDashboardStationAudits(audits) {
                 responsive: true,
                 maintainAspectRatio: false,
                 layout: {
-                    padding: { top: 20, bottom: 5, left: 5, right: 5 }
+                    padding: { top: 22, bottom: 5, left: 5, right: 5 }
                 },
                 plugins: {
                     legend: { display: false },
@@ -9562,10 +10455,12 @@ function renderDashboardStationAudits(audits) {
                     datalabels: {
                         anchor: 'end',
                         align: 'top',
-                        color: theme.text,
+                        offset: 3,
+                        color: labelColor,
                         font: {
-                            weight: 'bold',
-                            size: 9
+                            weight: '800',
+                            size: 10,
+                            family: "'Inter', sans-serif"
                         },
                         formatter: (val) => val
                     }
@@ -9575,21 +10470,31 @@ function renderDashboardStationAudits(audits) {
                         beginAtZero: true,
                         suggestedMax: suggestedMax,
                         grid: {
-                            color: theme.grid,
+                            color: gridColor,
                             borderColor: 'transparent'
                         },
                         ticks: {
                             stepSize: 1,
-                            color: theme.dim,
-                            font: { size: 9 }
+                            color: dimColor,
+                            font: {
+                                size: 9,
+                                weight: isLightMode ? '700' : '500',
+                                family: "'Inter', sans-serif"
+                            }
                         }
                     },
                     x: {
                         grid: { display: false },
                         ticks: {
-                            color: theme.text,
+                            color: labelColor,
+                            font: {
+                                size: 10,
+                                weight: isLightMode ? '700' : '600',
+                                family: "'Inter', sans-serif"
+                            },
                             maxRotation: 45,
-                            minRotation: 30
+                            minRotation: 30,
+                            autoSkip: false
                         }
                     }
                 }
@@ -10210,12 +11115,12 @@ async function openAuditModal(id) {
                         </div>
 
                         <!-- Column 3: Success Chart Container (Horizontal Bar Chart) -->
-                        <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 12px 16px; display: flex; flex-direction: column; justify-content: center; min-height: 190px; align-self: stretch; position: relative;">
-                            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
-                                <div style="width: 3px; height: 10px; background: #3b82f6; border-radius: 1px;"></div>
-                                <span style="font-size: 0.65rem; font-weight: 900; color: #ffffff; letter-spacing: 0.5px; text-transform: uppercase;">KATEGORİ BAZLI BAŞARI (%)</span>
+                        <div style="background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 20px; padding: 14px 16px; display: flex; flex-direction: column; justify-content: center; min-height: 205px; align-self: stretch; position: relative;">
+                            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+                                <div style="width: 4px; height: 12px; background: #3b82f6; border-radius: 2px;"></div>
+                                <span style="font-size: 0.72rem; font-weight: 900; color: #ffffff; letter-spacing: 0.8px; text-transform: uppercase;">KATEGORİ BAZLI BAŞARI (%)</span>
                             </div>
-                            <div style="flex: 1; position: relative; height: 155px; width: 100%; min-width: 0;">
+                            <div style="flex: 1; position: relative; height: 170px; width: 100%; min-width: 0;">
                                 <canvas id="auditDetailBarChart"></canvas>
                             </div>
                         </div>
@@ -10344,26 +11249,54 @@ async function openAuditModal(id) {
                     const color = isNC ? '#E11D48' : (scorePercent >= 80 ? '#16A34A' : '#EA580C');
                     
                     const ncs = findNcsForAuditAnswer(audit, ans, cat, questions[i]);
+                    const isResolved = ncs.length > 0 && ncs.some(nc => isNcClosed(nc));
                     let ncsHtml = '';
-                    if (isNC) {
+                    if (isNC || isResolved) {
                         if (ncs.length > 0) {
                             ncsHtml = ncs.map((nc, idx) => {
+                                const isDone = isNcClosed(nc);
                                 const comment = nc.auditorComment || '';
                                 const photos = nc.auditorPhotoPaths || [];
+                                const closurePhotos = nc.closurePhotoPaths || [];
                                 const titleSuffix = ncs.length > 1 ? ` (Uygunsuzluk ${idx + 1})` : '';
+                                const badgeText = isDone ? 'ÇÖZÜLDÜ' : 'AÇIK UYGUNSUZLUK';
+                                const badgeBg = isDone ? '#dcfce7' : '#ffe4e6';
+                                const badgeColor = isDone ? '#15803d' : '#e11d48';
+                                const iconClass = isDone ? 'fa-check-circle' : 'fa-clock';
                                 
                                 return `
                                     <div style="margin-top: 8px; padding: 10px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-main); border-left: 3px solid #E11D48;">
-                                        <div style="font-size: 0.65rem; font-weight: 850; color: #E11D48; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.2px;">
-                                            <i class="fas fa-triangle-exclamation" style="margin-right: 4px;"></i> Uygunsuzluk Detayı${titleSuffix}
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                            <div style="font-size: 0.65rem; font-weight: 850; color: #E11D48; text-transform: uppercase; letter-spacing: 0.2px;">
+                                                <i class="fas fa-triangle-exclamation" style="margin-right: 4px;"></i> Uygunsuzluk Detayı${titleSuffix}
+                                            </div>
+                                            <span style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; background: ${badgeBg}; color: ${badgeColor}; font-size: 0.62rem; font-weight: 900; border: 1px solid ${isDone ? 'rgba(22, 163, 74, 0.35)' : 'rgba(225, 29, 72, 0.25)'};">
+                                                <i class="fas ${iconClass}" style="color: ${badgeColor}; font-size: 0.62rem;"></i> ${badgeText}
+                                            </span>
                                         </div>
                                         ${comment ? `<div style="font-size: 0.74rem; color: var(--text-secondary); margin-bottom: 8px; font-weight: 500; line-height: 1.4;"><strong>Açıklama:</strong> ${escapeAttr(comment)}</div>` : ''}
                                         ${photos.length > 0 ? `
-                                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: ${isDone && (nc.closureComment || closurePhotos.length > 0) ? '8px' : '0'};">
                                                 ${photos.map(p => {
                                                     const r = resolveImagePath(p);
                                                     if (r) {
-                                                        return '<div style="width:48px;height:48px;border-radius:8px;overflow:hidden;border:1px solid var(--border-main);background:var(--bg-input);cursor:pointer;display:flex;align-items:center;justify-content:center;" onclick="openImagePreview(\'' + r + '\')"><img src="' + r + '" style="width:100%;height:100%;object-fit:contain;" onerror="this.parentElement.style.display=\'none\'"></div>';
+                                                        return '<div style="width:48px;height:48px;border-radius:8px;overflow:hidden;border:1px solid #fda4af;background:var(--bg-input);cursor:pointer;display:flex;align-items:center;justify-content:center;" onclick="openImagePreview(\'' + r + '\')"><img src="' + r + '" style="width:100%;height:100%;object-fit:contain;" onerror="this.parentElement.style.display=\'none\'"></div>';
+                                                    }
+                                                    return '';
+                                                }).join('')}
+                                            </div>
+                                        ` : ''}
+                                        ${isDone && nc.closureComment ? `
+                                            <div style="font-size: 0.74rem; color: #15803d; background: rgba(22, 163, 74, 0.08); border-radius: 6px; padding: 6px 8px; margin-top: 6px; font-weight: 500; line-height: 1.4; border-left: 2px solid #16a34a;">
+                                                <strong>Çözüm Notu:</strong> ${escapeAttr(nc.closureComment)}
+                                            </div>
+                                        ` : ''}
+                                        ${isDone && closurePhotos.length > 0 ? `
+                                            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px;">
+                                                ${closurePhotos.map(p => {
+                                                    const r = resolveImagePath(p);
+                                                    if (r) {
+                                                        return '<div style="width:48px;height:48px;border-radius:8px;overflow:hidden;border:1px solid #16A34A;background:var(--bg-input);cursor:pointer;display:flex;align-items:center;justify-content:center;" onclick="openImagePreview(\'' + r + '\')" title="Çözüm Fotoğrafı"><img src="' + r + '" style="width:100%;height:100%;object-fit:contain;" onerror="this.parentElement.style.display=\'none\'"></div>';
                                                     }
                                                     return '';
                                                 }).join('')}
@@ -10386,7 +11319,7 @@ async function openAuditModal(id) {
                                             ${fallbackPhotos.map(p => {
                                                 const r = resolveImagePath(p);
                                                 if (r) {
-                                                    return '<div style="width:48px;height:48px;border-radius:8px;overflow:hidden;border:1px solid var(--border-main);background:var(--bg-input);cursor:pointer;display:flex;align-items:center;justify-content:center;" onclick="openImagePreview(\'' + r + '\')"><img src="' + r + '" style="width:100%;height:100%;object-fit:contain;" onerror="this.parentElement.style.display=\'none\'"></div>';
+                                                    return '<div style="width:48px;height:48px;border-radius:8px;overflow:hidden;border:1px solid #fda4af;background:var(--bg-input);cursor:pointer;display:flex;align-items:center;justify-content:center;" onclick="openImagePreview(\'' + r + '\')"><img src="' + r + '" style="width:100%;height:100%;object-fit:contain;" onerror="this.parentElement.style.display=\'none\'"></div>';
                                                 }
                                                 return '';
                                             }).join('')}
@@ -10403,6 +11336,7 @@ async function openAuditModal(id) {
                         score: sVal,
                         displayScore: displayScore,
                         isNC: isNC,
+                        isResolved: isResolved,
                         color: color,
                         scorePercent: scorePercent,
                         ncsHtml
@@ -10413,6 +11347,7 @@ async function openAuditModal(id) {
                     const listItems = groupedQuestions[catName].map((qObj, index) => {
                         const questionNumber = index + 1;
                         const isMuaf = qObj.displayScore === 'K.D.' || qObj.score === -1;
+                        const hasNC = qObj.isNC || (qObj.ncsHtml && qObj.ncsHtml.length > 0);
                         let badgeBg = '#10b981';
                         let badgeFg = '#ffffff';
                         let badgeText = `${qObj.displayScore} PUAN`;
@@ -10421,7 +11356,7 @@ async function openAuditModal(id) {
                             badgeBg = '#475569';
                             badgeFg = '#ffffff';
                             badgeText = 'MUAF (K.D.)';
-                        } else if (qObj.isNC) {
+                        } else if (hasNC) {
                             badgeBg = '#e11d48';
                             badgeFg = '#ffffff';
                             badgeText = `${qObj.displayScore} PUAN`;
@@ -10441,8 +11376,15 @@ async function openAuditModal(id) {
                                                     <div style="flex: 1;">
                                                         <div class="audit-question-text" style="font-size: 0.82rem; font-weight: 600; color: var(--text-primary); line-height: 1.4;"><strong style="color: var(--primary); margin-right: 4px;">${questionNumber}.</strong> ${escapeAttr(qObj.questionText)}</div>
                                                     </div>
-                                                    <div style="padding: 4px 10px; border-radius: 8px; background: ${badgeBg}; color: ${badgeFg}; font-weight: 900; font-size: 0.76rem; letter-spacing: 0.4px; flex-shrink: 0; box-shadow: 0 2px 6px ${badgeBg}40; text-align: center; min-width: 60px;">
-                                                        ${badgeText}
+                                                    <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                                                        ${qObj.isResolved ? `
+                                                            <span style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 6px; background: rgba(22, 163, 74, 0.12); color: #15803d; font-size: 0.65rem; font-weight: 850; border: 1px solid rgba(22, 163, 74, 0.3); white-space: nowrap;" title="Bu uygunsuzluk çözülmüştür">
+                                                                <i class="fas fa-check-circle" style="font-size: 0.65rem; color: #16a34a;"></i> ÇÖZÜLDÜ
+                                                            </span>
+                                                        ` : ''}
+                                                        <div style="padding: 4px 10px; border-radius: 8px; background: ${badgeBg}; color: ${badgeFg}; font-weight: 900; font-size: 0.76rem; letter-spacing: 0.4px; flex-shrink: 0; box-shadow: 0 2px 6px ${badgeBg}40; text-align: center; min-width: 60px;">
+                                                            ${badgeText}
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 ${qObj.ncsHtml || ''}
@@ -10543,9 +11485,9 @@ async function openAuditModal(id) {
                             backgroundColor: finalScores.map(val => {
                                 return val >= 80 ? '#10b981' : (val >= 60 ? '#f59e0b' : '#ef4444');
                             }),
-                            borderRadius: 4,
-                            barThickness: 12,
-                            maxBarThickness: 14
+                            borderRadius: 5,
+                            barThickness: 16,
+                            maxBarThickness: 18
                         }]
                     },
                     options: {
@@ -10553,7 +11495,7 @@ async function openAuditModal(id) {
                         responsive: true,
                         maintainAspectRatio: false,
                         layout: {
-                            padding: { top: 2, bottom: 2, left: 0, right: 36 }
+                            padding: { top: 4, bottom: 4, left: 0, right: 48 }
                         },
                         plugins: {
                             legend: { display: false },
@@ -10564,10 +11506,10 @@ async function openAuditModal(id) {
                             },
                             datalabels: {
                                 anchor: 'end',
-                                align: 'start',
-                                offset: 4,
+                                align: 'end',
+                                offset: 6,
                                 formatter: (val) => '%' + Math.round(val),
-                                font: { weight: '800', size: 9 },
+                                font: { weight: '900', size: 11, family: 'Inter, system-ui, sans-serif' },
                                 color: '#ffffff'
                             }
                         },
@@ -10579,9 +11521,9 @@ async function openAuditModal(id) {
                             },
                             y: {
                                 ticks: {
-                                    font: { size: 8.5, weight: '700' },
+                                    font: { size: 10.5, weight: '800', family: 'Inter, system-ui, sans-serif' },
                                     color: '#ffffff',
-                                    padding: 6
+                                    padding: 8
                                 },
                                 grid: { display: false }
                             }
@@ -11372,24 +12314,24 @@ function drawAuditPdfCategoryChart(doc, audit, y) {
     y = auditPdfEnsureSpace(doc, y, 30);
 
     // Premium Corporate Header Box
-    const headerH = 7;
+    const headerH = 7.5;
     doc.setFillColor(11, 42, 74);
     drawAuditPdfRoundedRect(doc, margin, y, contentW, headerH, 1, 1, 'F');
 
     setAuditPdfFont(doc, 'bold');
-    doc.setFontSize(8);
+    doc.setFontSize(8.5);
     setAuditPdfRgb(doc, [255, 255, 255]);
-    auditPdfText(doc, 'KATEGORİ BAŞARI ÖZETİ', pageW / 2, y + 5, { align: 'center' });
+    auditPdfText(doc, 'KATEGORİ BAZLI BAŞARI (%)', pageW / 2, y + 5.2, { align: 'center' });
     y += headerH;
 
     // 3-Column Grid setup
     const cols = 3;
     const colW = contentW / cols;
-    const itemH = 9;
+    const itemH = 11;
     const paddingX = 4;
 
     const rows = Math.ceil(chartData.length / cols);
-    const boxH = rows * itemH + 4;
+    const boxH = rows * itemH + 5;
 
     // Main Body Box
     doc.setFillColor(252, 253, 255);
@@ -11409,30 +12351,32 @@ function drawAuditPdfCategoryChart(doc, audit, y) {
 
         // Category Name
         setAuditPdfFont(doc, 'bold');
-        doc.setFontSize(6.5);
-        setAuditPdfRgb(doc, [51, 65, 85]);
+        doc.setFontSize(7.5);
+        setAuditPdfRgb(doc, [15, 23, 42]);
         const catName = item.category.length > 21 ? item.category.substring(0, 19) + '..' : item.category;
-        auditPdfText(doc, catName, startX, startY + 3.5);
+        auditPdfText(doc, catName, startX, startY + 4);
 
         // Percentage Text (Right aligned within the column)
-        setAuditPdfRgb(doc, [15, 23, 42]);
+        const barColor = getAuditChartBarColor(item.avgPercent);
+        setAuditPdfFont(doc, 'bold');
+        doc.setFontSize(8);
+        setAuditPdfRgb(doc, barColor);
         const scoreText = `%${Math.round(item.avgPercent)}`;
         const scoreW = doc.getTextWidth(scoreText);
-        auditPdfText(doc, scoreText, startX + colW - paddingX * 2 - scoreW, startY + 3.5);
+        auditPdfText(doc, scoreText, startX + colW - paddingX * 2 - scoreW, startY + 4);
 
         // Micro Progress Bar
-        const barY = startY + 5.5;
+        const barY = startY + 6.5;
         const maxBarW = colW - paddingX * 2;
-        const actualBarW = Math.max(0.5, (item.avgPercent / 100) * maxBarW);
-        const barColor = getAuditChartBarColor(item.avgPercent);
+        const actualBarW = Math.max(0.8, (item.avgPercent / 100) * maxBarW);
 
         // Bar Background Track
-        doc.setFillColor(241, 245, 249);
-        drawAuditPdfRoundedRect(doc, startX, barY, maxBarW, 1.5, 0.75, 0.75, 'F');
+        doc.setFillColor(226, 232, 240);
+        drawAuditPdfRoundedRect(doc, startX, barY, maxBarW, 2, 1, 1, 'F');
 
         // Bar Fill
         doc.setFillColor(barColor[0], barColor[1], barColor[2]);
-        drawAuditPdfRoundedRect(doc, startX, barY, actualBarW, 1.5, 0.75, 0.75, 'F');
+        drawAuditPdfRoundedRect(doc, startX, barY, actualBarW, 2, 1, 1, 'F');
     }
 
     // Elegant Vertical Separators
@@ -11479,27 +12423,31 @@ function estimateAuditPdfNcBlockHeight(doc, ncBlock, contentW) {
     }
     let h = 0;
     if (ncBlock.isNc !== false || ncBlock.comment || ncBlock.detectionPhotos.length > 0) {
-        h += 4; // Title spacing
+        h += 4.5; // Uygunsuzluk başlığı
     }
     
     if (ncBlock.comment) {
         doc.setFontSize(6.5);
-        const commentLines = doc.splitTextToSize(auditPdfStr(`Açıklama: ${ncBlock.comment}`), contentW - 12);
-        h += commentLines.length * 3 + 1;
+        const commentLines = doc.splitTextToSize(auditPdfStr(`Açıklama: ${ncBlock.comment}`), contentW - 14);
+        h += commentLines.length * 3 + 1.5;
     }
     
     if (ncBlock.detectionPhotos.length > 0) {
-        h += 3 + Math.ceil(ncBlock.detectionPhotos.length / 4) * 20 + 1;
+        h += 3 + Math.ceil(ncBlock.detectionPhotos.length / 4) * 20 + 2;
     }
-    
-    if (ncBlock.closureComment) {
-        doc.setFontSize(6.5);
-        const closureLines = doc.splitTextToSize(auditPdfStr(`Çözüm Açıklaması: ${ncBlock.closureComment}`), contentW - 12);
-        h += closureLines.length * 3 + 1;
-    }
-    
-    if (ncBlock.closurePhotos.length > 0) {
-        h += 3 + Math.ceil(ncBlock.closurePhotos.length / 4) * 20 + 1;
+
+    const hasClosure = Boolean(ncBlock.closureComment || ncBlock.closurePhotos.length > 0 || ncBlock.isClosed);
+    if (hasClosure) {
+        h += 4.5; // Çözüm başlığı
+        if (ncBlock.closureComment) {
+            doc.setFontSize(6.5);
+            const closureLines = doc.splitTextToSize(auditPdfStr(`Çözüm Açıklaması: ${ncBlock.closureComment}`), contentW - 14);
+            h += closureLines.length * 3 + 1.5;
+        }
+        
+        if (ncBlock.closurePhotos.length > 0) {
+            h += 3 + Math.ceil(ncBlock.closurePhotos.length / 4) * 20 + 1;
+        }
     }
     
     h += 2; // Bottom gap
@@ -11522,13 +12470,7 @@ function getAuditQuestionBadgeConfig(audit, scoredAnswer, isNc, allClosed) {
     }
 
     if (is5S || (rawScore > 1 || percent > 0 && !isBooleanAuditAnswer(audit, scoredAnswer?.ans || {}))) {
-        if (allClosed) {
-            return {
-                text: `${scoreLabel} PUAN (ÇÖZÜLDÜ)`,
-                bg: [16, 185, 129],
-                fg: [255, 255, 255]
-            };
-        } else if (rawScore >= 4 || percent >= 80) {
+        if (rawScore >= 4 || percent >= 80) {
             // 4 ve 5 Puan: Tamamen Olumlu / Yeşil
             return {
                 text: `${scoreLabel} PUAN`,
@@ -11551,13 +12493,7 @@ function getAuditQuestionBadgeConfig(audit, scoredAnswer, isNc, allClosed) {
             };
         }
     } else {
-        if (allClosed) {
-            return {
-                text: '✓ ÇÖZÜLDÜ',
-                bg: [16, 185, 129],
-                fg: [255, 255, 255]
-            };
-        } else if (isNc) {
+        if (isNc) {
             return {
                 text: '✗ UYGUNSUZ',
                 bg: [225, 29, 72],
@@ -11618,31 +12554,48 @@ function drawAuditPdfNcBlock(doc, ncBlock, idx, totalNcs, startX, startY, conten
         currentY += 3;
     }
 
+    const hasClosure = Boolean(ncBlock.closureComment || (ncBlock.closurePhotos && ncBlock.closurePhotos.length > 0) || ncBlock.isClosed);
+
     if (ncBlock.isNc !== false) {
+        // 🔴 UYGUNSUZLUK (TESPİT) BAŞLIĞI - Kırmızı nokta ve kırmızı yazı
+        doc.setFillColor(225, 29, 72);
+        doc.circle(margin + 2, currentY - 1, 1.2, 'F');
+
         setAuditPdfFont(doc, 'bold');
-        doc.setFontSize(7);
+        doc.setFontSize(7.2);
         const titleSuffix = totalNcs > 1 ? ` #${idx + 1}` : '';
-        setAuditPdfRgb(doc, ncBlock.isClosed ? [22, 101, 52] : [225, 29, 72]);
-        auditPdfText(doc, `Uygunsuzluk${titleSuffix}${ncBlock.isClosed ? ' (Kapatıldı)' : ''}`, margin, currentY);
-        currentY += 4;
-    } else if (ncBlock.comment || ncBlock.detectionPhotos.length > 0) {
+        setAuditPdfRgb(doc, [225, 29, 72]); // Kırmızı
+        const titleText = `Uygunsuzluk (Tespit)${titleSuffix}`;
+        auditPdfText(doc, titleText, margin + 5, currentY);
+        if (ncBlock.isClosed) {
+            const titleW = doc.getTextWidth(auditPdfStr(titleText));
+            setAuditPdfFont(doc, 'bold');
+            doc.setFontSize(6.5);
+            setAuditPdfRgb(doc, [22, 163, 74]); // Yeşil
+            auditPdfText(doc, ' - ✓ Çözüldü', margin + 5 + titleW + 2, currentY);
+        }
+        currentY += 4.2;
+    } else if (ncBlock.comment || (ncBlock.detectionPhotos && ncBlock.detectionPhotos.length > 0)) {
+        doc.setFillColor(71, 85, 105);
+        doc.circle(margin + 2, currentY - 1, 1.2, 'F');
+
         setAuditPdfFont(doc, 'bold');
         doc.setFontSize(7);
         setAuditPdfRgb(doc, [71, 85, 105]);
-        auditPdfText(doc, 'Denetçi Notu', margin, currentY);
-        currentY += 4;
+        auditPdfText(doc, 'Denetçi Notu', margin + 5, currentY);
+        currentY += 4.2;
     }
 
     if (ncBlock.comment) {
         setAuditPdfFont(doc, 'normal');
         doc.setFontSize(6.5);
-        setAuditPdfRgb(doc, [71, 85, 105]);
-        const commentLines = doc.splitTextToSize(auditPdfStr(`Açıklama: ${ncBlock.comment}`), contentW - 12);
-        auditPdfText(doc, commentLines, margin + 4, currentY);
-        currentY += commentLines.length * 3 + 1;
+        setAuditPdfRgb(doc, [190, 24, 93]); // Belirgin kırmızı/bordo açıklama
+        const commentLines = doc.splitTextToSize(auditPdfStr(`Açıklama: ${ncBlock.comment}`), contentW - 14);
+        auditPdfText(doc, commentLines, margin + 5, currentY);
+        currentY += commentLines.length * 3 + 1.5;
     }
 
-    if (ncBlock.detectionPhotos.length > 0) {
+    if (ncBlock.detectionPhotos && ncBlock.detectionPhotos.length > 0) {
         const photoW = 24;
         const photoH = 18;
         const gap = 3;
@@ -11652,51 +12605,67 @@ function drawAuditPdfNcBlock(doc, ncBlock, idx, totalNcs, startX, startY, conten
             const photo = ncBlock.detectionPhotos[pIdx];
             const col = pIdx % imagesPerRow;
             const row = Math.floor(pIdx / imagesPerRow);
-            const imgX = margin + 4 + col * (photoW + gap);
+            const imgX = margin + 5 + col * (photoW + gap);
             const imgY = currentY + row * (photoH + gap);
 
             try {
                 doc.addImage(photo.dataUrl, 'JPEG', imgX, imgY, photoW, photoH);
-                doc.setDrawColor(226, 232, 240);
+                // Kırmızı çerçeve ile tespit fotoğrafı vurgusu
+                doc.setDrawColor(244, 63, 94);
+                doc.setLineWidth(0.3);
                 doc.rect(imgX, imgY, photoW, photoH);
             } catch (e) {
                 console.warn('PDF NC photo load failed:', e);
             }
         }
-        currentY += Math.ceil(ncBlock.detectionPhotos.length / imagesPerRow) * (photoH + gap) + 1;
+        currentY += Math.ceil(ncBlock.detectionPhotos.length / imagesPerRow) * (photoH + gap) + 2;
     }
 
-    if (ncBlock.closureComment) {
-        setAuditPdfFont(doc, 'normal');
-        doc.setFontSize(6.5);
-        setAuditPdfRgb(doc, [22, 101, 52]);
-        const closureLines = doc.splitTextToSize(auditPdfStr(`Çözüm Açıklaması: ${ncBlock.closureComment}`), contentW - 12);
-        auditPdfText(doc, closureLines, margin + 4, currentY);
-        currentY += closureLines.length * 3 + 1;
-    }
+    // 🟢 ÇÖZÜM BÖLÜMÜ - Yeşil nokta ve yeşil yazı
+    if (hasClosure) {
+        doc.setFillColor(22, 163, 74);
+        doc.circle(margin + 2, currentY - 1, 1.2, 'F');
 
-    if (ncBlock.closurePhotos.length > 0) {
-        const photoW = 24;
-        const photoH = 18;
-        const gap = 3;
-        const imagesPerRow = 4;
+        setAuditPdfFont(doc, 'bold');
+        doc.setFontSize(7.2);
+        setAuditPdfRgb(doc, [22, 101, 52]); // Yeşil
+        auditPdfText(doc, 'Çözüm / Giderilme (Kapatıldı)', margin + 5, currentY);
+        currentY += 4.2;
 
-        for (let pIdx = 0; pIdx < ncBlock.closurePhotos.length; pIdx++) {
-            const photo = ncBlock.closurePhotos[pIdx];
-            const col = pIdx % imagesPerRow;
-            const row = Math.floor(pIdx / imagesPerRow);
-            const imgX = margin + 4 + col * (photoW + gap);
-            const imgY = currentY + row * (photoH + gap);
-
-            try {
-                doc.addImage(photo.dataUrl, 'JPEG', imgX, imgY, photoW, photoH);
-                doc.setDrawColor(187, 247, 208);
-                doc.rect(imgX, imgY, photoW, photoH);
-            } catch (e) {
-                console.warn('PDF NC closure photo load failed:', e);
-            }
+        if (ncBlock.closureComment) {
+            setAuditPdfFont(doc, 'normal');
+            doc.setFontSize(6.5);
+            setAuditPdfRgb(doc, [21, 128, 61]); // Koyu yeşil açıklama
+            const closureLines = doc.splitTextToSize(auditPdfStr(`Çözüm Açıklaması: ${ncBlock.closureComment}`), contentW - 14);
+            auditPdfText(doc, closureLines, margin + 5, currentY);
+            currentY += closureLines.length * 3 + 1.5;
         }
-        currentY += Math.ceil(ncBlock.closurePhotos.length / imagesPerRow) * (photoH + gap) + 1;
+
+        if (ncBlock.closurePhotos && ncBlock.closurePhotos.length > 0) {
+            const photoW = 24;
+            const photoH = 18;
+            const gap = 3;
+            const imagesPerRow = 4;
+
+            for (let pIdx = 0; pIdx < ncBlock.closurePhotos.length; pIdx++) {
+                const photo = ncBlock.closurePhotos[pIdx];
+                const col = pIdx % imagesPerRow;
+                const row = Math.floor(pIdx / imagesPerRow);
+                const imgX = margin + 5 + col * (photoW + gap);
+                const imgY = currentY + row * (photoH + gap);
+
+                try {
+                    doc.addImage(photo.dataUrl, 'JPEG', imgX, imgY, photoW, photoH);
+                    // Yeşil çerçeve ile çözüm fotoğrafı vurgusu
+                    doc.setDrawColor(34, 197, 94);
+                    doc.setLineWidth(0.3);
+                    doc.rect(imgX, imgY, photoW, photoH);
+                } catch (e) {
+                    console.warn('PDF NC closure photo load failed:', e);
+                }
+            }
+            currentY += Math.ceil(ncBlock.closurePhotos.length / imagesPerRow) * (photoH + gap) + 1;
+        }
     }
 
     return currentY + 1;
@@ -11760,7 +12729,7 @@ function drawAuditPdfQuestionBlock(doc, audit, index, ans, categoryName, questio
 
     // Left Border Status Stripe
     const isMuaf = Boolean(scoredAnswer?.isOutOfScope || scoredAnswer?.displayScore === 'K.D.' || scoredAnswer?.rawScore === -1);
-    const indicatorColor = isMuaf ? [148, 163, 184] : (allClosed || !isNc ? [16, 185, 129] : [225, 29, 72]);
+    const indicatorColor = isMuaf ? [148, 163, 184] : (isNc ? [225, 29, 72] : [16, 185, 129]);
     doc.setFillColor(indicatorColor[0], indicatorColor[1], indicatorColor[2]);
     doc.rect(margin, boxY, 2, questionH, 'F');
 
@@ -11777,6 +12746,20 @@ function drawAuditPdfQuestionBlock(doc, audit, index, ans, categoryName, questio
     doc.setFontSize(6.8);
     setAuditPdfRgb(doc, badgeConfig.fg);
     auditPdfText(doc, badgeText, badgeX + badgeW / 2, badgeY + 3.4, { align: 'center' });
+
+    // Eğer çözülmüşse, puan rozetinin hemen solunda yeşil ÇÖZÜLDÜ rozeti çiz
+    if (allClosed) {
+        const resolvedText = auditPdfStr('✓ ÇÖZÜLDÜ');
+        setAuditPdfFont(doc, 'bold');
+        doc.setFontSize(6.5);
+        const resolvedW = doc.getTextWidth(resolvedText) + 6;
+        const resolvedH = 4.8;
+        const resolvedX = badgeX - resolvedW - 3;
+        setAuditPdfFill(doc, [22, 163, 74]); // Yeşil dolgu
+        drawAuditPdfRoundedRect(doc, resolvedX, badgeY, resolvedW, resolvedH, 1.2, 1.2, 'F');
+        setAuditPdfRgb(doc, [255, 255, 255]); // Beyaz yazı
+        auditPdfText(doc, resolvedText, resolvedX + resolvedW / 2, badgeY + 3.4, { align: 'center' });
+    }
 
     // Question Body Text (Completely below Top Bar)
     setAuditPdfFont(doc, 'normal');
@@ -14075,6 +15058,24 @@ function importAllDataJSON(input) {
     };
     reader.readAsText(file);
     input.value = '';
+}
+
+async function resetCacheAndResync() {
+    try {
+        localStorage.removeItem('cached_audits_v1');
+        localStorage.removeItem('cached_ncs_v1');
+        localStorage.removeItem('cached_sessions_v1');
+        appData.audits = [];
+        appData.nonconformities = [];
+        invalidateDataCaches();
+        showToast('Önbellek sıfırlandı, güncel veriler sunucudan çekiliyor...');
+        await Promise.all([syncAudits(), syncNCs(), syncSessions()]);
+        renderAll();
+        showToast('Tüm kayıtlar Firestore ile başarıyla eşitlendi!');
+    } catch (e) {
+        console.error('Reset cache error:', e);
+        showToast('Senkronizasyon hatası: ' + e.message);
+    }
 }
 
 function clearAllData() {
@@ -18128,6 +19129,17 @@ window.clearFilters = function (view) {
         populateStatsFilters();
         updateStats();
     } else if (view === 'audits') {
+        // Sıralama durumunu ilk varsayılan haline döndür (Tarih azalan, Puan sıfır)
+        auditDateSortDirection = 'desc';
+        auditScoreSortDirection = null;
+        auditsCurrentPage = 1;
+        updateDateSortHeader('audit-date-sort-header', 'audit-date-sort-icon', auditDateSortDirection);
+        resetSortHeader('audit-score-sort-header', 'audit-score-sort-icon');
+        const scoreBtn = document.querySelector('#audit-score-sort-header button');
+        if (scoreBtn) {
+            scoreBtn.title = 'Puana göre sıralamak için tıklayın.';
+        }
+
         unifiedDateFilters.audits.years = [];
         unifiedDateFilters.audits.months = [];
         unifiedDateFilters.audits.weeks = [];
@@ -18137,6 +19149,20 @@ window.clearFilters = function (view) {
         populateAuditPageFilters();
         renderAllAuditsTable();
     } else if (view === 'nc') {
+        // Sıralama durumunu ilk varsayılan haline döndür (Tarih azalan)
+        ncDateSortDirection = 'desc';
+        ncCurrentPage = 1;
+        updateDateSortHeader('nc-date-sort-header', 'nc-date-sort-icon', ncDateSortDirection);
+
+        const ncSearchInput = document.getElementById('nc-search-input');
+        if (ncSearchInput) {
+            ncSearchInput.value = '';
+            ncSearchInput.style.width = '28px';
+            ncSearchInput.style.borderColor = 'var(--border-main)';
+            ncSearchInput.style.color = 'transparent';
+            ncSearchInput.placeholder = '';
+        }
+
         unifiedDateFilters.nc.years = [];
         unifiedDateFilters.nc.months = [];
         unifiedDateFilters.nc.weeks = [];
